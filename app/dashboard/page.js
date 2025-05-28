@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import DashboardView from '@/app/components/DashboardView';
+import FacilityDashboardView from '@/app/components/FacilityDashboardView';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +25,7 @@ export default async function Dashboard() {
         }
 
         console.log('User authenticated, rendering dashboard');
-        return <DashboardView user={session.user} />;
+        return <FacilityDashboardView user={session.user} />;
     } catch (error) {
         console.error('Error in dashboard page:', error);
         redirect('/login?error=server_error');

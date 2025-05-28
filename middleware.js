@@ -33,7 +33,16 @@ export async function middleware(req) {
   console.log('Session check in middleware:', session ? 'Session exists' : 'No session');
   
   // Define which routes should be protected
-  const protectedRoutes = ['/dashboard', '/dashboard/book', '/dashboard/trips', '/dashboard/settings', '/dashboard/payment-methods'];
+  const protectedRoutes = [
+    '/dashboard', 
+    '/dashboard/book', 
+    '/dashboard/trips', 
+    '/dashboard/settings', 
+    '/dashboard/payment-methods',
+    '/dashboard/clients',
+    '/dashboard/billing',
+    '/dashboard/facility-settings'
+  ];
   
   // Check if the current route is protected
   const isProtectedRoute = protectedRoutes.some(route => 
@@ -52,10 +61,10 @@ export async function middleware(req) {
     
     // Email verification is disabled in Supabase settings
     
-    // Check if user has 'client' role in their metadata
+    // Check if user has 'facility' role in their metadata
     const userRole = session.user.user_metadata?.role;
     
-    if (userRole !== 'client') {
+    if (userRole !== 'facility') {
       // If user doesn't have the right role, fetch from profiles table
       // This is necessary for users created before role implementation
       try {
@@ -65,8 +74,8 @@ export async function middleware(req) {
           .eq('id', session.user.id)
           .single();
           
-        // If profile exists and doesn't have 'client' role, log the user out
-        if (!profile || profile.role !== 'client') {
+        // If profile exists and doesn't have 'facility' role, log the user out
+        if (!profile || profile.role !== 'facility') {
           console.log('Redirecting to login from protected route - Invalid role');
           await supabase.auth.signOut();
           // Add a small delay to ensure session is cleared
