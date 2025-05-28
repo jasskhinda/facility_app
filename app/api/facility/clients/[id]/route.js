@@ -115,6 +115,11 @@ export async function PUT(request, { params }) {
     // Get client data from request
     const clientData = await request.json();
     
+    // Validate required fields
+    if (!clientData.first_name || !clientData.last_name) {
+      return NextResponse.json({ error: 'First name and last name are required' }, { status: 400 });
+    }
+    
     // Update client profile
     const { error: updateError } = await supabase
       .from('profiles')

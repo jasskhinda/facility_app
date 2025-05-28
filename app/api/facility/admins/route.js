@@ -35,7 +35,7 @@ export async function GET(request) {
     // Get facility administrators
     const { data: admins, error: adminsError } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, email')
+      .select('id, first_name, last_name')
       .eq('facility_id', profile.facility_id)
       .eq('role', 'facility');
       
@@ -83,8 +83,15 @@ export async function POST(request) {
     // Get invite data from request
     const { email, first_name, last_name } = await request.json();
     
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    // Validate required fields
+    if (!email || !first_name || !last_name) {
+      return NextResponse.json({ error: 'Email, first name, and last name are required' }, { status: 400 });
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
     }
     
     // In a real implementation, you would:

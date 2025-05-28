@@ -46,7 +46,7 @@ export async function GET(request) {
     // Get facility administrators
     const { data: admins, error: adminsError } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, email')
+      .select('id, first_name, last_name')
       .eq('facility_id', profile.facility_id)
       .eq('role', 'facility');
       
@@ -93,6 +93,11 @@ export async function PUT(request) {
     
     // Get facility data from request
     const facilityData = await request.json();
+    
+    // Validate required fields
+    if (!facilityData.name || !facilityData.address || !facilityData.phone_number || !facilityData.contact_email) {
+      return NextResponse.json({ error: 'Name, address, phone number, and contact email are required' }, { status: 400 });
+    }
     
     // Update facility
     const { error: updateError } = await supabase

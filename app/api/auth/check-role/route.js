@@ -13,7 +13,7 @@ export async function GET() {
     // If no session, return unauthorized
     if (!session) {
       return NextResponse.json(
-        { error: 'Unauthorized', hasClientRole: false },
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }

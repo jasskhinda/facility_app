@@ -84,69 +84,38 @@ export async function POST(request) {
     // Get client data from request
     const clientData = await request.json();
     
-    // Check if we need to create an auth user
-    if (clientData.createAccount && clientData.email) {
-      // In a real implementation, you would:
-      // 1. Create a user in auth.users
-      // 2. Create a profile with facility_id
-      // 3. Send an invitation email
-      
-      // For this demo, we'll just create a profile with a dummy UUID
-      // Assuming auth user would be created via admin API or invitation flow
-      const clientId = uuidv4();
-      
-      const { error: insertError } = await supabase
-        .from('profiles')
-        .insert({
-          id: clientId,
-          first_name: clientData.first_name,
-          last_name: clientData.last_name,
-          phone_number: clientData.phone_number,
-          address: clientData.address,
-          accessibility_needs: clientData.accessibility_needs || null,
-          medical_requirements: clientData.medical_requirements || null,
-          emergency_contact: clientData.emergency_contact || null,
-          facility_id: profile.facility_id,
-          role: 'client'
-        });
-        
-      if (insertError) {
-        return NextResponse.json({ error: insertError.message }, { status: 500 });
-      }
-      
-      return NextResponse.json({ 
-        message: 'Client created successfully', 
-        id: clientId 
-      });
-    } 
-    // Create client without auth account
-    else {
-      const clientId = uuidv4();
-      
-      const { error: insertError } = await supabase
-        .from('profiles')
-        .insert({
-          id: clientId,
-          first_name: clientData.first_name,
-          last_name: clientData.last_name,
-          phone_number: clientData.phone_number,
-          address: clientData.address,
-          accessibility_needs: clientData.accessibility_needs || null,
-          medical_requirements: clientData.medical_requirements || null,
-          emergency_contact: clientData.emergency_contact || null,
-          facility_id: profile.facility_id,
-          role: 'client'
-        });
-        
-      if (insertError) {
-        return NextResponse.json({ error: insertError.message }, { status: 500 });
-      }
-      
-      return NextResponse.json({ 
-        message: 'Client created successfully', 
-        id: clientId 
-      });
+    // Validate required fields
+    if (!clientData.first_name || !clientData.last_name) {
+      return NextResponse.json({ error: 'First name and last name are required' }, { status: 400 });
     }
+    
+    // For facility-managed clients without auth accounts, create a profile with a UUID
+    // TODO: Implement proper auth user creation for clients with email accounts
+    const clientId = uuidv4();
+    
+    const { error: insertError } = await supabase
+      .from('profiles')
+      .insert({
+        id: clientId,
+        first_name: clientData.first_name,
+        last_name: clientData.last_name,
+        phone_number: clientData.phone_number,
+        address: clientData.address,
+        accessibility_needs: clientData.accessibility_needs || null,
+        medical_requirements: clientData.medical_requirements || null,
+        emergency_contact: clientData.emergency_contact || null,
+        facility_id: profile.facility_id,
+        role: 'client'
+      });
+      
+    if (insertError) {
+      return NextResponse.json({ error: insertError.message }, { status: 500 });
+    }
+    
+    return NextResponse.json({ 
+      message: 'Client created successfully', 
+      id: clientId 
+    });
   } catch (error) {
     console.error('Error creating client:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
