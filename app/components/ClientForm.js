@@ -2,16 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSupabase } from '@/lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export default function ClientForm({ clientId = null }) {
-  const { supabase, session } = useSupabase();
+  const supabase = createClientComponentClient();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [facilityId, setFacilityId] = useState(null);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
+  const [session, setSession] = useState(null);
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -25,12 +26,15 @@ export default function ClientForm({ clientId = null }) {
   const [createAccount, setCreateAccount] = useState(false);
 
   useEffect(() => {
-    if (!session?.user) {
-      router.push('/login');
-      return;
-    }
-    
     async function initialize() {
+      // Get session
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      setSession(currentSession);
+      
+      if (!currentSession?.user) {
+        router.push('/login');
+        return;
+      }
       try {
         setLoading(true);
         setError(null);
@@ -39,7 +43,7 @@ export default function ClientForm({ clientId = null }) {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role, facility_id')
-          .eq('id', session.user.id)
+          .eq('id', currentSession.user.id)
           .single();
           
         if (profileError) throw profileError;
@@ -95,7 +99,7 @@ export default function ClientForm({ clientId = null }) {
     }
     
     initialize();
-  }, [session, router, supabase, clientId]);
+  }, [router, supabase, clientId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

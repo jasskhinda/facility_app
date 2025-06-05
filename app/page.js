@@ -50,7 +50,7 @@ function HomeContent() {
         <section className="py-16 px-4 bg-gradient-to-b from-[#3B5B63]/10 to-white dark:from-[#24393C] dark:to-[#1C2C2F]">
           <div className="container mx-auto text-center">
             <h2 className="text-4xl font-bold mb-6 text-[#2E4F54] dark:text-[#E0F4F5]">
-              Streamline Your Facility's Transportation Management
+              Streamline Your Facility&apos;s Transportation Management
             </h2>
             <p className="text-xl mb-10 max-w-3xl mx-auto text-[#2E4F54]/80 dark:text-[#E0F4F5]/80">
               Efficiently manage transportation for all your clients with our comprehensive facility portal. 
@@ -112,7 +112,7 @@ function HomeContent() {
                 </div>
                 <h3 className="text-lg font-bold mb-2 text-[#2E4F54] dark:text-[#E0F4F5]">Add Clients</h3>
                 <p className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
-                  Register your facility's clients with their medical and accessibility needs
+                  Register your facility&apos;s clients with their medical and accessibility needs
                 </p>
               </div>
               
@@ -178,7 +178,7 @@ function HomeContent() {
               Get Started with Compassionate Rides
             </h2>
             <p className="text-xl mb-8 text-[#2E4F54]/80 dark:text-[#E0F4F5]/80">
-              Contact our sales team to learn how we can help streamline your facility's transportation management.
+              Contact our sales team to learn how we can help streamline your facility&apos;s transportation management.
             </p>
             <div className="bg-[#F8F9FA] dark:bg-[#24393C] p-8 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
               <div className="space-y-4 text-left">

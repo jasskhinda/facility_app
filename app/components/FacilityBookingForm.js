@@ -154,6 +154,7 @@ export default function FacilityBookingForm({ user }) {
     }
     
     loadFacilityAndClients();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id, router, supabase, clientId]);
   
   // Load selected client profile
@@ -215,6 +216,7 @@ export default function FacilityBookingForm({ user }) {
     if (selectedClient) {
       loadClientProfile(selectedClient);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClient]);
   
   // Handle click outside date picker to close it
@@ -475,6 +477,7 @@ export default function FacilityBookingForm({ user }) {
         google.maps.event.clearInstanceListeners(destinationAutocompleteRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGoogleLoaded, formData.pickupAddress, formData.destinationAddress]);
   
   // Effect to calculate route when both locations are available
@@ -804,7 +807,7 @@ export default function FacilityBookingForm({ user }) {
                         className="h-4 w-4 text-[#7CCFD0] focus:ring-[#7CCFD0] border-[#DDE5E7] dark:border-[#3F5E63] rounded"
                       />
                       <label htmlFor="useClientAddress" className="ml-2 text-xs text-[#2E4F54] dark:text-[#E0F4F5]">
-                        Use client's address as pickup location
+                        Use client&apos;s address as pickup location
                       </label>
                     </div>
                   )}

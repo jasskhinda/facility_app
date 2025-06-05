@@ -21,6 +21,7 @@ export default function FacilityDashboardView({ user }) {
 
   useEffect(() => {
     fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   async function fetchDashboardData() {
@@ -132,7 +133,7 @@ export default function FacilityDashboardView({ user }) {
             {facilityName} Dashboard
           </h1>
           <p className="text-[#2E4F54]/80 dark:text-[#E0F4F5]/80 mt-1">
-            Manage your facility's transportation needs
+            Manage your facility&apos;s transportation needs
           </p>
         </div>
 
@@ -165,7 +166,7 @@ export default function FacilityDashboardView({ user }) {
             className="bg-[#5C8A92] hover:bg-[#4A7880] text-white rounded-lg p-6 flex items-center justify-between transition-colors"
           >
             <div>
-              <h3 className="font-semibold text-lg">Today's Schedule</h3>
+              <h3 className="font-semibold text-lg">Today&apos;s Schedule</h3>
               <p className="text-white/80 text-sm mt-1">View all trips for today</p>
             </div>
             <span className="text-3xl">📅</span>
@@ -190,7 +191,7 @@ export default function FacilityDashboardView({ user }) {
           <div className="bg-white dark:bg-[#1C2C2F] rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[#2E4F54]/60 dark:text-[#E0F4F5]/60">Today's Trips</p>
+                <p className="text-sm font-medium text-[#2E4F54]/60 dark:text-[#E0F4F5]/60">Today&apos;s Trips</p>
                 <p className="text-2xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5] mt-1">
                   {stats.todayTrips}
                 </p>

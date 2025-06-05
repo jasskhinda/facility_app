@@ -51,6 +51,7 @@ export default function ClientManagement() {
     }
     
     checkAccess();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, router, supabase]);
 
   const loadClients = async (facilityId) => {

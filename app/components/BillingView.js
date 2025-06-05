@@ -27,6 +27,7 @@ export default function BillingView() {
     } else {
       fetchClientSummary();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, statusFilter, yearFilter, clientFilter, dateRange]);
 
   const fetchInvoices = async () => {

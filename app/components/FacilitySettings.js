@@ -2,24 +2,28 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSupabase } from '@/lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export default function FacilitySettings() {
-  const { supabase, session } = useSupabase();
+  const supabase = createClientComponentClient();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [facility, setFacility] = useState(null);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
+  const [session, setSession] = useState(null);
 
   useEffect(() => {
-    if (!session?.user) {
-      router.push('/login');
-      return;
-    }
-    
     async function loadFacility() {
+      // Get session
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      setSession(currentSession);
+      
+      if (!currentSession?.user) {
+        router.push('/login');
+        return;
+      }
       try {
         setLoading(true);
         setError(null);
@@ -28,7 +32,7 @@ export default function FacilitySettings() {
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('role, facility_id')
-          .eq('id', session.user.id)
+          .eq('id', currentSession.user.id)
           .single();
           
         if (profileError) {
@@ -65,7 +69,7 @@ export default function FacilitySettings() {
     }
     
     loadFacility();
-  }, [session, router, supabase]);
+  }, [router, supabase]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

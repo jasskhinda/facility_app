@@ -351,6 +351,7 @@ export default function BookingForm({ user }) {
         google.maps.event.clearInstanceListeners(destinationAutocompleteRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGoogleLoaded]);
   
   // Effect to calculate route when both locations are available

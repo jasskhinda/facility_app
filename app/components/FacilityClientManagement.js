@@ -16,6 +16,7 @@ export default function FacilityClientManagement({ user }) {
 
   useEffect(() => {
     loadFacilityAndClients();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const loadFacilityAndClients = async () => {
