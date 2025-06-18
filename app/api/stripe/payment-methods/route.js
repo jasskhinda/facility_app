@@ -17,7 +17,7 @@ export async function GET() {
     }
 
     // Get the user session
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {
@@ -84,7 +84,7 @@ export async function DELETE(request) {
     }
     
     // Get the user session
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {

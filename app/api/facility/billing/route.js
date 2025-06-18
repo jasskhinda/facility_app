@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 
 // GET /api/facility/billing - Get all invoices for the facility
 export async function GET(request) {
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
   const { searchParams } = new URL(request.url);
   
   try {
@@ -104,7 +104,7 @@ export async function GET(request) {
 
 // POST /api/facility/billing - Create invoice for a trip
 export async function POST(request) {
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
   
   try {
     // Get user session

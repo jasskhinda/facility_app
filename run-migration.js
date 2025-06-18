@@ -23,7 +23,7 @@ async function runMigration() {
     
     // Read the migration script
     const migrationScript = fs.readFileSync(
-      path.join(process.cwd(), 'db', 'add_facility_support.sql'), 
+      path.join(process.cwd(), 'db', 'temp_clients_fix.sql'), 
       'utf8'
     );
     

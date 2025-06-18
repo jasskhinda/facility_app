@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 
 // GET /api/facility/billing/client-summary - Get billing summary by client
 export async function GET(request) {
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
   const { searchParams } = new URL(request.url);
   
   try {

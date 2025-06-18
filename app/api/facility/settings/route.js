@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 
 // GET /api/facility/settings - Get facility settings
 export async function GET(request) {
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
   
   try {
     // Get user session
@@ -63,7 +63,7 @@ export async function GET(request) {
 
 // PUT /api/facility/settings - Update facility settings
 export async function PUT(request) {
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
   
   try {
     // Get user session

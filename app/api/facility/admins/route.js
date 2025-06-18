@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 
 // GET /api/facility/admins - Get facility admins
 export async function GET(request) {
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
   
   try {
     // Get user session
@@ -52,7 +52,7 @@ export async function GET(request) {
 
 // POST /api/facility/admins/invite - Invite a new admin
 export async function POST(request) {
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
   
   try {
     // Get user session

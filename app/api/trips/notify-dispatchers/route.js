@@ -6,7 +6,7 @@ import { notifyDispatchersOfNewTrip } from '@/lib/notifications';
 export async function POST(request) {
   try {
     // Create Supabase client
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
     
     // Get the current session
     const { data: { session } } = await supabase.auth.getSession();
