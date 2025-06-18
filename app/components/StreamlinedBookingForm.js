@@ -82,16 +82,36 @@ export default function StreamlinedBookingForm({ user }) {
           });
         }
         
-        // Load clients
-        const { data: facilityClients } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('facility_id', profile.facility_id)
-          .eq('role', 'client')
-          .eq('status', 'active')
-          .order('first_name');
+        // Load all clients (authenticated + managed) using the API
+        console.log('🔍 Loading clients for booking form...');
+        const response = await fetch('/api/facility/clients');
+        
+        if (response.ok) {
+          const data = await response.json();
+          const allClients = data.clients || [];
           
-        setClients(facilityClients || []);
+          // Filter only active clients and add display names
+          const activeClients = allClients
+            .filter(client => {
+              // For authenticated clients, check status
+              if (client.client_type === 'authenticated') {
+                return client.status === 'active';
+              }
+              // For managed clients, they're considered active by default
+              return client.client_type === 'managed';
+            })
+            .map(client => ({
+              ...client,
+              display_name: `${client.first_name} ${client.last_name}${client.client_type === 'managed' ? ' (Managed)' : ''}`
+            }))
+            .sort((a, b) => a.first_name.localeCompare(b.first_name));
+          
+          console.log('✅ Loaded', activeClients.length, 'clients for booking');
+          setClients(activeClients);
+        } else {
+          console.error('Failed to load clients:', response.status);
+          setError('Failed to load clients');
+        }
       }
     } catch (err) {
       console.error('Error loading data:', err);
@@ -126,9 +146,11 @@ export default function StreamlinedBookingForm({ user }) {
       // Combine date and time
       const pickupDateTime = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
       
-      // Create trip
+      // Determine if this is an authenticated client or managed client
+      const selectedClientData = clients.find(c => c.id === formData.clientId);
+      
+      // Create trip with appropriate client reference
       const tripData = {
-        user_id: formData.clientId,
         facility_id: facilityId,
         pickup_address: formData.pickupAddress,
         pickup_details: formData.pickupDetails,
@@ -142,6 +164,17 @@ export default function StreamlinedBookingForm({ user }) {
         booked_by: user.id,
         bill_to: formData.billTo
       };
+      
+      // Set the appropriate client reference based on client type
+      if (selectedClientData?.client_type === 'managed') {
+        tripData.managed_client_id = formData.clientId;
+        tripData.user_id = null;
+        console.log('📝 Creating trip for managed client:', selectedClientData.email);
+      } else {
+        tripData.user_id = formData.clientId;
+        tripData.managed_client_id = null;
+        console.log('📝 Creating trip for authenticated client:', selectedClientData?.email);
+      }
       
       const { data: trip, error: tripError } = await supabase
         .from('trips')
@@ -237,7 +270,7 @@ export default function StreamlinedBookingForm({ user }) {
                 <option value="">Choose a client...</option>
                 {clients.map(client => (
                   <option key={client.id} value={client.id}>
-                    {client.first_name} {client.last_name} - {client.phone_number}
+                    {client.display_name || `${client.first_name} ${client.last_name}`} {client.phone_number ? `- ${client.phone_number}` : ''}
                   </option>
                 ))}
               </select>
