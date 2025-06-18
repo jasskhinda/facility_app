@@ -36,8 +36,7 @@ export default function TestClientCreation() {
       const response = await fetch('/api/facility/clients', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-development-bypass': 'true'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData)
       });
@@ -74,7 +73,7 @@ export default function TestClientCreation() {
     try {
       const response = await fetch('/api/facility/clients', {
         headers: {
-          'x-development-bypass': 'true'
+          'Content-Type': 'application/json'
         }
       });
 
