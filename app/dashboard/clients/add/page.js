@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@/lib/client-supabase';
 import ClientForm from '@/app/components/ClientForm';
 import DashboardLayout from '@/app/components/DashboardLayout';
 
 export default function AddClientPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient();
 
   useEffect(() => {
     async function getUser() {

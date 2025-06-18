@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from './DashboardLayout';
 import RatingForm from './RatingForm';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@supabase/ssr';
 
 export default function TripsView({ user, trips: initialTrips = [], successMessage = null }) {
   const [filter, setFilter] = useState('all'); // all, upcoming, completed, cancelled
@@ -15,7 +15,10 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
   const [ratingTrip, setRatingTrip] = useState(null);
   const [rebookingTrip, setRebookingTrip] = useState(null);
   const [trips, setTrips] = useState(initialTrips);
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
   const router = useRouter();
 
   // Filter trips based on status

@@ -1,4 +1,4 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createRouteHandlerClient } from '@/lib/route-handler-client';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { notifyDispatchersOfNewTrip } from '@/lib/notifications';
@@ -6,7 +6,7 @@ import { notifyDispatchersOfNewTrip } from '@/lib/notifications';
 export async function POST(request) {
   try {
     // Create Supabase client
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = createRouteHandlerClient();
     
     // Get the current session
     const { data: { session } } = await supabase.auth.getSession();

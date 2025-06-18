@@ -1,10 +1,10 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createRouteHandlerClient } from '@/lib/route-handler-client';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 // GET /api/facility/billing - Get all invoices for the facility
 export async function GET(request) {
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = createRouteHandlerClient();
   const { searchParams } = new URL(request.url);
   
   try {
@@ -104,7 +104,7 @@ export async function GET(request) {
 
 // POST /api/facility/billing - Create invoice for a trip
 export async function POST(request) {
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = createRouteHandlerClient();
   
   try {
     // Get user session

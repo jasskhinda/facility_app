@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@/lib/client-supabase';
 import { useParams } from 'next/navigation';
 import ClientForm from '@/app/components/ClientForm';
 import DashboardLayout from '@/app/components/DashboardLayout';
@@ -12,7 +12,7 @@ export default function EditClientPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient();
 
   useEffect(() => {
     async function getUser() {

@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createServerClient } from '@/lib/server-supabase';
 import FacilityDashboardView from '@/app/components/FacilityDashboardView';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +10,7 @@ export default async function Dashboard() {
     
     try {
         // Create server component client
-        const supabase = createServerComponentClient({ cookies });
+        const supabase = createServerClient();
         console.log('Server supabase client created');
 
         // This will refresh the session if needed

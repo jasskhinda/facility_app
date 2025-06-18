@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@/lib/server-supabase';
 import { cookies } from 'next/headers';
 import DriverTracker from '@/app/components/DriverTracker';
 
@@ -10,7 +10,7 @@ export default async function TrackDriver({ params }) {
     const { tripId } = params;
     
     // Create server component client
-    const supabase = createServerComponentClient({ cookies });
+    const supabase = createServerClient();
     
     // Get and refresh session if needed
     const { data: { session } } = await supabase.auth.getSession();

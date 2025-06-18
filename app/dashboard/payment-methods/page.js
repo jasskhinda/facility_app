@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@/lib/server-supabase';
 import { cookies } from 'next/headers';
 import PaymentMethodsManager from '@/app/components/PaymentMethodsManager';
 
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export default async function PaymentMethods() {
   try {
     // Create server component client
-    const supabase = createServerComponentClient({ cookies });
+    const supabase = createServerClient();
     
     // Get and refresh session if needed
     const { data: { session } } = await supabase.auth.getSession();

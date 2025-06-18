@@ -1,11 +1,11 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createRouteHandlerClient } from '@/lib/route-handler-client';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 // GET /api/facility/clients/[id] - Get a specific client
 export async function GET(request, { params }) {
   const { id } = params;
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = createRouteHandlerClient();
   
   try {
     // Get user session
@@ -69,7 +69,7 @@ export async function GET(request, { params }) {
 // PUT /api/facility/clients/[id] - Update a client
 export async function PUT(request, { params }) {
   const { id } = params;
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = createRouteHandlerClient();
   
   try {
     // Get user session
@@ -148,7 +148,7 @@ export async function PUT(request, { params }) {
 // DELETE /api/facility/clients/[id] - Remove a client from facility
 export async function DELETE(request, { params }) {
   const { id } = params;
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = createRouteHandlerClient();
   
   try {
     // Get user session
