@@ -5,8 +5,8 @@ import { createClientSupabase } from '@/lib/client-supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from './DashboardLayout';
 import PricingDisplay from './PricingDisplay';
-import RouteMapDisplay from './RouteMapDisplay';
-import AddressAutocomplete from './AddressAutocomplete';
+import SimpleMap from './SimpleMap';
+import SimpleAutocomplete from './SimpleAutocomplete';
 
 export default function StreamlinedBookingForm({ user }) {
   const router = useRouter();
@@ -343,7 +343,7 @@ export default function StreamlinedBookingForm({ user }) {
                 <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
                   Pickup Address *
                 </label>
-                <AddressAutocomplete
+                <SimpleAutocomplete
                   value={formData.pickupAddress}
                   onChange={(value) => setFormData({ ...formData, pickupAddress: value })}
                   placeholder="Enter pickup address"
@@ -363,7 +363,7 @@ export default function StreamlinedBookingForm({ user }) {
                 <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
                   Destination Address *
                 </label>
-                <AddressAutocomplete
+                <SimpleAutocomplete
                   value={formData.destinationAddress}
                   onChange={(value) => setFormData({ ...formData, destinationAddress: value })}
                   placeholder="Enter destination address"
@@ -386,7 +386,7 @@ export default function StreamlinedBookingForm({ user }) {
                 <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
                   Route Overview
                 </label>
-                <RouteMapDisplay
+                <SimpleMap
                   origin={formData.pickupAddress}
                   destination={formData.destinationAddress}
                   onRouteCalculated={setRouteInfo}
