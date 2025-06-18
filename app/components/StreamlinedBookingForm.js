@@ -343,10 +343,9 @@ export default function StreamlinedBookingForm({ user }) {
                 <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
                   Pickup Address *
                 </label>
-                <input
-                  type="text"
+                <AddressAutocomplete
                   value={formData.pickupAddress}
-                  onChange={(e) => setFormData({ ...formData, pickupAddress: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, pickupAddress: value })}
                   placeholder="Enter pickup address"
                   className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   required
@@ -364,10 +363,9 @@ export default function StreamlinedBookingForm({ user }) {
                 <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
                   Destination Address *
                 </label>
-                <input
-                  type="text"
+                <AddressAutocomplete
                   value={formData.destinationAddress}
-                  onChange={(e) => setFormData({ ...formData, destinationAddress: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, destinationAddress: value })}
                   placeholder="Enter destination address"
                   className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   required

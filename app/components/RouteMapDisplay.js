@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import useGoogleMaps from '@/hooks/useGoogleMaps';
+import { getCachedRoute, cacheRoute } from '@/lib/route-cache';
 
 export default function RouteMapDisplay({ 
   origin, 
@@ -13,105 +15,82 @@ export default function RouteMapDisplay({
   const [directionsService, setDirectionsService] = useState(null);
   const [directionsRenderer, setDirectionsRenderer] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const { isLoaded: mapsLoaded, loadError } = useGoogleMaps(['places']);
   const [error, setError] = useState('');
 
   // Initialize map when Google Maps loads
   useEffect(() => {
-    const initializeMap = () => {
-      if (!window.google || !mapRef.current) {
-        console.log('Google Maps API or map reference not available');
-        return;
-      }
-
-      try {
-        console.log('Initializing Google Maps');
-        // Create map
-        const mapInstance = new window.google.maps.Map(mapRef.current, {
-          zoom: 10,
-          center: { lat: 39.9612, lng: -82.9988 }, // Columbus, OH center
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-        });
-
-        // Create directions service and renderer
-        const service = new window.google.maps.DirectionsService();
-        const renderer = new window.google.maps.DirectionsRenderer({
-          draggable: false,
-          panel: null,
-          polylineOptions: {
-            strokeColor: '#7CCFD0',
-            strokeWeight: 4,
-            strokeOpacity: 0.8,
-          },
-          markerOptions: {
-            icon: {
-              path: window.google.maps.SymbolPath.CIRCLE,
-              scale: 8,
-              fillColor: '#7CCFD0',
-              fillOpacity: 1,
-              strokeColor: '#FFFFFF',
-              strokeWeight: 2,
-            },
-          },
-        });
-
-        renderer.setMap(mapInstance);
-
-        setMap(mapInstance);
-        setDirectionsService(service);
-        setDirectionsRenderer(renderer);
-        setIsLoaded(true);
-        setError('');
-      } catch (err) {
-        console.error('Map initialization error:', err);
-        setError('Failed to initialize map');
-      }
-    };
-
-    // Check if Google Maps is already loaded
-    if (window.google && window.google.maps) {
-      initializeMap();
-    } else {
-      // Load Google Maps script
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-      
-      if (!apiKey) {
-        console.error('Google Maps API key is missing');
-        setError('Google Maps API key is not configured');
-        return;
-      }
-      
-      console.log('Loading Google Maps API with key:', apiKey ? 'Key exists' : 'No key');
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-      script.async = true;
-      script.onload = () => {
-        console.log('Google Maps script loaded successfully');
-        initializeMap();
-      };
-      script.onerror = () => {
-        setError('Failed to load Google Maps');
-      };
-      document.head.appendChild(script);
-
-      return () => {
-        if (document.head.contains(script)) {
-          document.head.removeChild(script);
-        }
-      };
+    // Debug logging for Google Maps loading state
+    console.log('RouteMapDisplay Init State:', {
+      googleLoaded: typeof window !== 'undefined' && !!window.google,
+      mapsLoaded,
+      mapRef: !!mapRef.current,
+      apiKey: !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    });
+    
+    if (loadError) {
+      console.error('Google Maps loading error:', loadError);
+      setError('Failed to load Google Maps: ' + loadError.message);
+      return;
     }
-  }, []);
+    
+    if (!mapsLoaded || !mapRef.current) {
+      return;
+    }
+
+    try {
+      console.log('Initializing Google Maps');
+      // Create map
+      const mapInstance = new window.google.maps.Map(mapRef.current, {
+        zoom: 10,
+        center: { lat: 39.9612, lng: -82.9988 }, // Columbus, OH center
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+      });
+
+      // Create directions service and renderer
+      const service = new window.google.maps.DirectionsService();
+      const renderer = new window.google.maps.DirectionsRenderer({
+        draggable: false,
+        panel: null,
+        polylineOptions: {
+          strokeColor: '#7CCFD0',
+          strokeWeight: 4,
+          strokeOpacity: 0.8,
+        },
+        markerOptions: {
+          icon: {
+            path: window.google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: '#7CCFD0',
+            fillOpacity: 1,
+            strokeColor: '#FFFFFF',
+            strokeWeight: 2,
+          },
+        },
+      });
+
+      renderer.setMap(mapInstance);
+
+      setMap(mapInstance);
+      setDirectionsService(service);
+      setDirectionsRenderer(renderer);
+      setError('');
+    } catch (err) {
+      console.error('Map initialization error:', err);
+      setError('Failed to initialize map');
+    }
+  }, [mapsLoaded, loadError]);
 
   // Calculate route when addresses change
   useEffect(() => {
-    if (!isLoaded || !directionsService || !directionsRenderer || !origin || !destination) {
+    if (!mapsLoaded || !directionsService || !directionsRenderer || !origin || !destination) {
       return;
     }
 
     calculateRoute();
-  }, [origin, destination, isLoaded, directionsService, directionsRenderer]);
+  }, [origin, destination, mapsLoaded, directionsService, directionsRenderer]);
 
   const calculateRoute = async () => {
     if (!directionsService || !directionsRenderer) return;
@@ -119,6 +98,37 @@ export default function RouteMapDisplay({
     try {
       setError('');
       
+      // Check cache first
+      const cachedRouteData = getCachedRoute(origin, destination);
+      if (cachedRouteData) {
+        console.log('Using cached route data');
+        setRouteInfo(cachedRouteData);
+        
+        // Set directions on map from cached data
+        if (map && directionsRenderer) {
+          // We still need to calculate the route for map display
+          // but we won't wait for the callback to set route info
+          const request = {
+            origin: origin,
+            destination: destination,
+            travelMode: window.google.maps.TravelMode.DRIVING,
+            unitSystem: window.google.maps.UnitSystem.IMPERIAL,
+          };
+          
+          directionsService.route(request, (result, status) => {
+            if (status === 'OK' && result) {
+              directionsRenderer.setDirections(result);
+            }
+          });
+        }
+        
+        if (onRouteCalculated) {
+          onRouteCalculated(cachedRouteData);
+        }
+        return;
+      }
+      
+      // No cache hit, calculate route
       const request = {
         origin: origin,
         destination: destination,
@@ -152,6 +162,9 @@ export default function RouteMapDisplay({
             distanceText: leg.distance.text,
             durationText: leg.duration.text
           };
+          
+          // Cache the route data
+          cacheRoute(origin, destination, routeData);
           
           setRouteInfo(routeData);
           
@@ -192,7 +205,7 @@ export default function RouteMapDisplay({
               <p className="text-sm text-gray-600 dark:text-gray-400">{error}</p>
             </div>
           </div>
-        ) : !isLoaded ? (
+        ) : !mapsLoaded ? (
           <div className="flex items-center justify-center h-full bg-gray-50 dark:bg-gray-800 rounded-lg">
             <div className="text-center">
               <svg className="animate-spin h-8 w-8 text-[#7CCFD0] mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -251,7 +264,7 @@ export default function RouteMapDisplay({
       )}
 
       {/* No route message */}
-      {isLoaded && !routeInfo && !error && (origin || destination) && (
+      {mapsLoaded && !routeInfo && !error && (origin || destination) && (
         <div className="text-center py-4">
           <p className="text-sm text-[#2E4F54]/60 dark:text-[#E0F4F5]/60">
             {!origin || !destination 
