@@ -241,7 +241,7 @@ export async function PUT(request, { params }) {
 
 // DELETE /api/facility/clients/[id] - Remove a client from facility
 export async function DELETE(request, { params }) {
-  const { id } = params;
+  const { id } = await params;
   const supabase = await createRouteHandlerClient();
   
   try {

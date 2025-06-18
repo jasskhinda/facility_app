@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 
 // GET /api/facility/billing/[id] - Get a specific invoice with details
 export async function GET(request, { params }) {
-  const { id } = params;
+  const { id } = await params;
   const supabase = await createRouteHandlerClient();
   
   try {
@@ -80,7 +80,7 @@ export async function GET(request, { params }) {
 
 // PUT /api/facility/billing/[id] - Update invoice status
 export async function PUT(request, { params }) {
-  const { id } = params;
+  const { id } = await params;
   const supabase = await createRouteHandlerClient();
   
   try {
