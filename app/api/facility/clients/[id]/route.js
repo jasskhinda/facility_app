@@ -1,5 +1,4 @@
 import { createRouteHandlerClient } from '@/lib/route-handler-client';
-import { createRouteHandlerClient } from '@/lib/route-handler-client';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
