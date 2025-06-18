@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 
 // GET /api/facility/clients/[id] - Get a specific client
 export async function GET(request, { params }) {
-  const { id } = params;
+  const { id } = await params;
   const supabase = await createRouteHandlerClient();
   
   console.log('🔍 GET /api/facility/clients/[id] - Client ID:', id);
@@ -130,7 +130,7 @@ export async function GET(request, { params }) {
 
 // PUT /api/facility/clients/[id] - Update a client
 export async function PUT(request, { params }) {
-  const { id } = params;
+  const { id } = await params;
   const supabase = await createRouteHandlerClient();
   
   try {
