@@ -11,6 +11,7 @@ export async function GET(request) {
   try {
     // Get user session
     const { data: { session } } = await supabase.auth.getSession();
+    
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -34,44 +35,57 @@ export async function GET(request) {
       return NextResponse.json({ error: 'No facility associated with this account' }, { status: 400 });
     }
     
-    // Get clients for this facility - include both authenticated and managed clients
+    // Get clients for this facility
     console.log('Fetching clients for facility:', profile.facility_id);
     
-    const { data: authClients, error: authClientsError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('facility_id', profile.facility_id)
-      .eq('role', 'client');
+    let authClients = [];
+    let managedClients = [];
+    
+    // Get authenticated clients
+    try {
+      const { data: authData, error: authError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('facility_id', profile.facility_id)
+        .eq('role', 'client');
       
-    console.log('Auth clients:', { count: authClients?.length, error: authClientsError });
-      
-    const { data: managedClients, error: managedClientsError } = await supabase
+      if (!authError) {
+        authClients = authData || [];
+      }
+      console.log('Auth clients:', { count: authClients.length });
+    } catch (error) {
+      console.log('Auth clients error:', error.message);
+    }
+    
+    // Get managed clients
+    const { data: managedData, error: managedError } = await supabase
       .from('facility_managed_clients')
       .select('*')
       .eq('facility_id', profile.facility_id);
-      
-    console.log('Managed clients:', { count: managedClients?.length, error: managedClientsError });
-      
-    if (authClientsError && authClientsError.code !== 'PGRST116') {
-      console.error('Auth clients error:', authClientsError);
-      return NextResponse.json({ error: authClientsError.message }, { status: 500 });
-    }
     
-    if (managedClientsError && managedClientsError.code !== 'PGRST116') {
-      console.error('Managed clients error:', managedClientsError);
-      // If table doesn't exist, just use auth clients
-      if (managedClientsError.code === '42P01') {
-        console.log('facility_managed_clients table does not exist, using only auth clients');
-        return NextResponse.json({ clients: (authClients || []).map(client => ({ ...client, client_type: 'authenticated' })) });
+    if (managedError) {
+      console.error('Managed clients error:', managedError);
+      
+      if (managedError.code === '42P01') {
+        return NextResponse.json({ 
+          error: 'Database table missing. Please run: node create-real-table.js YOUR_SERVICE_ROLE_KEY',
+          details: 'The facility_managed_clients table needs to be created.'
+        }, { status: 500 });
       }
-      return NextResponse.json({ error: managedClientsError.message }, { status: 500 });
+      
+      return NextResponse.json({ error: managedError.message }, { status: 500 });
     }
     
-    // Combine both types of clients, marking the source
+    managedClients = managedData || [];
+    console.log('Managed clients:', { count: managedClients.length });
+    
+    // Combine all clients
     const allClients = [
-      ...(authClients || []).map(client => ({ ...client, client_type: 'authenticated' })),
-      ...(managedClients || []).map(client => ({ ...client, client_type: 'managed', role: 'client' }))
+      ...authClients.map(client => ({ ...client, client_type: 'authenticated' })),
+      ...managedClients.map(client => ({ ...client, client_type: 'managed' }))
     ];
+    
+    console.log('Total clients found:', allClients.length);
     
     return NextResponse.json({ clients: allClients });
   } catch (error) {
@@ -116,7 +130,7 @@ export async function POST(request) {
     }
     
     if (!profile.facility_id) {
-      console.log('No facility_id found for user');
+      console.log('No facility ID found for user');
       return NextResponse.json({ error: 'No facility associated with this account' }, { status: 400 });
     }
     
@@ -129,109 +143,49 @@ export async function POST(request) {
       return NextResponse.json({ error: 'First name, last name, and email are required' }, { status: 400 });
     }
     
-    // Create a client profile using Supabase Auth if email is provided, otherwise use a managed approach
-    let clientId;
-    let insertError;
     
-    // For development/testing: Use facility_managed_clients table
-    // In production with proper credentials, this would create authenticated users
-    
+    // Create client in facility_managed_clients table
     console.log('Creating managed client for:', clientData.email);
     
-    // Check if we have real credentials (not placeholder)
-    const hasRealCredentials = process.env.SUPABASE_SERVICE_ROLE_KEY && 
-                               !process.env.SUPABASE_SERVICE_ROLE_KEY.includes('placeholder');
-    
-    if (hasRealCredentials) {
-      // Use admin client to create proper auth user
-      const adminSupabase = createAdminClient();
-      const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
-      
-      console.log('Creating auth user with admin client...');
-      const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
+    const { data: newClient, error: insertError } = await supabase
+      .from('facility_managed_clients')
+      .insert([{
+        first_name: clientData.first_name,
+        last_name: clientData.last_name,
         email: clientData.email,
-        password: tempPassword,
-        email_confirm: true,
-        user_metadata: {
-          first_name: clientData.first_name,
-          last_name: clientData.last_name,
-          role: 'client',
-          facility_id: profile.facility_id,
-          created_by_facility: true
-        }
-      });
-      
-      if (authError) {
-        console.error('Auth creation error:', authError);
-        return NextResponse.json({ error: `Failed to create user account: ${authError.message}` }, { status: 500 });
-      }
-      
-      clientId = authData.user.id;
-      console.log('Auth user created:', clientId);
-      
-      // Wait for trigger to create profile, then update it
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          phone_number: clientData.phone_number,
-          address: clientData.address,
-          accessibility_needs: clientData.accessibility_needs || null,
-          medical_requirements: clientData.medical_requirements || null,
-          emergency_contact: clientData.emergency_contact || null,
-          facility_id: profile.facility_id
-        })
-        .eq('id', clientId);
-        
-      insertError = updateError;
-    } else {
-      // Development mode: Use facility_managed_clients table
-      console.log('Development mode: Creating managed client');
-      
-      const { data: insertData, error: insertProfileError } = await supabase
-        .from('facility_managed_clients')
-        .insert({
-          first_name: clientData.first_name,
-          last_name: clientData.last_name,
-          email: clientData.email,
-          phone_number: clientData.phone_number,
-          address: clientData.address,
-          accessibility_needs: clientData.accessibility_needs || null,
-          medical_requirements: clientData.medical_requirements || null,
-          emergency_contact: clientData.emergency_contact || null,
-          facility_id: profile.facility_id
-        })
-        .select()
-        .single();
-        
-      if (insertProfileError) {
-        console.error('Managed client creation error:', insertProfileError);
-        
-        // If table doesn't exist, provide helpful error message
-        if (insertProfileError.code === '42P01') {
-          return NextResponse.json({ 
-            error: 'Database setup incomplete. Please run the database migration script or contact administrator.' 
-          }, { status: 500 });
-        }
-        
-        return NextResponse.json({ error: insertProfileError.message }, { status: 500 });
-      }
-      
-      clientId = insertData.id;
-      insertError = null;
-      console.log('Managed client created:', clientId);
-    }
+        phone_number: clientData.phone_number || null,
+        address: clientData.address || null,
+        accessibility_needs: clientData.accessibility_needs || null,
+        medical_requirements: clientData.medical_requirements || null,
+        emergency_contact: clientData.emergency_contact || null,
+        facility_id: profile.facility_id
+      }])
+      .select()
+      .single();
     
     if (insertError) {
-      console.error('Profile update error:', insertError);
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
+      console.error('Insert error:', insertError);
+      
+      // If table doesn't exist, provide clear instructions
+      if (insertError.code === '42P01') {
+        return NextResponse.json({ 
+          error: 'Database table missing. Please run: node create-real-table.js YOUR_SERVICE_ROLE_KEY',
+          details: 'The facility_managed_clients table needs to be created.'
+        }, { status: 500 });
+      }
+      
+      return NextResponse.json({ error: `Failed to create client: ${insertError.message}` }, { status: 500 });
     }
     
+    console.log('✅ Client created successfully:', newClient);
+    
+    console.log('✅ Client created successfully:', newClient);
+    
     return NextResponse.json({ 
-      message: 'Client created successfully', 
-      id: clientId 
+      message: 'Client created successfully',
+      client: newClient
     });
+    
   } catch (error) {
     console.error('Error creating client:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

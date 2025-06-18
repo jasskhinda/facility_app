@@ -155,7 +155,7 @@ export default function ClientForm({ clientId = null }) {
         const response = await fetch('/api/facility/clients', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             first_name: formData.first_name,
