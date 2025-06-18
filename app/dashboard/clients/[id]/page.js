@@ -44,36 +44,18 @@ export default function ClientDetailPage() {
         
         setUser(session.user);
         
-        // Load client details
-        const { data: clientData, error: clientError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', clientId)
-          .eq('facility_id', profile.facility_id)
-          .single();
-          
-        if (clientError) {
-          if (clientError.code === 'PGRST116') {
-            setError('Client not found or not associated with your facility');
-          } else {
-            setError(clientError.message);
-          }
+        // Load client details using the API endpoint
+        const response = await fetch(`/api/facility/clients/${clientId}`);
+        const result = await response.json();
+        
+        if (!response.ok) {
+          setError(result.error || 'Failed to load client data');
           setLoading(false);
           return;
         }
         
-        setClient(clientData);
-        
-        // Load client trips
-        const { data: tripsData, error: tripsError } = await supabase
-          .from('trips')
-          .select('*')
-          .eq('user_id', clientId)
-          .order('pickup_time', { ascending: false });
-          
-        if (tripsError) throw tripsError;
-        
-        setTrips(tripsData || []);
+        setClient(result.client);
+        setTrips(result.trips || []);
       } catch (error) {
         console.error('Error loading client data:', error);
         setError(error.message);

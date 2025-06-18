@@ -65,25 +65,20 @@ export default function ClientForm({ clientId = null }) {
         
         // If editing an existing client, load their data
         if (clientId) {
-          const { data: client, error: clientError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', clientId)
-            .eq('facility_id', profile.facility_id)
-            .single();
-            
-          if (clientError) throw clientError;
+          const response = await fetch(`/api/facility/clients/${clientId}`);
+          const result = await response.json();
           
-          if (!client) {
-            setError('Client not found or not associated with your facility');
+          if (!response.ok) {
+            setError(result.error || 'Failed to load client data');
             setLoading(false);
             return;
           }
           
+          const client = result.client;
           setFormData({
             first_name: client.first_name || '',
             last_name: client.last_name || '',
-            email: '', // Email can't be fetched from profiles table directly
+            email: client.email || '',
             phone_number: client.phone_number || '',
             address: client.address || '',
             accessibility_needs: client.accessibility_needs || '',
@@ -129,23 +124,44 @@ export default function ClientForm({ clientId = null }) {
       
       // If editing an existing client
       if (clientId) {
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({
+        console.log('Updating client with data:', formData);
+        
+        const response = await fetch(`/api/facility/clients/${clientId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
             first_name: formData.first_name,
             last_name: formData.last_name,
+            email: formData.email,
             phone_number: formData.phone_number,
             address: formData.address,
             accessibility_needs: formData.accessibility_needs,
             medical_requirements: formData.medical_requirements,
             emergency_contact: formData.emergency_contact,
-          })
-          .eq('id', clientId);
-          
-        if (updateError) throw updateError;
-        
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('API Error Response:', errorText);
+          try {
+            const errorData = JSON.parse(errorText);
+            throw new Error(errorData.error || 'Failed to update client');
+          } catch (parseError) {
+            throw new Error(`Failed to update client: ${response.status} ${response.statusText}`);
+          }
+        }
+
+        const result = await response.json();
+        console.log('Update API Success:', result);
         setMessage('Client updated successfully');
-        router.push('/dashboard/clients');
+        
+        // Wait a moment before redirecting to let the user see the success message
+        setTimeout(() => {
+          router.push('/dashboard/clients');
+        }, 1500);
       } 
       // Creating a new client
       else {

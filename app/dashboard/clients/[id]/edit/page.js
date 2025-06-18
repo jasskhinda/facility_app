@@ -39,22 +39,6 @@ export default function EditClientPage() {
           return;
         }
         
-        // Verify that the client belongs to this facility
-        if (clientId) {
-          const { data: client, error: clientError } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('id', clientId)
-            .eq('facility_id', profile.facility_id)
-            .single();
-            
-          if (clientError) {
-            setError('Client not found or does not belong to your facility');
-            setLoading(false);
-            return;
-          }
-        }
-        
         setUser(session.user);
       } catch (error) {
         console.error('Error getting user:', error);
