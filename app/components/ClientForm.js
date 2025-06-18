@@ -26,7 +26,6 @@ export default function ClientForm({ clientId = null }) {
     medical_requirements: '',
     emergency_contact: '',
   });
-  const [createAccount, setCreateAccount] = useState(false);
 
   useEffect(() => {
     async function initialize() {
@@ -112,11 +111,6 @@ export default function ClientForm({ clientId = null }) {
     }));
   };
 
-  const handleCheckboxChange = (e) => {
-    const { checked } = e.target;
-    setCreateAccount(checked);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -155,40 +149,48 @@ export default function ClientForm({ clientId = null }) {
       } 
       // Creating a new client
       else {
-        if (createAccount && formData.email) {
-          // This would call an API endpoint to create a new user and send an invitation
-          // Since we can't directly create auth.users, we'd need a server API endpoint
-          // For now, just show a message
-          setMessage('Account creation would be handled by an API endpoint');
-          router.push('/dashboard/clients');
-        } else {
-          // Use the API endpoint to create the client
-          const response = await fetch('/api/facility/clients', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              first_name: formData.first_name,
-              last_name: formData.last_name,
-              email: formData.email,
-              phone_number: formData.phone_number,
-              address: formData.address,
-              accessibility_needs: formData.accessibility_needs,
-              medical_requirements: formData.medical_requirements,
-              emergency_contact: formData.emergency_contact,
-            }),
-          });
+        console.log('Creating new client with data:', formData);
+        
+        // Use the API endpoint to create the client
+        const response = await fetch('/api/facility/clients', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            first_name: formData.first_name,
+            last_name: formData.last_name,
+            email: formData.email,
+            phone_number: formData.phone_number,
+            address: formData.address,
+            accessibility_needs: formData.accessibility_needs,
+            medical_requirements: formData.medical_requirements,
+            emergency_contact: formData.emergency_contact,
+          }),
+        });
 
-          if (!response.ok) {
-            const errorData = await response.json();
+        console.log('API Response status:', response.status);
+        console.log('API Response headers:', Object.fromEntries(response.headers.entries()));
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('API Error Response:', errorText);
+          try {
+            const errorData = JSON.parse(errorText);
             throw new Error(errorData.error || 'Failed to create client');
+          } catch (parseError) {
+            throw new Error(`Failed to create client: ${response.status} ${response.statusText}`);
           }
-
-          const result = await response.json();
-          setMessage('Client added successfully');
-          router.push('/dashboard/clients');
         }
+
+        const result = await response.json();
+        console.log('API Success:', result);
+        setMessage('Client added successfully');
+        
+        // Wait a moment before redirecting to let the user see the success message
+        setTimeout(() => {
+          router.push('/dashboard/clients');
+        }, 1500);
       }
     } catch (err) {
       console.error('Error saving client:', err);
@@ -343,21 +345,6 @@ export default function ClientForm({ clientId = null }) {
               className="w-full p-2 border rounded"
             />
           </div>
-          
-          {!clientId && (
-            <div className="flex items-center">
-              <input
-                id="create_account"
-                type="checkbox"
-                checked={createAccount}
-                onChange={handleCheckboxChange}
-                className="mr-2"
-              />
-              <label htmlFor="create_account">
-                Create account for this client
-              </label>
-            </div>
-          )}
           
           <div className="pt-4 flex justify-between">
             <button
