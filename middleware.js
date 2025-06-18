@@ -1,4 +1,4 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 
 export const config = {
@@ -23,7 +23,23 @@ export async function middleware(req) {
   const res = NextResponse.next();
   
   // Create a Supabase client specifically for middleware
-  const supabase = createMiddlewareClient({ req, res });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll().map(({ name, value }) => ({ name, value }));
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            req.cookies.set(name, value);
+            res.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
   
   // This will refresh the session if it exists and is expired
   const {

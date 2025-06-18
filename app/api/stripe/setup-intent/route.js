@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createRouteHandlerClient } from '@/lib/route-handler-client';
 import Stripe from 'stripe';
 
 // Initialize Stripe with the secret key
@@ -17,7 +16,7 @@ export async function POST() {
     }
 
     // Get the user session
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = createRouteHandlerClient();
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {
