@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 
 export default function RouteMapDisplay({ 
-  pickupAddress, 
-  destinationAddress, 
+  origin, 
+  destination, 
   onRouteCalculated = null,
   className = "w-full h-64 rounded-lg border border-gray-200"
 }) {
@@ -19,9 +19,13 @@ export default function RouteMapDisplay({
   // Initialize map when Google Maps loads
   useEffect(() => {
     const initializeMap = () => {
-      if (!window.google || !mapRef.current) return;
+      if (!window.google || !mapRef.current) {
+        console.log('Google Maps API or map reference not available');
+        return;
+      }
 
       try {
+        console.log('Initializing Google Maps');
         // Create map
         const mapInstance = new window.google.maps.Map(mapRef.current, {
           zoom: 10,
@@ -71,10 +75,22 @@ export default function RouteMapDisplay({
       initializeMap();
     } else {
       // Load Google Maps script
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      
+      if (!apiKey) {
+        console.error('Google Maps API key is missing');
+        setError('Google Maps API key is not configured');
+        return;
+      }
+      
+      console.log('Loading Google Maps API with key:', apiKey ? 'Key exists' : 'No key');
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
       script.async = true;
-      script.onload = initializeMap;
+      script.onload = () => {
+        console.log('Google Maps script loaded successfully');
+        initializeMap();
+      };
       script.onerror = () => {
         setError('Failed to load Google Maps');
       };
@@ -90,12 +106,12 @@ export default function RouteMapDisplay({
 
   // Calculate route when addresses change
   useEffect(() => {
-    if (!isLoaded || !directionsService || !directionsRenderer || !pickupAddress || !destinationAddress) {
+    if (!isLoaded || !directionsService || !directionsRenderer || !origin || !destination) {
       return;
     }
 
     calculateRoute();
-  }, [pickupAddress, destinationAddress, isLoaded, directionsService, directionsRenderer]);
+  }, [origin, destination, isLoaded, directionsService, directionsRenderer]);
 
   const calculateRoute = async () => {
     if (!directionsService || !directionsRenderer) return;
@@ -104,8 +120,8 @@ export default function RouteMapDisplay({
       setError('');
       
       const request = {
-        origin: pickupAddress,
-        destination: destinationAddress,
+        origin: origin,
+        destination: destination,
         travelMode: window.google.maps.TravelMode.DRIVING,
         unitSystem: window.google.maps.UnitSystem.IMPERIAL,
         avoidHighways: false,
@@ -230,10 +246,10 @@ export default function RouteMapDisplay({
       )}
 
       {/* No route message */}
-      {isLoaded && !routeInfo && !error && (pickupAddress || destinationAddress) && (
+      {isLoaded && !routeInfo && !error && (origin || destination) && (
         <div className="text-center py-4">
           <p className="text-sm text-[#2E4F54]/60 dark:text-[#E0F4F5]/60">
-            {!pickupAddress || !destinationAddress 
+            {!origin || !destination 
               ? 'Enter both pickup and destination addresses to see route'
               : 'Calculating route...'
             }

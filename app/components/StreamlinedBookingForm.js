@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from './DashboardLayout';
 import PricingDisplay from './PricingDisplay';
 import RouteMapDisplay from './RouteMapDisplay';
+import AddressAutocomplete from './AddressAutocomplete';
 
 export default function StreamlinedBookingForm({ user }) {
   const router = useRouter();
