@@ -147,10 +147,15 @@ export default function RouteMapDisplay({
               value: leg.duration.value
             },
             startAddress: leg.start_address,
-            endAddress: leg.end_address
+            endAddress: leg.end_address,
+            // Add these properties at the top level for easier access
+            distanceText: leg.distance.text,
+            durationText: leg.duration.text
           };
           
           setRouteInfo(routeData);
+          
+          console.log('Route calculated successfully:', routeData);
           
           if (onRouteCalculated) {
             onRouteCalculated(routeData);

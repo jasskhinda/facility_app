@@ -46,6 +46,8 @@ export default function PricingDisplay({
       // Determine client type for discount calculation
       const clientType = selectedClient?.client_type === 'authenticated' ? 'individual' : 'facility';
       
+      console.log('Calculating pricing with routeInfo:', routeInfo);
+      
       const result = await getPricingEstimate({
         pickupAddress: formData.pickupAddress,
         destinationAddress: formData.destinationAddress,
@@ -54,7 +56,12 @@ export default function PricingDisplay({
         wheelchairType: formData.wheelchairType,
         clientType,
         additionalPassengers: formData.additionalPassengers || 0,
-        preCalculatedDistance: routeInfo?.distance
+        preCalculatedDistance: routeInfo ? {
+          miles: routeInfo.distance?.miles || 0,
+          distance: routeInfo.distance?.value / 1609.34, // Convert meters to miles
+          text: routeInfo.distance?.text || '',
+          duration: routeInfo.duration?.text || ''
+        } : null
       });
 
       if (result.success) {
