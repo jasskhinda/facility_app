@@ -1,9 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import RouteMapDisplay from '../components/RouteMapDisplay';
-import AddressAutocomplete from '../components/AddressAutocomplete';
+import dynamic from 'next/dynamic';
 import useGoogleMaps from '@/hooks/useGoogleMaps';
+
+// Dynamically import components to prevent SSR issues
+const RouteMapDisplay = dynamic(() => import('../components/RouteMapDisplay'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-gray-200 h-96 rounded"></div>
+});
+
+const AddressAutocomplete = dynamic(() => import('../components/AddressAutocomplete'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-gray-200 h-12 rounded"></div>
+});
 
 export default function TestMapPage() {
   const [origin, setOrigin] = useState('123 Main St, Columbus, OH');

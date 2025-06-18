@@ -16,6 +16,11 @@ export default function useGoogleMaps(libraries = ['places']) {
   const [loadError, setLoadError] = useState(null);
 
   useEffect(() => {
+    // Return early if not in browser
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     console.log('useGoogleMaps hook called with libraries:', libraries);
     
     // Check if Google Maps is already loaded

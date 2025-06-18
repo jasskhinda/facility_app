@@ -1,13 +1,36 @@
 'use client';
 
-import { useState } from 'react';
-import SimpleAutocomplete from '../components/SimpleAutocomplete';
-import SimpleMap from '../components/SimpleMap';
+import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
+
+// Dynamically import components to prevent SSR issues
+const SimpleAutocomplete = dynamic(() => import('../components/SimpleAutocomplete'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-gray-200 h-12 rounded"></div>
+});
+
+const SimpleMap = dynamic(() => import('../components/SimpleMap'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-gray-200 h-96 rounded"></div>
+});
 
 export default function TestUltraSimplePage() {
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [routeInfo, setRouteInfo] = useState(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="container mx-auto p-6">
+        <h1 className="text-3xl font-bold mb-6">Loading...</h1>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6">

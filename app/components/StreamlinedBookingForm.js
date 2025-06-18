@@ -1,12 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { createClientSupabase } from '@/lib/client-supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from './DashboardLayout';
 import PricingDisplay from './PricingDisplay';
-import SimpleMap from './SimpleMap';
-import SimpleAutocomplete from './SimpleAutocomplete';
+
+// Dynamically import Google Maps components to prevent SSR issues
+const SimpleMap = dynamic(() => import('./SimpleMap'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-gray-200 h-64 rounded-lg"></div>
+});
+
+const SimpleAutocomplete = dynamic(() => import('./SimpleAutocomplete'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-gray-200 h-12 rounded"></div>
+});
 
 export default function StreamlinedBookingForm({ user }) {
   const router = useRouter();

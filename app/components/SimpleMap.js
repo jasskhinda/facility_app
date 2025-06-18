@@ -16,8 +16,15 @@ export default function SimpleMap({
   const [routeInfo, setRouteInfo] = useState(null);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState('');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
     console.log('SimpleMap: useEffect called');
     
     const initMap = async () => {
@@ -60,7 +67,7 @@ export default function SimpleMap({
     };
 
     initMap();
-  }, []);
+  }, [mounted]);
 
   useEffect(() => {
     if (!isReady || !directionsService || !directionsRenderer || !origin || !destination) {
@@ -111,6 +118,21 @@ export default function SimpleMap({
       }
     });
   }, [origin, destination, isReady, directionsService, directionsRenderer, onRouteCalculated]);
+
+  if (!mounted) {
+    return (
+      <div className="space-y-3">
+        <div className={className}>
+          <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg">
+            <div className="text-center">
+              <div className="animate-pulse h-8 w-8 bg-gray-300 rounded-full mx-auto mb-2"></div>
+              <p className="text-sm text-gray-600">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">

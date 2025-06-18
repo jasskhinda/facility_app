@@ -18,8 +18,8 @@ export default function AddressAutocompleteSimple({
     console.log('AddressAutocompleteSimple: Starting initialization');
     
     const initializeAutocomplete = () => {
-      if (!inputRef.current) {
-        console.log('Input ref not available');
+      if (typeof window === 'undefined' || !inputRef.current) {
+        console.log('Window or input ref not available');
         return;
       }
 
@@ -64,6 +64,12 @@ export default function AddressAutocompleteSimple({
     };
 
     const loadGoogleMaps = () => {
+      if (typeof window === 'undefined') {
+        console.log('Window not available (SSR)');
+        setIsLoading(false);
+        return;
+      }
+
       const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
       
       if (!apiKey) {
@@ -108,10 +114,12 @@ export default function AddressAutocompleteSimple({
       script.defer = true;
       
       // Create a global callback for when the script loads
-      window.initGoogleMapsAutocomplete = () => {
-        console.log('Google Maps callback fired for autocomplete');
-        setTimeout(initializeAutocomplete, 100);
-      };
+      if (typeof window !== 'undefined') {
+        window.initGoogleMapsAutocomplete = () => {
+          console.log('Google Maps callback fired for autocomplete');
+          setTimeout(initializeAutocomplete, 100);
+        };
+      }
       
       script.onload = () => {
         console.log('Google Maps script loaded');

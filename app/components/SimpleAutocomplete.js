@@ -13,8 +13,15 @@ export default function SimpleAutocomplete({
   const inputRef = useRef(null);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState('');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
     console.log('SimpleAutocomplete: useEffect called');
     
     const initAutocomplete = async () => {
@@ -52,7 +59,23 @@ export default function SimpleAutocomplete({
     };
 
     initAutocomplete();
-  }, [onChange]);
+  }, [onChange, mounted]);
+
+  if (!mounted) {
+    return (
+      <div className="relative">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={className}
+          required={required}
+          disabled
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="relative">

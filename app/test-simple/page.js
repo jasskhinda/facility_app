@@ -1,8 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import AddressAutocompleteSimple from '../components/AddressAutocompleteSimple';
-import RouteMapDisplaySimple from '../components/RouteMapDisplaySimple';
+import dynamic from 'next/dynamic';
+
+// Dynamically import components to prevent SSR issues
+const AddressAutocompleteSimple = dynamic(() => import('../components/AddressAutocompleteSimple'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-gray-200 h-12 rounded"></div>
+});
+
+const RouteMapDisplaySimple = dynamic(() => import('../components/RouteMapDisplaySimple'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-gray-200 h-96 rounded"></div>
+});
 
 export default function TestSimplePage() {
   const [origin, setOrigin] = useState('');
