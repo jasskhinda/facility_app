@@ -128,6 +128,11 @@ export default function ClientForm({ clientId = null }) {
         throw new Error('Facility ID not found');
       }
       
+      // Validate required fields
+      if (!formData.first_name || !formData.last_name || !formData.email) {
+        throw new Error('First name, last name, and email are required');
+      }
+      
       // If editing an existing client
       if (clientId) {
         const { error: updateError } = await supabase
@@ -157,26 +162,30 @@ export default function ClientForm({ clientId = null }) {
           setMessage('Account creation would be handled by an API endpoint');
           router.push('/dashboard/clients');
         } else {
-          // Create a profile entry without an auth user
-          // This would be for tracking clients who don't need system access
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              // In a real implementation, you'd generate a UUID here or have the API do it
-              id: crypto.randomUUID(), // This is just for demonstration
+          // Use the API endpoint to create the client
+          const response = await fetch('/api/facility/clients', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
               first_name: formData.first_name,
               last_name: formData.last_name,
+              email: formData.email,
               phone_number: formData.phone_number,
               address: formData.address,
               accessibility_needs: formData.accessibility_needs,
               medical_requirements: formData.medical_requirements,
               emergency_contact: formData.emergency_contact,
-              facility_id: facilityId,
-              role: 'client',
-            });
-            
-          if (insertError) throw insertError;
-          
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to create client');
+          }
+
+          const result = await response.json();
           setMessage('Client added successfully');
           router.push('/dashboard/clients');
         }
@@ -247,7 +256,7 @@ export default function ClientForm({ clientId = null }) {
           
           <div>
             <label htmlFor="email" className="block mb-1 font-medium">
-              Email
+              Email *
             </label>
             <input
               id="email"
@@ -256,7 +265,11 @@ export default function ClientForm({ clientId = null }) {
               value={formData.email}
               onChange={handleChange}
               className="w-full p-2 border rounded"
+              required
             />
+            <p className="text-sm text-gray-600 mt-1">
+              Required to create client account and send login credentials
+            </p>
           </div>
           
           <div>
@@ -357,7 +370,7 @@ export default function ClientForm({ clientId = null }) {
             
             <button
               type="submit"
-              className="px-4 py-2 bg-primary text-onPrimary font-medium rounded"
+              className="px-4 py-2 bg-primary text-onPrimary font-medium rounded border-2 border-white"
               disabled={saving}
             >
               {saving ? 'Saving...' : (clientId ? 'Update Client' : 'Add Client')}
