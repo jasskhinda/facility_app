@@ -43,17 +43,15 @@ export default function FacilityClientManagement({ user }) {
       
       setFacilityId(profile.facility_id);
       
-      // Load clients for this facility
-      const { data: clients } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          recent_trips:trips(count)
-        `)
-        .eq('facility_id', profile.facility_id)
-        .eq('role', 'client')
-        .order('created_at', { ascending: false });
-        
+      // Load clients for this facility using the API endpoint
+      // This will fetch both authenticated clients (from profiles) and managed clients (from facility_managed_clients)
+      const response = await fetch('/api/facility/clients');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch clients');
+      }
+      
+      const { clients } = await response.json();
       setClients(clients || []);
     } catch (err) {
       console.error('Error loading clients:', err);

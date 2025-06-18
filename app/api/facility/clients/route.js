@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 // GET /api/facility/clients - Get all clients for the facility
 export async function GET(request) {
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
   
   try {
     // Get user session
@@ -35,22 +35,35 @@ export async function GET(request) {
     }
     
     // Get clients for this facility - include both authenticated and managed clients
+    console.log('Fetching clients for facility:', profile.facility_id);
+    
     const { data: authClients, error: authClientsError } = await supabase
       .from('profiles')
       .select('*')
       .eq('facility_id', profile.facility_id)
       .eq('role', 'client');
       
+    console.log('Auth clients:', { count: authClients?.length, error: authClientsError });
+      
     const { data: managedClients, error: managedClientsError } = await supabase
       .from('facility_managed_clients')
       .select('*')
       .eq('facility_id', profile.facility_id);
       
+    console.log('Managed clients:', { count: managedClients?.length, error: managedClientsError });
+      
     if (authClientsError && authClientsError.code !== 'PGRST116') {
+      console.error('Auth clients error:', authClientsError);
       return NextResponse.json({ error: authClientsError.message }, { status: 500 });
     }
     
     if (managedClientsError && managedClientsError.code !== 'PGRST116') {
+      console.error('Managed clients error:', managedClientsError);
+      // If table doesn't exist, just use auth clients
+      if (managedClientsError.code === '42P01') {
+        console.log('facility_managed_clients table does not exist, using only auth clients');
+        return NextResponse.json({ clients: (authClients || []).map(client => ({ ...client, client_type: 'authenticated' })) });
+      }
       return NextResponse.json({ error: managedClientsError.message }, { status: 500 });
     }
     
@@ -69,7 +82,7 @@ export async function GET(request) {
 
 // POST /api/facility/clients - Create a new client
 export async function POST(request) {
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
   
   try {
     console.log('POST /api/facility/clients - Starting...');
@@ -194,6 +207,14 @@ export async function POST(request) {
         
       if (insertProfileError) {
         console.error('Managed client creation error:', insertProfileError);
+        
+        // If table doesn't exist, provide helpful error message
+        if (insertProfileError.code === '42P01') {
+          return NextResponse.json({ 
+            error: 'Database setup incomplete. Please run the database migration script or contact administrator.' 
+          }, { status: 500 });
+        }
+        
         return NextResponse.json({ error: insertProfileError.message }, { status: 500 });
       }
       
