@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { createClientSupabase } from '@/lib/client-supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from './DashboardLayout';
+import PricingDisplay from './PricingDisplay';
+import RouteMapDisplay from './RouteMapDisplay';
 
 export default function StreamlinedBookingForm({ user }) {
   const router = useRouter();
@@ -34,6 +36,8 @@ export default function StreamlinedBookingForm({ user }) {
   const [selectedClient, setSelectedClient] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [currentPricing, setCurrentPricing] = useState(null);
+  const [routeInfo, setRouteInfo] = useState(null);
 
   useEffect(() => {
     loadFacilityAndClients();
@@ -162,7 +166,15 @@ export default function StreamlinedBookingForm({ user }) {
         trip_notes: formData.tripNotes,
         status: 'pending',
         booked_by: user.id,
-        bill_to: formData.billTo
+        bill_to: formData.billTo,
+        // Add pricing information if available
+        price: currentPricing?.pricing?.total || null,
+        is_round_trip: formData.isRoundTrip,
+        distance: routeInfo?.distance || currentPricing?.distance?.distance || null,
+        // Add route information from map if available
+        route_duration: routeInfo?.duration || null,
+        route_distance_text: routeInfo?.distanceText || null,
+        route_duration_text: routeInfo?.durationText || null
       };
       
       // Set the appropriate client reference based on client type
@@ -369,6 +381,20 @@ export default function StreamlinedBookingForm({ user }) {
               </div>
             </div>
 
+            {/* Route Map Display */}
+            {formData.pickupAddress && formData.destinationAddress && (
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                  Route Overview
+                </label>
+                <RouteMapDisplay
+                  origin={formData.pickupAddress}
+                  destination={formData.destinationAddress}
+                  onRouteCalculated={setRouteInfo}
+                />
+              </div>
+            )}
+
             {/* Round Trip */}
             <div>
               <label className="flex items-center space-x-3">
@@ -445,6 +471,14 @@ export default function StreamlinedBookingForm({ user }) {
                 className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
               />
             </div>
+
+            {/* Pricing Display */}
+            <PricingDisplay 
+              formData={formData}
+              selectedClient={selectedClient}
+              routeInfo={routeInfo}
+              onPricingCalculated={setCurrentPricing}
+            />
 
             {/* Billing */}
             <div>
