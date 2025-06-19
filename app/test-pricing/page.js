@@ -26,16 +26,16 @@ export default function PricingTestPage() {
       data: { isRoundTrip: false, distance: 5, pickupDateTime: '2024-12-19T14:30', wheelchairType: 'no_wheelchair', clientType: 'facility' }
     },
     {
-      name: 'Round Trip with Wheelchair',
-      data: { isRoundTrip: true, distance: 8, pickupDateTime: '2024-12-19T14:30', wheelchairType: 'wheelchair', clientType: 'facility' }
+      name: 'Round Trip with Foldable Wheelchair',
+      data: { isRoundTrip: true, distance: 8, pickupDateTime: '2024-12-19T14:30', wheelchairType: 'foldable', clientType: 'facility' }
     },
     {
       name: 'Off-Hours Individual Client',
       data: { isRoundTrip: false, distance: 12, pickupDateTime: '2024-12-19T21:30', wheelchairType: 'no_wheelchair', clientType: 'individual' }
     },
     {
-      name: 'Weekend Round Trip',
-      data: { isRoundTrip: true, distance: 15, pickupDateTime: '2024-12-21T10:00', wheelchairType: 'wheelchair', clientType: 'individual' }
+      name: 'Weekend with Power Wheelchair',
+      data: { isRoundTrip: true, distance: 15, pickupDateTime: '2024-12-21T10:00', wheelchairType: 'power', clientType: 'individual' }
     }
   ];
 
@@ -60,7 +60,7 @@ export default function PricingTestPage() {
                 <div className="font-medium text-gray-900">{scenario.name}</div>
                 <div className="text-sm text-gray-600 mt-1">
                   {scenario.data.isRoundTrip ? 'Round Trip' : 'One Way'} • {scenario.data.distance} miles
-                  {scenario.data.wheelchairType === 'wheelchair' && ' • Wheelchair'}
+                  {(scenario.data.wheelchairType === 'foldable' || scenario.data.wheelchairType === 'power') && ` • ${scenario.data.wheelchairType} wheelchair (+$25)`}
                   {scenario.data.clientType === 'individual' && ' • Individual Client'}
                 </div>
               </button>
@@ -112,7 +112,8 @@ export default function PricingTestPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >
                 <option value="no_wheelchair">No Wheelchair</option>
-                <option value="wheelchair">Wheelchair</option>
+                <option value="foldable">Foldable Wheelchair (+$25)</option>
+                <option value="power">Power Wheelchair (+$25)</option>
               </select>
             </div>
 

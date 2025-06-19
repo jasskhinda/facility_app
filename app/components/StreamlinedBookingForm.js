@@ -452,8 +452,8 @@ export default function StreamlinedBookingForm({ user }) {
                   className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                 >
                   <option value="no_wheelchair">No wheelchair</option>
-                  <option value="foldable">Foldable wheelchair</option>
-                  <option value="power">Power wheelchair</option>
+                  <option value="foldable">Foldable wheelchair +$25</option>
+                  <option value="power">Power wheelchair +$25</option>
                 </select>
               </div>
               
