@@ -27,13 +27,23 @@ export default function BulletproofMap({
   const MAX_RETRIES = 3;
 
   useEffect(() => {
-    console.log('🗺️ BulletproofMap: Initializing...');
+    console.log('🗺️ BulletproofMap: Starting initialization...');
+    console.log('🔍 Environment check:', {
+      window: typeof window !== 'undefined',
+      google: typeof window !== 'undefined' && !!window.google,
+      googleMaps: typeof window !== 'undefined' && !!window.google && !!window.google.maps,
+      apiKey: !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    });
+
     let isMounted = true;
     let timeoutId;
     let intervalId;
 
     const initMap = () => {
-      if (!isMounted || !mapRef.current) return;
+      if (!isMounted || !mapRef.current) {
+        console.log('🚫 Cannot init map: mounted =', isMounted, 'mapRef =', !!mapRef.current);
+        return;
+      }
 
       try {
         console.log('🗺️ Creating map instance...');
@@ -69,48 +79,57 @@ export default function BulletproofMap({
     };
 
     const checkAndLoadGoogleMaps = () => {
-      // Check if Google Maps is already available
+      console.log('🔍 Checking Google Maps availability...');
+      
+      // Immediate check with detailed logging
       if (window.google && window.google.maps) {
-        console.log('✅ Google Maps already loaded');
+        console.log('✅ Google Maps immediately available, initializing...');
         initMap();
         return;
       }
 
+      console.log('⏳ Google Maps not ready, starting load process...');
       setStatus('loading');
       
-      // Check for existing script
+      // Check for existing script with detailed info
       const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
       if (existingScript) {
-        console.log('📜 Google Maps script exists, waiting...');
+        console.log('📜 Existing Google Maps script found:', existingScript.src);
         
-        // Set up polling to check when it loads
+        // More aggressive polling for existing script
+        let pollCount = 0;
         intervalId = setInterval(() => {
           if (!isMounted) return;
           
+          pollCount++;
+          console.log(`🔄 Polling attempt ${pollCount}/100 for Google Maps...`);
+          
           if (window.google && window.google.maps) {
+            console.log('✅ Google Maps loaded via existing script!');
             clearInterval(intervalId);
             initMap();
+          } else if (pollCount >= 100) {
+            // After 20 seconds of polling, give up on existing script
+            console.log('⏰ Polling timeout, will load new script');
+            clearInterval(intervalId);
+            loadNewScript();
           }
         }, 200);
         
-        // Timeout after 20 seconds
-        timeoutId = setTimeout(() => {
-          if (!isMounted) return;
-          
-          clearInterval(intervalId);
-          if (!window.google || !window.google.maps) {
-            console.log('⏰ Timeout waiting for existing script');
-            handleRetry();
-          }
-        }, 20000);
         return;
       }
 
-      // Load Google Maps script
-      console.log('📜 Loading Google Maps script...');
+      // No existing script, load new one
+      console.log('📜 No existing script found, loading new one...');
+      loadNewScript();
+    };
+
+    const loadNewScript = () => {
+      console.log('📜 Loading fresh Google Maps script...');
       const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
       
       if (!apiKey) {
+        console.error('❌ Google Maps API key missing');
         setError('Google Maps API key not configured');
         setStatus('error');
         return;
@@ -119,9 +138,11 @@ export default function BulletproofMap({
       const script = document.createElement('script');
       const callbackName = `initGoogleMapsBulletproof_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
+      console.log('📞 Creating callback:', callbackName);
+      
       // Create unique global callback
       window[callbackName] = () => {
-        console.log('📞 Google Maps callback fired');
+        console.log('📞 Google Maps callback fired for:', callbackName);
         if (isMounted) {
           initMap();
         }
@@ -137,6 +158,8 @@ export default function BulletproofMap({
       script.async = true;
       script.defer = true;
       
+      console.log('📜 Loading script:', script.src);
+      
       script.onerror = () => {
         console.error('❌ Failed to load Google Maps script');
         if (isMounted) {
@@ -146,12 +169,12 @@ export default function BulletproofMap({
 
       document.head.appendChild(script);
       
-      // Backup timeout
+      // Backup timeout - if callback doesn't fire, retry
       timeoutId = setTimeout(() => {
         if (!isMounted) return;
         
         if (!window.google || !window.google.maps) {
-          console.log('⏰ Script load timeout');
+          console.log('⏰ Script load timeout, retrying...');
           handleRetry();
         }
       }, 15000);
@@ -165,13 +188,13 @@ export default function BulletproofMap({
         setTimeout(checkAndLoadGoogleMaps, 2000);
       } else {
         console.error('❌ Max retries reached');
-        setError('Failed to load Google Maps after multiple attempts');
+        setError('Failed to load Google Maps after multiple attempts. Please refresh the page.');
         setStatus('error');
       }
     };
 
-    // Start the process
-    checkAndLoadGoogleMaps();
+    // Start immediately with a small delay to ensure DOM is ready
+    setTimeout(checkAndLoadGoogleMaps, 100);
 
     // Cleanup
     return () => {
