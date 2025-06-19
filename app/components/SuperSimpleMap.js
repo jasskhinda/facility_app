@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 /**
  * SuperSimpleMap - Just show a route between two addresses
- * No complex loading states, just basic functionality
+ * Fixed for dynamic import compatibility
  */
 export default function SuperSimpleMap({ 
   origin, 
@@ -16,9 +16,15 @@ export default function SuperSimpleMap({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [routeInfo, setRouteInfo] = useState(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Use layoutEffect to ensure DOM is ready
+  useLayoutEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
-    if (!origin || !destination) {
+    if (!isMounted || !origin || !destination) {
       setIsLoading(false);
       return;
     }
@@ -31,19 +37,19 @@ export default function SuperSimpleMap({
     const initMapWithRetry = (retryCount = 0) => {
       console.log('SuperSimpleMap: Attempting to initialize map (attempt', retryCount + 1, ')');
       
-      // Check if map container is ready
-      if (!mapRef.current) {
+      // Check if component is mounted and map container is ready
+      if (!isMounted || !mapRef.current) {
         console.log('SuperSimpleMap: Map container not ready, will retry...');
         
-        // Retry up to 10 times with increasing delays
-        if (retryCount < 10) {
-          const delay = Math.min(100 * (retryCount + 1), 500); // Progressive delay up to 500ms
+        // Retry up to 15 times with progressive delays
+        if (retryCount < 15) {
+          const delay = Math.min(100 * (retryCount + 1), 1000); // Progressive delay up to 1000ms
           setTimeout(() => {
             initMapWithRetry(retryCount + 1);
           }, delay);
         } else {
           console.error('SuperSimpleMap: Map container still not ready after', retryCount + 1, 'attempts');
-          setError('Map container failed to initialize after multiple attempts. Please refresh the page.');
+          setError('Map container failed to initialize. The component may not be fully loaded yet.');
           setIsLoading(false);
         }
         return;
@@ -177,7 +183,21 @@ export default function SuperSimpleMap({
       clearInterval(checkForGoogleMaps);
     };
 
-  }, [origin, destination, onRouteCalculated]);
+  }, [origin, destination, onRouteCalculated, isMounted]);
+
+  // Don't render anything if not mounted (prevents SSR issues)
+  if (!isMounted) {
+    return (
+      <div className={className}>
+        <div className="flex items-center justify-center h-full bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="text-center">
+            <div className="animate-pulse h-8 w-8 bg-gray-300 rounded-full mx-auto mb-2"></div>
+            <p className="text-gray-600 text-sm">Initializing...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
@@ -195,16 +215,10 @@ export default function SuperSimpleMap({
                 onClick={() => {
                   setError('');
                   setIsLoading(true);
-                  // Force re-initialization
+                  setIsMounted(false);
+                  // Force re-initialization by resetting mount state
                   setTimeout(() => {
-                    if (origin && destination) {
-                      console.log('SuperSimpleMap: Manual retry triggered');
-                      // Trigger useEffect by clearing and setting addresses
-                      const currentOrigin = origin;
-                      const currentDestination = destination;
-                      // This will trigger the useEffect again
-                      window.location.reload();
-                    }
+                    setIsMounted(true);
                   }, 100);
                 }}
                 className="px-4 py-2 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors block mx-auto"
