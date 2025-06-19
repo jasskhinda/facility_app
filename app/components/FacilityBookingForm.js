@@ -134,16 +134,36 @@ export default function FacilityBookingForm({ user }) {
         
         setFacilityId(userProfile.facility_id);
         
-        // Load facility's clients
-        const { data: clientsList, error: clientsError } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, full_name, address, accessibility_needs, medical_requirements')
-          .eq('facility_id', userProfile.facility_id)
-          .eq('role', 'client');
-          
-        if (clientsError) throw clientsError;
+        // Load all clients (authenticated + managed) using the API
+        console.log('🔍 Loading clients for booking form...');
+        const response = await fetch('/api/facility/clients');
         
-        setClients(clientsList || []);
+        if (response.ok) {
+          const data = await response.json();
+          const allClients = data.clients || [];
+          
+          // Filter only active clients and add display names
+          const activeClients = allClients
+            .filter(client => {
+              // For authenticated clients, check status
+              if (client.client_type === 'authenticated') {
+                return client.status === 'active';
+              }
+              // For managed clients, they're considered active by default
+              return client.client_type === 'managed';
+            })
+            .map(client => ({
+              ...client,
+              display_name: `${client.first_name} ${client.last_name}${client.client_type === 'managed' ? ' (Managed)' : ''}`
+            }))
+            .sort((a, b) => a.first_name.localeCompare(b.first_name));
+          
+          console.log('✅ Loaded', activeClients.length, 'clients for booking');
+          setClients(activeClients);
+        } else {
+          console.error('Failed to load clients:', response.status);
+          setError('Failed to load clients');
+        }
         
         // If clientId is provided in the URL, set the selected client
         if (clientId) {
@@ -637,23 +657,41 @@ export default function FacilityBookingForm({ user }) {
       
       setBookingStatus('submitting');
       
+      // Determine if this is an authenticated client or managed client
+      const selectedClientData = clients.find(c => c.id === selectedClient);
+      
+      // Create trip data with appropriate client reference
+      const tripData = {
+        facility_id: facilityId,
+        pickup_address: pickupAddressValue,
+        destination_address: destinationAddressValue,
+        pickup_time: formData.pickupTime,
+        status: 'pending',
+        special_requirements: formData.clientNotes || null,
+        wheelchair_type: formData.wheelchairType,
+        is_round_trip: formData.isRoundTrip,
+        price: calculatedPrice,
+        distance: distanceMiles > 0 ? Math.round(distanceMiles * 10) / 10 : null,
+        booked_by: user.id,
+        bill_to: formData.paymentMethod,
+        created_at: new Date().toISOString(),
+      };
+      
+      // Set the appropriate client reference based on client type
+      if (selectedClientData?.client_type === 'managed') {
+        tripData.managed_client_id = selectedClient;
+        tripData.user_id = null;
+        console.log('📝 Creating trip for managed client:', selectedClientData.first_name, selectedClientData.last_name);
+      } else {
+        tripData.user_id = selectedClient;
+        tripData.managed_client_id = null;
+        console.log('📝 Creating trip for authenticated client:', selectedClientData?.first_name, selectedClientData?.last_name);
+      }
+      
       // Insert the trip into the database
       const { data, error: insertError } = await supabase
         .from('trips')
-        .insert([{
-          user_id: selectedClient, // Use selected client's ID
-          facility_id: facilityId, // Associate with facility
-          pickup_address: pickupAddressValue,
-          destination_address: destinationAddressValue,
-          pickup_time: formData.pickupTime,
-          status: 'pending',
-          special_requirements: formData.clientNotes || null,
-          wheelchair_type: formData.wheelchairType,
-          is_round_trip: formData.isRoundTrip,
-          price: calculatedPrice, // Save estimated price
-          distance: distanceMiles > 0 ? Math.round(distanceMiles * 10) / 10 : null, // Save distance in miles, rounded to 1 decimal
-          created_at: new Date().toISOString(),
-        }])
+        .insert([tripData])
         .select();
 
       if (insertError) {
@@ -772,7 +810,7 @@ export default function FacilityBookingForm({ user }) {
                     <option value="">Select a client</option>
                     {clients.map(client => (
                       <option key={client.id} value={client.id}>
-                        {client.full_name || `${client.first_name} ${client.last_name}`}
+                        {client.display_name || client.full_name || `${client.first_name} ${client.last_name}`}
                       </option>
                     ))}
                   </select>
