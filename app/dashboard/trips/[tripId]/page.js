@@ -24,6 +24,104 @@ export default function TripDetailsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
 
+  // Download trip details as PDF-style document
+  const downloadTripDetails = () => {
+    try {
+      const clientName = trip.user_profile 
+        ? `${trip.user_profile.first_name || ''} ${trip.user_profile.last_name || ''}`.trim() || 'Unknown Client'
+        : trip.managed_client
+        ? `${trip.managed_client.first_name || ''} ${trip.managed_client.last_name || ''}`.trim() || 'Unknown Client'
+        : 'Unknown Client';
+      
+      const clientType = trip.user_profile ? 'Registered Client' : trip.managed_client ? 'Managed Client' : 'Unknown';
+      
+      const tripDetails = `
+COMPASSIONATE CARE TRANSPORTATION
+TRIP DETAILS & RECEIPT
+
+================================================
+TRIP INFORMATION
+================================================
+Trip ID: ${trip.id}
+Date: ${formatDate(trip.pickup_time)}
+Status: ${trip.status.charAt(0).toUpperCase() + trip.status.slice(1)}
+Type: ${trip.is_round_trip ? 'Round Trip' : 'One Way'}
+
+================================================
+CLIENT INFORMATION
+================================================
+Name: ${clientName}
+Type: ${clientType}
+${trip.user_profile?.phone_number || trip.managed_client?.phone_number ? `Phone: ${trip.user_profile?.phone_number || trip.managed_client?.phone_number}` : ''}
+${trip.user_profile?.email ? `Email: ${trip.user_profile.email}` : ''}
+
+================================================
+ROUTE DETAILS
+================================================
+Pickup Address: ${trip.pickup_address}
+Destination: ${trip.destination_address || trip.dropoff_address}
+${trip.distance ? `Distance: ${trip.distance} miles` : ''}
+
+================================================
+SERVICE REQUIREMENTS
+================================================
+Accessibility: ${trip.wheelchair_type === 'wheelchair' ? 'Wheelchair Accessible Vehicle Required' : 'Standard Vehicle'}
+${trip.additional_passengers && trip.additional_passengers > 0 ? `Additional Passengers: ${trip.additional_passengers}` : ''}
+${trip.notes ? `Special Instructions: ${trip.notes}` : ''}
+
+================================================
+COST BREAKDOWN
+================================================
+Base Fare: $${trip.base_price?.toFixed(2) || (trip.price ? (trip.price * 0.8).toFixed(2) : '0.00')}
+${trip.wheelchair_type === 'wheelchair' ? `Wheelchair Surcharge: $${trip.wheelchair_fee?.toFixed(2) || (trip.price ? (trip.price * 0.1).toFixed(2) : '0.00')}` : ''}
+${trip.additional_passengers && trip.additional_passengers > 0 ? `Additional Passengers: $${trip.passenger_fee?.toFixed(2) || (trip.additional_passengers * 5).toFixed(2)}` : ''}
+${trip.is_round_trip ? `Round Trip Fee: $${trip.round_trip_fee?.toFixed(2) || (trip.price ? (trip.price * 0.1).toFixed(2) : '0.00')}` : ''}
+------------------------------------------------
+TOTAL AMOUNT: $${trip.price?.toFixed(2) || '0.00'}
+${trip.status === 'completed' ? 'Payment Status: PAID' : ''}
+${trip.status === 'cancelled' && trip.refund_status ? `Refund Status: ${trip.refund_status}` : ''}
+
+================================================
+${trip.driver ? `
+DRIVER INFORMATION
+================================================
+Driver: ${trip.driver.profile?.full_name || `${trip.driver.profile?.first_name || ''} ${trip.driver.profile?.last_name || ''}`.trim() || 'Unknown'}
+${trip.driver.profile?.phone_number ? `Contact: ${trip.driver.profile.phone_number}` : ''}
+${trip.vehicle ? `Vehicle: ${trip.vehicle}` : ''}
+` : ''}
+================================================
+BOOKING DETAILS
+================================================
+Booked: ${formatDate(trip.created_at)}
+${trip.status === 'cancelled' && trip.cancellation_reason ? `Cancellation Reason: ${trip.cancellation_reason}` : ''}
+
+================================================
+Thank you for choosing Compassionate Care Transportation!
+
+For questions or support, please contact us:
+Website: https://compassionatecaretransportation.com
+================================================
+      `.trim();
+
+      // Create and download the file
+      const blob = new Blob([tripDetails], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `trip-details-${trip.id}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      setSuccessMessage('Trip details downloaded successfully!');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error) {
+      console.error('Error downloading trip details:', error);
+      setError('Failed to download trip details. Please try again.');
+    }
+  };
+
   useEffect(() => {
     async function fetchData() {
       try {
@@ -38,38 +136,35 @@ export default function TripDetailsPage() {
         
         setUser(session.user);
         
-        // Fetch trip data
-        const { data: tripData, error: tripError } = await supabase
-          .from('trips')
-          .select('*')
-          .eq('id', tripId)
-          .eq('user_id', session.user.id)
+        // Get user role and facility_id from profile to determine trip access
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('role, facility_id')
+          .eq('id', session.user.id)
           .single();
           
-        // If trip has a driver_id, fetch driver information separately
-        if (tripData && tripData.driver_id) {
-          const { data: driverData } = await supabase
-            .from('profiles')
-            .select('id, first_name, last_name, full_name, avatar_url, phone_number')
-            .eq('id', tripData.driver_id)
-            .single();
-            
-          if (driverData) {
-            // Get driver email from auth
-            const { data: userData } = await supabase
-              .from('users')
-              .select('email')
-              .eq('id', tripData.driver_id)
-              .single();
-              
-            // Add driver information to trip data
-            tripData.driver = {
-              id: tripData.driver_id,
-              email: userData?.email,
-              profile: driverData
-            };
-          }
+        if (profileError) {
+          console.error('Error fetching user profile:', profileError);
+          // Continue anyway - maybe they're a user without a profile yet
         }
+        
+        // Build trip query based on user role (same logic as trips list page)
+        let tripQuery = supabase
+          .from('trips')
+          .select('*')
+          .eq('id', tripId);
+        
+        // For facility users, allow access to any trip for their facility
+        // For regular clients, only allow access to their own trips
+        if (profileData?.role === 'facility' && profileData?.facility_id) {
+          console.log('🏥 Facility user accessing trip - checking facility access');
+          tripQuery = tripQuery.eq('facility_id', profileData.facility_id);
+        } else {
+          console.log('👤 Regular client accessing trip - checking user access');
+          tripQuery = tripQuery.eq('user_id', session.user.id);
+        }
+        
+        const { data: tripData, error: tripError } = await tripQuery.single();
         
         if (tripError) {
           if (tripError.code === 'PGRST116') {
@@ -80,7 +175,53 @@ export default function TripDetailsPage() {
           return;
         }
         
-        setTrip(tripData);
+        // Enhance trip data with client information (same approach as trips list)
+        let enhancedTripData = { ...tripData };
+        
+        // Fetch client profile information if user_id exists
+        if (tripData.user_id) {
+          const { data: userProfile } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, phone_number, email')
+            .eq('id', tripData.user_id)
+            .single();
+          
+          if (userProfile) {
+            enhancedTripData.user_profile = userProfile;
+          }
+        }
+        
+        // Fetch managed client information if managed_client_id exists
+        if (tripData.managed_client_id) {
+          const { data: managedClient } = await supabase
+            .from('managed_clients')
+            .select('id, first_name, last_name, phone_number')
+            .eq('id', tripData.managed_client_id)
+            .single();
+          
+          if (managedClient) {
+            enhancedTripData.managed_client = managedClient;
+          }
+        }
+        
+        // If trip has a driver_id, fetch driver information separately
+        if (enhancedTripData.driver_id) {
+          const { data: driverData } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, full_name, avatar_url, phone_number')
+            .eq('id', enhancedTripData.driver_id)
+            .single();
+            
+          if (driverData) {
+            // Add driver information to trip data
+            enhancedTripData.driver = {
+              id: enhancedTripData.driver_id,
+              profile: driverData
+            };
+          }
+        }
+        
+        setTrip(enhancedTripData);
       } catch (error) {
         console.error('Error fetching data:', error);
         setError('An unexpected error occurred. Please try again.');
@@ -259,55 +400,186 @@ export default function TripDetailsPage() {
         </div>
         
         {/* Trip Details Card */}
-        <div className="bg-white dark:bg-[#1C2C2F] rounded-lg p-5 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] mb-6">
-          <h3 className="text-lg font-medium mb-4 text-[#2E4F54] dark:text-[#E0F4F5]">Trip Information</h3>
+        <div className="bg-white dark:bg-[#1C2C2F] rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] mb-6">
+          <h3 className="text-lg font-medium mb-6 text-[#2E4F54] dark:text-[#E0F4F5]">Trip Information</h3>
           
+          {/* Client Information Section - For facility users */}
+          {(trip.user_profile || trip.managed_client) && (
+            <div className="mb-6 p-4 bg-[#F8F9FA] dark:bg-[#24393C] rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
+              <h4 className="text-md font-medium mb-3 text-[#2E4F54] dark:text-[#E0F4F5]">Client Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Client Name</p>
+                  <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+                    {trip.user_profile 
+                      ? `${trip.user_profile.first_name || ''} ${trip.user_profile.last_name || ''}`.trim() || 'Unknown'
+                      : trip.managed_client
+                      ? `${trip.managed_client.first_name || ''} ${trip.managed_client.last_name || ''}`.trim() || 'Unknown'
+                      : 'Unknown Client'
+                    }
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Client Type</p>
+                  <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+                    {trip.user_profile ? 'Registered Client' : trip.managed_client ? 'Managed Client' : 'Unknown'}
+                  </p>
+                </div>
+                {(trip.user_profile?.phone_number || trip.managed_client?.phone_number) && (
+                  <div>
+                    <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Phone Number</p>
+                    <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+                      {trip.user_profile?.phone_number || trip.managed_client?.phone_number}
+                    </p>
+                  </div>
+                )}
+                {trip.user_profile?.email && (
+                  <div>
+                    <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Email</p>
+                    <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.user_profile.email}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* Trip Details Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Pickup Time</p>
-              <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{formatDate(trip.pickup_time)}</p>
+              <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Pickup Date & Time</p>
+              <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90 font-medium">{formatDate(trip.pickup_time)}</p>
             </div>
+            
+            <div>
+              <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Trip Type</p>
+              <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+                {trip.is_round_trip ? 'Round Trip' : 'One Way'}
+              </p>
+            </div>
+            
+            <div className="md:col-span-2">
+              <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">Route</p>
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-green-500 rounded-full mr-3 flex-shrink-0"></div>
+                  <div>
+                    <p className="text-xs text-[#2E4F54]/60 dark:text-[#E0F4F5]/60">Pickup Address</p>
+                    <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.pickup_address}</p>
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-red-500 rounded-full mr-3 flex-shrink-0"></div>
+                  <div>
+                    <p className="text-xs text-[#2E4F54]/60 dark:text-[#E0F4F5]/60">Destination Address</p>
+                    <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.destination_address || trip.dropoff_address}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Trip Status</p>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(trip.status)} mt-1`}>
+                {trip.status === 'pending' ? 'Pending Approval' :
+                 trip.status === 'upcoming' ? 'Upcoming' : 
+                 trip.status === 'completed' ? 'Completed' : 
+                 trip.status === 'in_progress' ? 'In Progress' : 'Cancelled'}
+              </span>
+            </div>
+            
+            <div>
+              <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Accessibility Requirements</p>
+              <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+                {trip.wheelchair_type === 'wheelchair' ? 'Wheelchair Accessible Vehicle Required' : 
+                 trip.accessibility_needs ? trip.accessibility_needs : 'Standard Vehicle'}
+              </p>
+            </div>
+            
+            {trip.distance && (
+              <div>
+                <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Estimated Distance</p>
+                <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.distance} miles</p>
+              </div>
+            )}
+            
+            {trip.additional_passengers && trip.additional_passengers > 0 && (
+              <div>
+                <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Additional Passengers</p>
+                <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.additional_passengers}</p>
+              </div>
+            )}
             
             <div>
               <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Booking Date</p>
               <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{formatDate(trip.created_at)}</p>
             </div>
             
-            <div>
-              <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">From</p>
-              <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.pickup_address}</p>
+            {trip.notes && (
+              <div className="md:col-span-2">
+                <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Special Instructions</p>
+                <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.notes}</p>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Cost Breakdown Section */}
+        <div className="bg-white dark:bg-[#1C2C2F] rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] mb-6">
+          <h3 className="text-lg font-medium mb-4 text-[#2E4F54] dark:text-[#E0F4F5]">Cost Breakdown</h3>
+          
+          <div className="space-y-3">
+            <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
+              <span className="text-sm text-[#2E4F54] dark:text-[#E0F4F5]">Base Fare</span>
+              <span className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+                ${trip.base_price?.toFixed(2) || (trip.price ? (trip.price * 0.8).toFixed(2) : '0.00')}
+              </span>
             </div>
             
-            <div>
-              <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">To</p>
-              <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.destination_address}</p>
-            </div>
-            
-            <div>
-              <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Wheelchair Required</p>
-              <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
-                {trip.wheelchair_type === 'wheelchair' ? 'Yes' : 'No'}
-              </p>
-            </div>
-            
-            <div>
-              <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Round Trip</p>
-              <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
-                {trip.is_round_trip ? 'Yes' : 'No'}
-              </p>
-            </div>
-            
-            {trip.distance && (
-              <div>
-                <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Distance</p>
-                <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.distance} miles</p>
+            {trip.wheelchair_type === 'wheelchair' && (
+              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
+                <span className="text-sm text-[#2E4F54] dark:text-[#E0F4F5]">Wheelchair Accessible Surcharge</span>
+                <span className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+                  ${trip.wheelchair_fee?.toFixed(2) || (trip.price ? (trip.price * 0.1).toFixed(2) : '0.00')}
+                </span>
               </div>
             )}
             
-            <div>
-              <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Price</p>
-              <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">${trip.price?.toFixed(2) || 'N/A'}</p>
+            {trip.additional_passengers && trip.additional_passengers > 0 && (
+              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
+                <span className="text-sm text-[#2E4F54] dark:text-[#E0F4F5]">Additional Passengers ({trip.additional_passengers})</span>
+                <span className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+                  ${trip.passenger_fee?.toFixed(2) || (trip.additional_passengers * 5).toFixed(2)}
+                </span>
+              </div>
+            )}
+            
+            {trip.is_round_trip && (
+              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
+                <span className="text-sm text-[#2E4F54] dark:text-[#E0F4F5]">Round Trip</span>
+                <span className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+                  ${trip.round_trip_fee?.toFixed(2) || (trip.price ? (trip.price * 0.1).toFixed(2) : '0.00')}
+                </span>
+              </div>
+            )}
+            
+            <div className="flex justify-between items-center py-3 bg-[#F8F9FA] dark:bg-[#24393C] rounded-lg px-4 mt-4">
+              <span className="text-lg font-semibold text-[#2E4F54] dark:text-[#E0F4F5]">Total Amount</span>
+              <span className="text-lg font-bold text-[#7CCFD0]">${trip.price?.toFixed(2) || '0.00'}</span>
             </div>
+            
+            {trip.status === 'completed' && (
+              <div className="flex justify-between items-center py-2 text-sm">
+                <span className="text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">Payment Status</span>
+                <span className="font-medium text-green-600 dark:text-green-400">Paid</span>
+              </div>
+            )}
+            
+            {trip.status === 'cancelled' && trip.refund_status && (
+              <div className="flex justify-between items-center py-2 text-sm">
+                <span className="text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">Refund Status</span>
+                <span className="font-medium text-yellow-600 dark:text-yellow-400">{trip.refund_status}</span>
+              </div>
+            )}
           </div>
         </div>
         
@@ -392,6 +664,17 @@ export default function TripDetailsPage() {
         
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-3">
+          {/* Download Trip Details Button */}
+          <button
+            onClick={downloadTripDetails}
+            className="px-4 py-2 bg-[#7CCFD0] hover:bg-[#60BFC0] text-white rounded-md inline-flex items-center"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Download Trip Details
+          </button>
+          
           {(trip.status === 'pending' || trip.status === 'upcoming') && (
             <button
               onClick={() => setCancellingTrip(true)}
