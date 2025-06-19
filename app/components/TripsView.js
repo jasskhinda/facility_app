@@ -311,6 +311,20 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                   </div>
                   
                   <div className="mt-3 space-y-2">
+                    {/* Client Information for facility trips */}
+                    {(trip.user_profile || trip.managed_client) && (
+                      <div>
+                        <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Client</p>
+                        <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+                          {trip.user_profile 
+                            ? `${trip.user_profile.first_name} ${trip.user_profile.last_name}${trip.user_profile.phone_number ? ` • ${trip.user_profile.phone_number}` : ''}`
+                            : trip.managed_client
+                            ? `${trip.managed_client.first_name} ${trip.managed_client.last_name} (Managed)${trip.managed_client.phone_number ? ` • ${trip.managed_client.phone_number}` : ''}`
+                            : 'Unknown Client'
+                          }
+                        </p>
+                      </div>
+                    )}
                     <div>
                       <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">From</p>
                       <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.pickup_address}</p>

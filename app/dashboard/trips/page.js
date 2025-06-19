@@ -61,10 +61,10 @@ export default function TripsPage() {
           const userId = session.user.id;
           console.log('Fetching trips for user:', userId, 'User object:', JSON.stringify(session.user));
           
-          // Get user role from profile to check if it's valid
+          // Get user role and facility_id from profile to determine trip query
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
-            .select('role')
+            .select('role, facility_id')
             .eq('id', userId)
             .single();
             
@@ -72,15 +72,31 @@ export default function TripsPage() {
             console.error('Error fetching user profile:', profileError);
             // Continue anyway - maybe they're a user without a profile yet
           } else {
-            console.log('User role from profile:', profileData?.role);
+            console.log('User role from profile:', profileData?.role, 'Facility ID:', profileData?.facility_id);
           }
           
-          // First fetch trips without driver info
-          const { data: tripsData, error: tripsError } = await supabase
+          // Build trips query based on user role
+          let tripsQuery = supabase
             .from('trips')
-            .select('*')
-            .eq('user_id', userId)
+            .select(`
+              *,
+              user_profile:user_id(first_name, last_name, phone_number),
+              managed_client:managed_client_id(first_name, last_name, phone_number)
+            `)
             .order('created_at', { ascending: false });
+          
+          // For facility users, get trips for their facility
+          // For regular clients, get trips where they are the user
+          if (profileData?.role === 'facility' && profileData?.facility_id) {
+            console.log('🏥 Facility user detected - fetching facility trips for facility:', profileData.facility_id);
+            tripsQuery = tripsQuery.eq('facility_id', profileData.facility_id);
+          } else {
+            console.log('👤 Regular client detected - fetching user trips for user:', userId);
+            tripsQuery = tripsQuery.eq('user_id', userId);
+          }
+          
+          // Execute the query
+          const { data: tripsData, error: tripsError } = await tripsQuery;
           
           // If trips are found and there are driver_ids, fetch driver information
           if (!tripsError && tripsData && tripsData.length > 0) {
