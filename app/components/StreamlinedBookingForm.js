@@ -8,12 +8,12 @@ import DashboardLayout from './DashboardLayout';
 import PricingDisplay from './PricingDisplay';
 
 // Dynamically import Google Maps components to prevent SSR issues
-const DirectMap = dynamic(() => import('./DirectMap'), {
+const SuperSimpleMap = dynamic(() => import('./SuperSimpleMap'), {
   ssr: false,
-  loading: () => <div className="animate-pulse bg-gray-200 h-64 rounded-lg flex items-center justify-center">
+  loading: () => <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center">
     <div className="text-center">
-      <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-      <p className="text-sm text-gray-600">Loading route overview...</p>
+      <div className="animate-spin h-6 w-6 border-2 border-gray-400 border-t-transparent rounded-full mx-auto mb-2"></div>
+      <p className="text-gray-600 text-sm">Loading map...</p>
     </div>
   </div>
 });
@@ -401,7 +401,7 @@ export default function StreamlinedBookingForm({ user }) {
                 <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
                   Route Overview
                 </label>
-                <DirectMap
+                <SuperSimpleMap
                   origin={formData.pickupAddress}
                   destination={formData.destinationAddress}
                   onRouteCalculated={setRouteInfo}
