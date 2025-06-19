@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { waitForGoogleMaps } from '@/lib/google-maps-loader';
 
 export default function SimpleMap({ 
   origin, 
@@ -25,30 +24,36 @@ export default function SimpleMap({
   useEffect(() => {
     if (!mounted) return;
     
-    console.log('SimpleMap: useEffect called');
+    console.log('SimpleMap: Starting initialization');
     
-    const initMap = async () => {
-      try {
-        console.log('Waiting for Google Maps...');
-        await waitForGoogleMaps();
-        
-        if (!mapRef.current) {
-          console.log('Map ref not available');
-          return;
-        }
+    const initializeMap = () => {
+      if (typeof window === 'undefined' || !mapRef.current) {
+        console.log('Window or map ref not available');
+        return;
+      }
 
-        console.log('Creating map...');
+      if (!window.google || !window.google.maps) {
+        console.log('Google Maps API not available');
+        return;
+      }
+
+      try {
+        console.log('Creating map instance...');
         const mapInstance = new window.google.maps.Map(mapRef.current, {
           zoom: 10,
-          center: { lat: 39.9612, lng: -82.9988 } // Columbus, OH
+          center: { lat: 39.9612, lng: -82.9988 }, // Columbus, OH
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
         });
 
         const service = new window.google.maps.DirectionsService();
         const renderer = new window.google.maps.DirectionsRenderer({
           polylineOptions: {
             strokeColor: '#7CCFD0',
-            strokeWeight: 4
-          }
+            strokeWeight: 4,
+            strokeOpacity: 0.8,
+          },
         });
 
         renderer.setMap(mapInstance);
@@ -58,15 +63,88 @@ export default function SimpleMap({
         setDirectionsRenderer(renderer);
         setIsReady(true);
         setError('');
-        console.log('Map ready');
+        console.log('Map initialized successfully');
 
       } catch (err) {
-        console.error('Error setting up map:', err);
+        console.error('Error initializing map:', err);
         setError('Failed to initialize map');
       }
     };
 
-    initMap();
+    const loadGoogleMaps = () => {
+      if (typeof window === 'undefined') {
+        console.log('Window not available (SSR)');
+        return;
+      }
+
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      
+      if (!apiKey) {
+        console.error('Google Maps API key is missing');
+        setError('Google Maps API key is not configured');
+        return;
+      }
+
+      // Check if already loaded
+      if (window.google && window.google.maps) {
+        console.log('Google Maps already loaded');
+        initializeMap();
+        return;
+      }
+
+      // Check if script is already being loaded
+      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+      if (existingScript) {
+        console.log('Google Maps script already exists, waiting for load...');
+        const checkInterval = setInterval(() => {
+          if (window.google && window.google.maps) {
+            clearInterval(checkInterval);
+            initializeMap();
+          }
+        }, 100);
+
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          if (!map) {
+            setError('Timeout waiting for Google Maps to load');
+          }
+        }, 10000);
+        return;
+      }
+
+      console.log('Loading Google Maps script...');
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initGoogleMapsMap`;
+      script.async = true;
+      script.defer = true;
+      
+      // Create a global callback for when the script loads
+      if (typeof window !== 'undefined') {
+        window.initGoogleMapsMap = () => {
+          console.log('Google Maps callback fired for map');
+          setTimeout(initializeMap, 100);
+        };
+      }
+      
+      script.onload = () => {
+        console.log('Google Maps script loaded');
+      };
+      
+      script.onerror = () => {
+        console.error('Failed to load Google Maps script');
+        setError('Failed to load Google Maps');
+      };
+      
+      document.head.appendChild(script);
+    };
+
+    loadGoogleMaps();
+
+    return () => {
+      if (window.initGoogleMapsMap) {
+        delete window.initGoogleMapsMap;
+      }
+    };
   }, [mounted]);
 
   useEffect(() => {

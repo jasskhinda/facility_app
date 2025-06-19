@@ -8,9 +8,14 @@ import DashboardLayout from './DashboardLayout';
 import PricingDisplay from './PricingDisplay';
 
 // Dynamically import Google Maps components to prevent SSR issues
-const SimpleMap = dynamic(() => import('./SimpleMap'), {
+const BulletproofMap = dynamic(() => import('./BulletproofMap'), {
   ssr: false,
-  loading: () => <div className="animate-pulse bg-gray-200 h-64 rounded-lg"></div>
+  loading: () => <div className="animate-pulse bg-gray-200 h-64 rounded-lg flex items-center justify-center">
+    <div className="text-center">
+      <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+      <p className="text-sm text-gray-600">Loading map component...</p>
+    </div>
+  </div>
 });
 
 const SimpleAutocomplete = dynamic(() => import('./SimpleAutocomplete'), {
@@ -396,7 +401,7 @@ export default function StreamlinedBookingForm({ user }) {
                 <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
                   Route Overview
                 </label>
-                <SimpleMap
+                <BulletproofMap
                   origin={formData.pickupAddress}
                   destination={formData.destinationAddress}
                   onRouteCalculated={setRouteInfo}
