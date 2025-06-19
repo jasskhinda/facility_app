@@ -43,27 +43,28 @@ export default function BillingView() {
       if (yearFilter) params.append('year', yearFilter);
       if (monthFilter) params.append('month', monthFilter);
       
-      const response = await fetch(`/api/facility/billing?${params}`);
+      // Fetch trip-based bills instead of formal invoices
+      const response = await fetch(`/api/facility/trips-billing?${params}`);
       if (!response.ok) throw new Error('Failed to fetch billing data');
       
       const data = await response.json();
-      let filteredInvoices = data.invoices || [];
+      let filteredBills = data.bills || [];
       
       // Apply client-side filters
       if (clientFilter) {
-        filteredInvoices = filteredInvoices.filter(inv => inv.user_id === clientFilter);
+        filteredBills = filteredBills.filter(bill => bill.client_id === clientFilter);
       }
       
       if (amountFilter.min) {
-        filteredInvoices = filteredInvoices.filter(inv => parseFloat(inv.total || 0) >= parseFloat(amountFilter.min));
+        filteredBills = filteredBills.filter(bill => parseFloat(bill.total || 0) >= parseFloat(amountFilter.min));
       }
       
       if (amountFilter.max) {
-        filteredInvoices = filteredInvoices.filter(inv => parseFloat(inv.total || 0) <= parseFloat(amountFilter.max));
+        filteredBills = filteredBills.filter(bill => parseFloat(bill.total || 0) <= parseFloat(amountFilter.max));
       }
       
       // Apply sorting
-      filteredInvoices.sort((a, b) => {
+      filteredBills.sort((a, b) => {
         let aValue, bValue;
         switch (sortBy) {
           case 'amount':
@@ -71,8 +72,8 @@ export default function BillingView() {
             bValue = parseFloat(b.total || 0);
             break;
           case 'client':
-            aValue = `${a.profiles?.first_name} ${a.profiles?.last_name}`;
-            bValue = `${b.profiles?.first_name} ${b.profiles?.last_name}`;
+            aValue = a.client_name;
+            bValue = b.client_name;
             break;
           case 'status':
             aValue = a.status;
@@ -90,7 +91,7 @@ export default function BillingView() {
         }
       });
       
-      setInvoices(filteredInvoices);
+      setInvoices(filteredBills);
       setSummary(data.summary);
       
       // Fetch all clients for filter dropdown
@@ -231,27 +232,27 @@ export default function BillingView() {
           <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
             <div className="flex items-center">
               <div className="flex-1">
-                <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Total Billed</h3>
+                <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Total Trip Revenue</h3>
                 <p className="text-2xl font-bold text-[#3B5B63] dark:text-white mt-2">
                   {formatCurrency(summary.total_amount)}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {summary.total_invoices} total bills
+                  {summary.total_bills} total trips
                 </p>
               </div>
-              <div className="text-4xl opacity-30">💰</div>
+              <div className="text-4xl opacity-30">🚌</div>
             </div>
           </div>
           
           <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
             <div className="flex items-center">
               <div className="flex-1">
-                <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Paid</h3>
+                <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Completed Trips</h3>
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-2">
                   {formatCurrency(summary.paid_amount)}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {Math.round((summary.paid_amount / summary.total_amount) * 100) || 0}% of total
+                  {summary.completed_trips} trips completed
                 </p>
               </div>
               <div className="text-4xl opacity-30">✅</div>
@@ -261,12 +262,12 @@ export default function BillingView() {
           <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
             <div className="flex items-center">
               <div className="flex-1">
-                <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Outstanding</h3>
+                <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Pending Trips</h3>
                 <p className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-2">
                   {formatCurrency(summary.outstanding_amount)}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Pending payment
+                  {summary.pending_trips} trips pending
                 </p>
               </div>
               <div className="text-4xl opacity-30">⏳</div>
@@ -276,15 +277,15 @@ export default function BillingView() {
           <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
             <div className="flex items-center">
               <div className="flex-1">
-                <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Overdue</h3>
+                <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Cancelled</h3>
                 <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-2">
-                  {summary.overdue_count}
+                  {summary.cancelled_trips}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Requires attention
+                  Cancelled trips
                 </p>
               </div>
-              <div className="text-4xl opacity-30">⚠️</div>
+              <div className="text-4xl opacity-30">❌</div>
             </div>
           </div>
         </div>
@@ -456,25 +457,25 @@ export default function BillingView() {
                       Showing {invoices.length} bills • Total: {formatCurrency(invoices.reduce((sum, inv) => sum + parseFloat(inv.total || 0), 0))}
                     </div>
                     
-                    {invoices.map((invoice) => (
-                      <div key={invoice.id} className="bg-[#F8F9FA] dark:bg-[#2A3A3D] rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63] overflow-hidden">
+                    {invoices.map((bill) => (
+                      <div key={bill.id} className="bg-[#F8F9FA] dark:bg-[#2A3A3D] rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63] overflow-hidden">
                         {/* Bill Header */}
                         <div className="p-6">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4">
                               {/* Status Badge */}
-                              <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(invoice.status)}`}>
-                                <span>{getStatusIcon(invoice.status)}</span>
-                                <span>{invoice.status.toUpperCase()}</span>
+                              <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(bill.status)}`}>
+                                <span>{getStatusIcon(bill.status)}</span>
+                                <span>{bill.status.toUpperCase()}</span>
                               </div>
                               
-                              {/* Invoice Info */}
+                              {/* Bill Info */}
                               <div>
                                 <h3 className="text-lg font-semibold text-[#3B5B63] dark:text-white">
-                                  Invoice #{invoice.invoice_number}
+                                  Trip #{bill.bill_number}
                                 </h3>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  {invoice.profiles?.first_name} {invoice.profiles?.last_name}
+                                  {bill.client_name}
                                 </p>
                               </div>
                             </div>
@@ -483,26 +484,26 @@ export default function BillingView() {
                             <div className="flex items-center space-x-4">
                               <div className="text-right">
                                 <p className="text-2xl font-bold text-[#3B5B63] dark:text-white">
-                                  {formatCurrency(invoice.total)}
+                                  {formatCurrency(bill.total)}
                                 </p>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                                  Due: {formatDate(invoice.due_date)}
+                                  {bill.trip_date ? formatDate(bill.trip_date) : 'No date'}
                                 </p>
                               </div>
                               
                               <div className="flex items-center space-x-2">
                                 <button
-                                  onClick={() => setExpandedInvoice(expandedInvoice === invoice.id ? null : invoice.id)}
+                                  onClick={() => setExpandedInvoice(expandedInvoice === bill.id ? null : bill.id)}
                                   className="p-2 text-gray-500 dark:text-gray-400 hover:text-[#3B5B63] dark:hover:text-[#84CED3] transition-colors"
                                 >
-                                  {expandedInvoice === invoice.id ? '▼' : '▶'}
+                                  {expandedInvoice === bill.id ? '▼' : '▶'}
                                 </button>
                                 
                                 <Link
-                                  href={`/dashboard/billing/${invoice.id}`}
+                                  href={`/dashboard/trips/${bill.trip_id}`}
                                   className="bg-[#7CCFD0] text-white px-3 py-1 rounded text-sm hover:bg-[#60BFC0] transition-colors"
                                 >
-                                  View Details
+                                  View Trip
                                 </Link>
                               </div>
                             </div>
@@ -511,80 +512,98 @@ export default function BillingView() {
                           {/* Quick Info Row */}
                           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                             <div>
-                              <span className="text-gray-500 dark:text-gray-400">Created:</span>
-                              <span className="ml-2 text-[#3B5B63] dark:text-white">{formatDate(invoice.created_at)}</span>
+                              <span className="text-gray-500 dark:text-gray-400">Date:</span>
+                              <span className="ml-2 text-[#3B5B63] dark:text-white">{formatDate(bill.created_at)}</span>
                             </div>
                             <div>
-                              <span className="text-gray-500 dark:text-gray-400">Trip:</span>
+                              <span className="text-gray-500 dark:text-gray-400">Route:</span>
                               <span className="ml-2 text-[#3B5B63] dark:text-white">
-                                {invoice.trips ? 
-                                  `${invoice.trips.pickup_address.substring(0, 25)}...` : 
-                                  'No trip details'
+                                {bill.pickup_address ? 
+                                  `${bill.pickup_address.substring(0, 25)}...` : 
+                                  'No pickup address'
                                 }
                               </span>
                             </div>
                             <div>
-                              <span className="text-gray-500 dark:text-gray-400">Trip Date:</span>
+                              <span className="text-gray-500 dark:text-gray-400">Trip Type:</span>
                               <span className="ml-2 text-[#3B5B63] dark:text-white">
-                                {invoice.trips?.pickup_time ? formatDateTime(invoice.trips.pickup_time) : 'N/A'}
+                                {bill.is_round_trip ? 'Round Trip' : 'One Way'}
+                                {bill.wheelchair_accessible && ' • Wheelchair'}
                               </span>
                             </div>
                           </div>
                         </div>
                         
                         {/* Expanded Details */}
-                        {expandedInvoice === invoice.id && (
+                        {expandedInvoice === bill.id && (
                           <div className="border-t border-[#DDE5E7] dark:border-[#3F5E63] bg-white dark:bg-[#1E1E1E] p-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               {/* Trip Details */}
                               <div>
                                 <h4 className="font-semibold text-[#3B5B63] dark:text-[#84CED3] mb-3">Trip Information</h4>
-                                {invoice.trips ? (
-                                  <div className="space-y-2 text-sm">
-                                    <div>
-                                      <span className="text-gray-500 dark:text-gray-400">Pickup:</span>
-                                      <p className="text-[#3B5B63] dark:text-white">{invoice.trips.pickup_address}</p>
-                                    </div>
-                                    <div>
-                                      <span className="text-gray-500 dark:text-gray-400">Destination:</span>
-                                      <p className="text-[#3B5B63] dark:text-white">{invoice.trips.destination_address}</p>
-                                    </div>
-                                    <div>
-                                      <span className="text-gray-500 dark:text-gray-400">Scheduled Time:</span>
-                                      <p className="text-[#3B5B63] dark:text-white">{formatDateTime(invoice.trips.pickup_time)}</p>
-                                    </div>
+                                <div className="space-y-2 text-sm">
+                                  <div>
+                                    <span className="text-gray-500 dark:text-gray-400">Pickup:</span>
+                                    <p className="text-[#3B5B63] dark:text-white">{bill.pickup_address}</p>
                                   </div>
-                                ) : (
-                                  <p className="text-gray-500 dark:text-gray-400 text-sm">No trip details available</p>
-                                )}
+                                  <div>
+                                    <span className="text-gray-500 dark:text-gray-400">Destination:</span>
+                                    <p className="text-[#3B5B63] dark:text-white">{bill.destination_address}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500 dark:text-gray-400">Scheduled Time:</span>
+                                    <p className="text-[#3B5B63] dark:text-white">{formatDateTime(bill.pickup_time)}</p>
+                                  </div>
+                                  {bill.distance && (
+                                    <div>
+                                      <span className="text-gray-500 dark:text-gray-400">Distance:</span>
+                                      <p className="text-[#3B5B63] dark:text-white">{bill.distance} miles</p>
+                                    </div>
+                                  )}
+                                  {bill.additional_passengers > 0 && (
+                                    <div>
+                                      <span className="text-gray-500 dark:text-gray-400">Additional Passengers:</span>
+                                      <p className="text-[#3B5B63] dark:text-white">{bill.additional_passengers}</p>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                               
-                              {/* Billing Details */}
+                              {/* Cost Breakdown */}
                               <div>
-                                <h4 className="font-semibold text-[#3B5B63] dark:text-[#84CED3] mb-3">Billing Details</h4>
+                                <h4 className="font-semibold text-[#3B5B63] dark:text-[#84CED3] mb-3">Trip Cost Details</h4>
                                 <div className="space-y-2 text-sm">
                                   <div className="flex justify-between">
-                                    <span className="text-gray-500 dark:text-gray-400">Subtotal:</span>
-                                    <span className="text-[#3B5B63] dark:text-white">{formatCurrency(invoice.amount)}</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-500 dark:text-gray-400">Tax/Fees:</span>
+                                    <span className="text-gray-500 dark:text-gray-400">Trip Type:</span>
                                     <span className="text-[#3B5B63] dark:text-white">
-                                      {formatCurrency((invoice.total - invoice.amount) || 0)}
+                                      {bill.is_round_trip ? 'Round Trip' : 'One Way'}
                                     </span>
                                   </div>
+                                  {bill.wheelchair_accessible && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-500 dark:text-gray-400">Wheelchair Accessible:</span>
+                                      <span className="text-[#3B5B63] dark:text-white">Yes</span>
+                                    </div>
+                                  )}
+                                  {bill.additional_passengers > 0 && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-500 dark:text-gray-400">Extra Passengers:</span>
+                                      <span className="text-[#3B5B63] dark:text-white">{bill.additional_passengers}</span>
+                                    </div>
+                                  )}
                                   <div className="flex justify-between font-semibold border-t border-gray-200 dark:border-gray-600 pt-2">
-                                    <span className="text-[#3B5B63] dark:text-white">Total:</span>
-                                    <span className="text-[#3B5B63] dark:text-white">{formatCurrency(invoice.total)}</span>
+                                    <span className="text-[#3B5B63] dark:text-white">Total Cost:</span>
+                                    <span className="text-[#3B5B63] dark:text-white">{formatCurrency(bill.total)}</span>
                                   </div>
                                   <div className="flex justify-between mt-3 pt-2 border-t border-gray-200 dark:border-gray-600">
                                     <span className="text-gray-500 dark:text-gray-400">Payment Status:</span>
                                     <span className={`font-medium ${
-                                      invoice.status === 'paid' ? 'text-green-600 dark:text-green-400' :
-                                      invoice.status === 'overdue' ? 'text-red-600 dark:text-red-400' :
+                                      bill.status === 'paid' ? 'text-green-600 dark:text-green-400' :
+                                      bill.status === 'cancelled' ? 'text-red-600 dark:text-red-400' :
                                       'text-orange-600 dark:text-orange-400'
                                     }`}>
-                                      {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                                      {bill.status === 'paid' ? 'Completed & Paid' : 
+                                       bill.status === 'cancelled' ? 'Cancelled' : 'Pending Completion'}
                                     </span>
                                   </div>
                                 </div>
