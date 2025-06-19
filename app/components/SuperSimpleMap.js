@@ -37,13 +37,30 @@ export default function SuperSimpleMap({
     const initMapWithRetry = (retryCount = 0) => {
       console.log('SuperSimpleMap: Attempting to initialize map (attempt', retryCount + 1, ')');
       
-      // Check if component is mounted and map container is ready
+      // First check if Google Maps API is available
+      if (!window.google || !window.google.maps) {
+        console.log('SuperSimpleMap: Google Maps API not ready, will retry...');
+        
+        if (retryCount < 30) { // Wait up to 15 seconds for Google Maps API
+          const delay = 500; // Check every 500ms
+          setTimeout(() => {
+            initMapWithRetry(retryCount + 1);
+          }, delay);
+        } else {
+          console.error('SuperSimpleMap: Google Maps API failed to load after', retryCount + 1, 'attempts');
+          setError('Google Maps API failed to load. Please refresh the page and try again.');
+          setIsLoading(false);
+        }
+        return;
+      }
+      
+      // Then check if component is mounted and map container is ready
       if (!isMounted || !mapRef.current) {
         console.log('SuperSimpleMap: Map container not ready, will retry...');
         
-        // Retry up to 15 times with progressive delays
-        if (retryCount < 15) {
-          const delay = Math.min(100 * (retryCount + 1), 1000); // Progressive delay up to 1000ms
+        // Retry up to 10 times with shorter delays for DOM readiness
+        if (retryCount < 40) { // Total 20 second timeout
+          const delay = 100; // Check every 100ms for DOM readiness
           setTimeout(() => {
             initMapWithRetry(retryCount + 1);
           }, delay);
@@ -55,7 +72,7 @@ export default function SuperSimpleMap({
         return;
       }
 
-      console.log('SuperSimpleMap: Map container ready, proceeding with initialization');
+      console.log('SuperSimpleMap: Both Google Maps API and container ready, proceeding with initialization');
 
       try {
         // Create the map
@@ -134,54 +151,8 @@ export default function SuperSimpleMap({
       }
     };
 
-    // Enhanced Google Maps loading with better error handling
-    if (typeof window === 'undefined') {
-      setError('Window not available');
-      setIsLoading(false);
-      return;
-    }
-
-    // Check if Google Maps is already available
-    if (window.google && window.google.maps) {
-      console.log('SuperSimpleMap: Google Maps already available');
-      // Small delay to ensure DOM is ready
-      setTimeout(() => {
-        initMapWithRetry();
-      }, 50);
-      return;
-    }
-
-    console.log('SuperSimpleMap: Waiting for Google Maps to load...');
-    
-    // Simple polling for Google Maps availability
-    let attempts = 0;
-    const maxAttempts = 100; // 10 seconds with 100ms intervals
-    
-    const checkForGoogleMaps = setInterval(() => {
-      attempts++;
-      
-      if (window.google && window.google.maps) {
-        console.log('SuperSimpleMap: Google Maps loaded after', attempts, 'attempts');
-        clearInterval(checkForGoogleMaps);
-        // Small delay to ensure DOM is ready
-        setTimeout(() => {
-          initMapWithRetry();
-        }, 50);
-        return;
-      }
-      
-      if (attempts >= maxAttempts) {
-        console.error('SuperSimpleMap: Timeout waiting for Google Maps');
-        clearInterval(checkForGoogleMaps);
-        setError('Google Maps failed to load. Please refresh the page.');
-        setIsLoading(false);
-      }
-    }, 100);
-
-    // Cleanup function
-    return () => {
-      clearInterval(checkForGoogleMaps);
-    };
+    // Start initialization process
+    initMapWithRetry();
 
   }, [origin, destination, onRouteCalculated, isMounted]);
 
