@@ -75,14 +75,10 @@ export default function TripsPage() {
             console.log('User role from profile:', profileData?.role, 'Facility ID:', profileData?.facility_id);
           }
           
-          // Build trips query based on user role
+          // Build trips query based on user role (without foreign key joins due to schema issues)
           let tripsQuery = supabase
             .from('trips')
-            .select(`
-              *,
-              user_profile:user_id(first_name, last_name, phone_number),
-              managed_client:managed_client_id(first_name, last_name, phone_number)
-            `)
+            .select('*')
             .order('created_at', { ascending: false });
           
           // For facility users, get trips for their facility
@@ -98,9 +94,54 @@ export default function TripsPage() {
           // Execute the query
           const { data: tripsData, error: tripsError } = await tripsQuery;
           
-          // If trips are found and there are driver_ids, fetch driver information
+          // If trips are found, fetch client information separately
+          let tripsWithClientInfo = [];
           if (!tripsError && tripsData && tripsData.length > 0) {
-            const tripsWithDriverIds = tripsData.filter(trip => trip.driver_id);
+            console.log('📝 Fetching client information for trips...');
+            
+            // Get unique user IDs and managed client IDs
+            const userIds = [...new Set(tripsData.filter(trip => trip.user_id).map(trip => trip.user_id))];
+            const managedClientIds = [...new Set(tripsData.filter(trip => trip.managed_client_id).map(trip => trip.managed_client_id))];
+            
+            // Fetch user profiles
+            let userProfiles = [];
+            if (userIds.length > 0) {
+              const { data: profiles, error: profilesError } = await supabase
+                .from('profiles')
+                .select('id, first_name, last_name, phone_number')
+                .in('id', userIds);
+              
+              if (!profilesError) {
+                userProfiles = profiles || [];
+              }
+            }
+            
+            // Fetch managed clients
+            let managedClients = [];
+            if (managedClientIds.length > 0) {
+              const { data: managed, error: managedError } = await supabase
+                .from('managed_clients')
+                .select('id, first_name, last_name, phone_number')
+                .in('id', managedClientIds);
+              
+              if (!managedError) {
+                managedClients = managed || [];
+              }
+            }
+            
+            // Combine trip data with client information
+            tripsWithClientInfo = tripsData.map(trip => ({
+              ...trip,
+              user_profile: trip.user_id ? userProfiles.find(profile => profile.id === trip.user_id) : null,
+              managed_client: trip.managed_client_id ? managedClients.find(client => client.id === trip.managed_client_id) : null
+            }));
+          } else {
+            tripsWithClientInfo = tripsData || [];
+          }
+          
+          // If trips are found and there are driver_ids, fetch driver information
+          if (!tripsError && tripsWithClientInfo && tripsWithClientInfo.length > 0) {
+            const tripsWithDriverIds = tripsWithClientInfo.filter(trip => trip.driver_id);
             
             if (tripsWithDriverIds.length > 0) {
               // Get all unique driver IDs
@@ -114,7 +155,7 @@ export default function TripsPage() {
                 
               if (!driversError && driverProfiles) {
                 // Map driver info to each trip
-                const enrichedTrips = tripsData.map(trip => {
+                const enrichedTrips = tripsWithClientInfo.map(trip => {
                   if (trip.driver_id) {
                     const driverProfile = driverProfiles.find(profile => profile.id === trip.driver_id);
                     return {
@@ -129,18 +170,20 @@ export default function TripsPage() {
                 setTrips(enrichedTrips || []);
               } else {
                 console.error('Error fetching driver profiles:', driversError);
-                setTrips(tripsData || []);
+                setTrips(tripsWithClientInfo || []);
               }
             } else {
-              setTrips(tripsData || []);
+              setTrips(tripsWithClientInfo || []);
             }
+          } else {
+            setTrips(tripsWithClientInfo || []);
           }
 
           if (tripsError) {
             console.error('Error fetching trips:', tripsError);
             console.error('Error details:', JSON.stringify(tripsError));
             setError(tripsError.message || 'An error occurred while fetching your trips');
-          } else if (!tripsData || tripsData.length === 0) {
+          } else if (!tripsWithClientInfo || tripsWithClientInfo.length === 0) {
             console.log('No trips found for this user');
             setTrips([]);
           }
