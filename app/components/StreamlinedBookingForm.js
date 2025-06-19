@@ -186,11 +186,11 @@ export default function StreamlinedBookingForm({ user }) {
         // Add pricing information if available
         price: currentPricing?.pricing?.total || null,
         is_round_trip: formData.isRoundTrip,
-        distance: routeInfo?.distance || currentPricing?.distance?.distance || null,
+        distance: routeInfo?.distance?.miles || currentPricing?.distance?.distance || null,
         // Add route information from map if available
-        route_duration: routeInfo?.duration || null,
-        route_distance_text: routeInfo?.distanceText || null,
-        route_duration_text: routeInfo?.durationText || null
+        route_duration: routeInfo?.duration?.text || null,
+        route_distance_text: routeInfo?.distance?.text || null,
+        route_duration_text: routeInfo?.duration?.text || null
       };
       
       // Set the appropriate client reference based on client type
