@@ -28,15 +28,28 @@ export default function SuperSimpleMap({
     setError('');
     setRouteInfo(null);
 
-    const initMap = () => {
-      console.log('SuperSimpleMap: Initializing map');
+    const initMapWithRetry = (retryCount = 0) => {
+      console.log('SuperSimpleMap: Attempting to initialize map (attempt', retryCount + 1, ')');
       
+      // Check if map container is ready
       if (!mapRef.current) {
-        console.log('SuperSimpleMap: Map container not ready');
-        setError('Map container not ready');
-        setIsLoading(false);
+        console.log('SuperSimpleMap: Map container not ready, will retry...');
+        
+        // Retry up to 10 times with increasing delays
+        if (retryCount < 10) {
+          const delay = Math.min(100 * (retryCount + 1), 500); // Progressive delay up to 500ms
+          setTimeout(() => {
+            initMapWithRetry(retryCount + 1);
+          }, delay);
+        } else {
+          console.error('SuperSimpleMap: Map container still not ready after', retryCount + 1, 'attempts');
+          setError('Map container failed to initialize after multiple attempts. Please refresh the page.');
+          setIsLoading(false);
+        }
         return;
       }
+
+      console.log('SuperSimpleMap: Map container ready, proceeding with initialization');
 
       try {
         // Create the map
@@ -125,23 +138,16 @@ export default function SuperSimpleMap({
     // Check if Google Maps is already available
     if (window.google && window.google.maps) {
       console.log('SuperSimpleMap: Google Maps already available');
-      initMap();
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        initMapWithRetry();
+      }, 50);
       return;
     }
 
     console.log('SuperSimpleMap: Waiting for Google Maps to load...');
     
-    // Listen for global Google Maps ready event
-    const handleGoogleMapsReady = () => {
-      console.log('SuperSimpleMap: Received global Google Maps ready event');
-      if (window.google && window.google.maps) {
-        initMap();
-      }
-    };
-
-    window.addEventListener('googleMapsReady', handleGoogleMapsReady);
-    
-    // Fallback: Poll for Google Maps availability
+    // Simple polling for Google Maps availability
     let attempts = 0;
     const maxAttempts = 100; // 10 seconds with 100ms intervals
     
@@ -151,15 +157,16 @@ export default function SuperSimpleMap({
       if (window.google && window.google.maps) {
         console.log('SuperSimpleMap: Google Maps loaded after', attempts, 'attempts');
         clearInterval(checkForGoogleMaps);
-        window.removeEventListener('googleMapsReady', handleGoogleMapsReady);
-        initMap();
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+          initMapWithRetry();
+        }, 50);
         return;
       }
       
       if (attempts >= maxAttempts) {
         console.error('SuperSimpleMap: Timeout waiting for Google Maps');
         clearInterval(checkForGoogleMaps);
-        window.removeEventListener('googleMapsReady', handleGoogleMapsReady);
         setError('Google Maps failed to load. Please refresh the page.');
         setIsLoading(false);
       }
@@ -168,7 +175,6 @@ export default function SuperSimpleMap({
     // Cleanup function
     return () => {
       clearInterval(checkForGoogleMaps);
-      window.removeEventListener('googleMapsReady', handleGoogleMapsReady);
     };
 
   }, [origin, destination, onRouteCalculated]);
@@ -183,13 +189,35 @@ export default function SuperSimpleMap({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-red-600 text-sm font-medium">{error}</p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="mt-2 px-3 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200 transition-colors"
-            >
-              Reload Page
-            </button>
+            <p className="text-red-600 text-sm font-medium mb-3">{error}</p>
+            <div className="space-y-2">
+              <button 
+                onClick={() => {
+                  setError('');
+                  setIsLoading(true);
+                  // Force re-initialization
+                  setTimeout(() => {
+                    if (origin && destination) {
+                      console.log('SuperSimpleMap: Manual retry triggered');
+                      // Trigger useEffect by clearing and setting addresses
+                      const currentOrigin = origin;
+                      const currentDestination = destination;
+                      // This will trigger the useEffect again
+                      window.location.reload();
+                    }
+                  }, 100);
+                }}
+                className="px-4 py-2 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors block mx-auto"
+              >
+                Try Again
+              </button>
+              <button 
+                onClick={() => window.location.reload()}
+                className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors block mx-auto"
+              >
+                Reload Page
+              </button>
+            </div>
           </div>
         </div>
       </div>
