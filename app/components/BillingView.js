@@ -10,25 +10,30 @@ export default function BillingView() {
   const [allClients, setAllClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('invoices');
+  const [activeTab, setActiveTab] = useState('all-bills');
+  const [sortBy, setSortBy] = useState('date');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [expandedInvoice, setExpandedInvoice] = useState(null);
   
-  // Filters
+  // Enhanced Filters
   const [statusFilter, setStatusFilter] = useState('');
   const [yearFilter, setYearFilter] = useState(new Date().getFullYear());
+  const [monthFilter, setMonthFilter] = useState('');
   const [clientFilter, setClientFilter] = useState('');
+  const [amountFilter, setAmountFilter] = useState({ min: '', max: '' });
   const [dateRange, setDateRange] = useState({
     start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
   });
 
   useEffect(() => {
-    if (activeTab === 'invoices') {
+    if (activeTab === 'all-bills' || activeTab === 'invoices') {
       fetchInvoices();
     } else {
       fetchClientSummary();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, statusFilter, yearFilter, clientFilter, dateRange]);
+  }, [activeTab, statusFilter, yearFilter, monthFilter, clientFilter, dateRange, amountFilter]);
 
   const fetchInvoices = async () => {
     try {
@@ -36,13 +41,64 @@ export default function BillingView() {
       const params = new URLSearchParams();
       if (statusFilter) params.append('status', statusFilter);
       if (yearFilter) params.append('year', yearFilter);
+      if (monthFilter) params.append('month', monthFilter);
       
       const response = await fetch(`/api/facility/billing?${params}`);
       if (!response.ok) throw new Error('Failed to fetch billing data');
       
       const data = await response.json();
-      setInvoices(data.invoices || []);
+      let filteredInvoices = data.invoices || [];
+      
+      // Apply client-side filters
+      if (clientFilter) {
+        filteredInvoices = filteredInvoices.filter(inv => inv.user_id === clientFilter);
+      }
+      
+      if (amountFilter.min) {
+        filteredInvoices = filteredInvoices.filter(inv => parseFloat(inv.total || 0) >= parseFloat(amountFilter.min));
+      }
+      
+      if (amountFilter.max) {
+        filteredInvoices = filteredInvoices.filter(inv => parseFloat(inv.total || 0) <= parseFloat(amountFilter.max));
+      }
+      
+      // Apply sorting
+      filteredInvoices.sort((a, b) => {
+        let aValue, bValue;
+        switch (sortBy) {
+          case 'amount':
+            aValue = parseFloat(a.total || 0);
+            bValue = parseFloat(b.total || 0);
+            break;
+          case 'client':
+            aValue = `${a.profiles?.first_name} ${a.profiles?.last_name}`;
+            bValue = `${b.profiles?.first_name} ${b.profiles?.last_name}`;
+            break;
+          case 'status':
+            aValue = a.status;
+            bValue = b.status;
+            break;
+          default:
+            aValue = new Date(a.created_at);
+            bValue = new Date(b.created_at);
+        }
+        
+        if (sortOrder === 'asc') {
+          return aValue > bValue ? 1 : -1;
+        } else {
+          return aValue < bValue ? 1 : -1;
+        }
+      });
+      
+      setInvoices(filteredInvoices);
       setSummary(data.summary);
+      
+      // Fetch all clients for filter dropdown
+      const clientsResponse = await fetch('/api/facility/billing/client-summary');
+      if (clientsResponse.ok) {
+        const clientsData = await clientsResponse.json();
+        setAllClients(clientsData.allClients || []);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -87,6 +143,16 @@ export default function BillingView() {
     });
   };
 
+  const formatDateTime = (date) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const getStatusColor = (status) => {
     const colors = {
       pending: 'bg-[#84CED3]/20 dark:bg-[#84CED3]/10 text-[#3B5B63] dark:text-[#84CED3]',
@@ -96,6 +162,57 @@ export default function BillingView() {
       refunded: 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400'
     };
     return colors[status] || 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300';
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'paid':
+        return '✓';
+      case 'pending':
+        return '⏳';
+      case 'overdue':
+        return '⚠️';
+      case 'cancelled':
+        return '✕';
+      case 'refunded':
+        return '↩️';
+      default:
+        return '•';
+    }
+  };
+
+  const calculateTripDuration = (pickupTime) => {
+    if (!pickupTime) return 'N/A';
+    const pickup = new Date(pickupTime);
+    const now = new Date();
+    const duration = Math.abs(now - pickup);
+    const hours = Math.floor(duration / (1000 * 60 * 60));
+    return hours > 24 ? `${Math.floor(hours / 24)}d ${hours % 24}h` : `${hours}h`;
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Invoice #', 'Client', 'Trip Details', 'Amount', 'Status', 'Date', 'Due Date'];
+    const csvData = invoices.map(invoice => [
+      invoice.invoice_number,
+      `${invoice.profiles?.first_name} ${invoice.profiles?.last_name}`,
+      invoice.trips ? `${invoice.trips.pickup_address} → ${invoice.trips.destination_address}` : 'N/A',
+      invoice.total,
+      invoice.status,
+      formatDate(invoice.created_at),
+      formatDate(invoice.due_date)
+    ]);
+
+    const csvContent = [headers, ...csvData]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `facility-billing-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   if (loading) {
@@ -108,32 +225,85 @@ export default function BillingView() {
 
   return (
     <div className="space-y-6">
-      {/* Header with summary */}
+      {/* Enhanced Header with summary */}
       {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-[#F5F7F8] dark:bg-[#1E1E1E] p-6 rounded-lg">
-            <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Total Billed</h3>
-            <p className="text-2xl font-bold text-[#3B5B63] dark:text-white mt-2">{formatCurrency(summary.total_amount)}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
+            <div className="flex items-center">
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Total Billed</h3>
+                <p className="text-2xl font-bold text-[#3B5B63] dark:text-white mt-2">
+                  {formatCurrency(summary.total_amount)}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {summary.total_invoices} total bills
+                </p>
+              </div>
+              <div className="text-4xl opacity-30">💰</div>
+            </div>
           </div>
-          <div className="bg-[#F5F7F8] dark:bg-[#1E1E1E] p-6 rounded-lg">
-            <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Paid</h3>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-2">{formatCurrency(summary.paid_amount)}</p>
+          
+          <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
+            <div className="flex items-center">
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Paid</h3>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-2">
+                  {formatCurrency(summary.paid_amount)}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {Math.round((summary.paid_amount / summary.total_amount) * 100) || 0}% of total
+                </p>
+              </div>
+              <div className="text-4xl opacity-30">✅</div>
+            </div>
           </div>
-          <div className="bg-[#F5F7F8] dark:bg-[#1E1E1E] p-6 rounded-lg">
-            <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Outstanding</h3>
-            <p className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-2">{formatCurrency(summary.outstanding_amount)}</p>
+          
+          <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
+            <div className="flex items-center">
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Outstanding</h3>
+                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-2">
+                  {formatCurrency(summary.outstanding_amount)}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Pending payment
+                </p>
+              </div>
+              <div className="text-4xl opacity-30">⏳</div>
+            </div>
           </div>
-          <div className="bg-[#F5F7F8] dark:bg-[#1E1E1E] p-6 rounded-lg">
-            <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Overdue</h3>
-            <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-2">{summary.overdue_count} invoices</p>
+          
+          <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
+            <div className="flex items-center">
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Overdue</h3>
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-2">
+                  {summary.overdue_count}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Requires attention
+                </p>
+              </div>
+              <div className="text-4xl opacity-30">⚠️</div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="bg-white dark:bg-[#1E1E1E] rounded-lg shadow-sm">
+      {/* Enhanced Tabs */}
+      <div className="bg-white dark:bg-[#1E1E1E] rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
         <div className="border-b border-gray-200 dark:border-gray-700">
           <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+            <button
+              onClick={() => setActiveTab('all-bills')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'all-bills'
+                  ? 'border-[#84CED3] text-[#3B5B63] dark:text-[#84CED3]'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-[#3B5B63] dark:hover:text-[#84CED3] hover:border-gray-300 dark:hover:border-gray-600'
+              }`}
+            >
+              📋 All Bills
+            </button>
             <button
               onClick={() => setActiveTab('invoices')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
@@ -142,7 +312,7 @@ export default function BillingView() {
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-[#3B5B63] dark:hover:text-[#84CED3] hover:border-gray-300 dark:hover:border-gray-600'
               }`}
             >
-              Monthly Invoices
+              📄 Monthly Invoices
             </button>
             <button
               onClick={() => setActiveTab('clients')}
@@ -152,14 +322,289 @@ export default function BillingView() {
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-[#3B5B63] dark:hover:text-[#84CED3] hover:border-gray-300 dark:hover:border-gray-600'
               }`}
             >
-              Client Breakdown
+              👥 Client Breakdown
             </button>
           </nav>
         </div>
 
         {/* Content */}
         <div className="p-6">
-          {activeTab === 'invoices' ? (
+          {activeTab === 'all-bills' ? (
+            <>
+              {/* Enhanced Filters and Controls */}
+              <div className="mb-6 space-y-4">
+                <div className="flex flex-wrap justify-between items-center gap-4">
+                  <div className="flex flex-wrap gap-4">
+                    {/* Status Filter */}
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
+                    >
+                      <option value="">All Statuses</option>
+                      <option value="pending">⏳ Pending</option>
+                      <option value="paid">✅ Paid</option>
+                      <option value="overdue">⚠️ Overdue</option>
+                      <option value="cancelled">✕ Cancelled</option>
+                      <option value="refunded">↩️ Refunded</option>
+                    </select>
+
+                    {/* Client Filter */}
+                    <select
+                      value={clientFilter}
+                      onChange={(e) => setClientFilter(e.target.value)}
+                      className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
+                    >
+                      <option value="">All Clients</option>
+                      {allClients.map(client => (
+                        <option key={client.id} value={client.id}>
+                          {client.first_name} {client.last_name}
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* Year Filter */}
+                    <select
+                      value={yearFilter}
+                      onChange={(e) => setYearFilter(e.target.value)}
+                      className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
+                    >
+                      {[2024, 2025, 2026].map(year => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+
+                    {/* Month Filter */}
+                    <select
+                      value={monthFilter}
+                      onChange={(e) => setMonthFilter(e.target.value)}
+                      className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
+                    >
+                      <option value="">All Months</option>
+                      {Array.from({ length: 12 }, (_, i) => {
+                        const month = new Date(0, i).toLocaleString('en', { month: 'long' });
+                        return (
+                          <option key={i + 1} value={i + 1}>{month}</option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  {/* Sort and Export Controls */}
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-gray-600 dark:text-gray-400">Sort by:</label>
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3] text-sm"
+                      >
+                        <option value="date">Date</option>
+                        <option value="amount">Amount</option>
+                        <option value="client">Client</option>
+                        <option value="status">Status</option>
+                      </select>
+                      <button
+                        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-[#3B5B63] dark:hover:text-[#84CED3] transition-colors"
+                      >
+                        {sortOrder === 'asc' ? '↑' : '↓'}
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={exportToCSV}
+                      className="bg-[#7CCFD0] text-white px-4 py-2 rounded-md hover:bg-[#60BFC0] transition-colors text-sm font-medium"
+                    >
+                      📊 Export CSV
+                    </button>
+                  </div>
+                </div>
+
+                {/* Amount Range Filter */}
+                <div className="flex items-center gap-4">
+                  <label className="text-sm text-gray-600 dark:text-gray-400">Amount Range:</label>
+                  <input
+                    type="number"
+                    placeholder="Min ($)"
+                    value={amountFilter.min}
+                    onChange={(e) => setAmountFilter({ ...amountFilter, min: e.target.value })}
+                    className="w-24 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3] text-sm"
+                  />
+                  <span className="text-gray-400">-</span>
+                  <input
+                    type="number"
+                    placeholder="Max ($)"
+                    value={amountFilter.max}
+                    onChange={(e) => setAmountFilter({ ...amountFilter, max: e.target.value })}
+                    className="w-24 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3] text-sm"
+                  />
+                  <button
+                    onClick={() => setAmountFilter({ min: '', max: '' })}
+                    className="text-sm text-gray-500 dark:text-gray-400 hover:text-[#3B5B63] dark:hover:text-[#84CED3] transition-colors"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+
+              {/* Enhanced Bills List */}
+              <div className="space-y-4">
+                {invoices.length > 0 ? (
+                  <>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Showing {invoices.length} bills • Total: {formatCurrency(invoices.reduce((sum, inv) => sum + parseFloat(inv.total || 0), 0))}
+                    </div>
+                    
+                    {invoices.map((invoice) => (
+                      <div key={invoice.id} className="bg-[#F8F9FA] dark:bg-[#2A3A3D] rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63] overflow-hidden">
+                        {/* Bill Header */}
+                        <div className="p-6">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                              {/* Status Badge */}
+                              <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(invoice.status)}`}>
+                                <span>{getStatusIcon(invoice.status)}</span>
+                                <span>{invoice.status.toUpperCase()}</span>
+                              </div>
+                              
+                              {/* Invoice Info */}
+                              <div>
+                                <h3 className="text-lg font-semibold text-[#3B5B63] dark:text-white">
+                                  Invoice #{invoice.invoice_number}
+                                </h3>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  {invoice.profiles?.first_name} {invoice.profiles?.last_name}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            {/* Amount and Actions */}
+                            <div className="flex items-center space-x-4">
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-[#3B5B63] dark:text-white">
+                                  {formatCurrency(invoice.total)}
+                                </p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  Due: {formatDate(invoice.due_date)}
+                                </p>
+                              </div>
+                              
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => setExpandedInvoice(expandedInvoice === invoice.id ? null : invoice.id)}
+                                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-[#3B5B63] dark:hover:text-[#84CED3] transition-colors"
+                                >
+                                  {expandedInvoice === invoice.id ? '▼' : '▶'}
+                                </button>
+                                
+                                <Link
+                                  href={`/dashboard/billing/${invoice.id}`}
+                                  className="bg-[#7CCFD0] text-white px-3 py-1 rounded text-sm hover:bg-[#60BFC0] transition-colors"
+                                >
+                                  View Details
+                                </Link>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Quick Info Row */}
+                          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <span className="text-gray-500 dark:text-gray-400">Created:</span>
+                              <span className="ml-2 text-[#3B5B63] dark:text-white">{formatDate(invoice.created_at)}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500 dark:text-gray-400">Trip:</span>
+                              <span className="ml-2 text-[#3B5B63] dark:text-white">
+                                {invoice.trips ? 
+                                  `${invoice.trips.pickup_address.substring(0, 25)}...` : 
+                                  'No trip details'
+                                }
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500 dark:text-gray-400">Trip Date:</span>
+                              <span className="ml-2 text-[#3B5B63] dark:text-white">
+                                {invoice.trips?.pickup_time ? formatDateTime(invoice.trips.pickup_time) : 'N/A'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Expanded Details */}
+                        {expandedInvoice === invoice.id && (
+                          <div className="border-t border-[#DDE5E7] dark:border-[#3F5E63] bg-white dark:bg-[#1E1E1E] p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              {/* Trip Details */}
+                              <div>
+                                <h4 className="font-semibold text-[#3B5B63] dark:text-[#84CED3] mb-3">Trip Information</h4>
+                                {invoice.trips ? (
+                                  <div className="space-y-2 text-sm">
+                                    <div>
+                                      <span className="text-gray-500 dark:text-gray-400">Pickup:</span>
+                                      <p className="text-[#3B5B63] dark:text-white">{invoice.trips.pickup_address}</p>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500 dark:text-gray-400">Destination:</span>
+                                      <p className="text-[#3B5B63] dark:text-white">{invoice.trips.destination_address}</p>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500 dark:text-gray-400">Scheduled Time:</span>
+                                      <p className="text-[#3B5B63] dark:text-white">{formatDateTime(invoice.trips.pickup_time)}</p>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="text-gray-500 dark:text-gray-400 text-sm">No trip details available</p>
+                                )}
+                              </div>
+                              
+                              {/* Billing Details */}
+                              <div>
+                                <h4 className="font-semibold text-[#3B5B63] dark:text-[#84CED3] mb-3">Billing Details</h4>
+                                <div className="space-y-2 text-sm">
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-500 dark:text-gray-400">Subtotal:</span>
+                                    <span className="text-[#3B5B63] dark:text-white">{formatCurrency(invoice.amount)}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-500 dark:text-gray-400">Tax/Fees:</span>
+                                    <span className="text-[#3B5B63] dark:text-white">
+                                      {formatCurrency((invoice.total - invoice.amount) || 0)}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between font-semibold border-t border-gray-200 dark:border-gray-600 pt-2">
+                                    <span className="text-[#3B5B63] dark:text-white">Total:</span>
+                                    <span className="text-[#3B5B63] dark:text-white">{formatCurrency(invoice.total)}</span>
+                                  </div>
+                                  <div className="flex justify-between mt-3 pt-2 border-t border-gray-200 dark:border-gray-600">
+                                    <span className="text-gray-500 dark:text-gray-400">Payment Status:</span>
+                                    <span className={`font-medium ${
+                                      invoice.status === 'paid' ? 'text-green-600 dark:text-green-400' :
+                                      invoice.status === 'overdue' ? 'text-red-600 dark:text-red-400' :
+                                      'text-orange-600 dark:text-orange-400'
+                                    }`}>
+                                      {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-6xl opacity-30 mb-4">📄</div>
+                    <h3 className="text-lg font-medium text-[#3B5B63] dark:text-white mb-2">No bills found</h3>
+                    <p className="text-gray-500 dark:text-gray-400">Try adjusting your filters to see more results.</p>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : activeTab === 'invoices' ? (
             <>
               {/* Invoice Filters */}
               <div className="flex flex-wrap gap-4 mb-6">
@@ -188,7 +633,7 @@ export default function BillingView() {
 
               </div>
 
-              {/* Invoice List */}
+              {/* Invoice Table */}
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-[#F5F7F8] dark:bg-[#121212]">
