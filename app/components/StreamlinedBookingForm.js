@@ -209,13 +209,10 @@ export default function StreamlinedBookingForm({ user }) {
         destination_address: formData.destinationAddress,
         destination_details: formData.destinationDetails,
         pickup_time: pickupDateTime.toISOString(),
-        wheelchair_type: formData.wheelchairType,
-        wheelchair_details: JSON.stringify({
-          type: wheelchairData.type,
-          needsProvided: wheelchairData.needsProvided,
-          customType: wheelchairData.customType,
-          fee: wheelchairData.fee
-        }),
+        wheelchair_type: wheelchairData.isTransportChair ? 'transport_not_allowed' : 
+                        wheelchairData.needsProvided ? 'provided' : 
+                        wheelchairData.type === 'none' ? 'no_wheelchair' : 
+                        wheelchairData.type,
         additional_passengers: formData.additionalPassengers,
         trip_notes: formData.tripNotes,
         status: 'pending',

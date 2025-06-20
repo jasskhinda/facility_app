@@ -746,13 +746,10 @@ export default function FacilityBookingForm({ user }) {
         pickup_time: formData.pickupTime,
         status: 'pending',
         special_requirements: formData.clientNotes || null,
-        wheelchair_type: formData.wheelchairType,
-        wheelchair_details: JSON.stringify({
-          type: wheelchairData.type,
-          needsProvided: wheelchairData.needsProvided,
-          customType: wheelchairData.customType,
-          fee: wheelchairData.fee
-        }),
+        wheelchair_type: wheelchairData.isTransportChair ? 'transport_not_allowed' : 
+                        wheelchairData.needsProvided ? 'provided' : 
+                        wheelchairData.type === 'none' ? 'no_wheelchair' : 
+                        wheelchairData.type,
         is_round_trip: formData.isRoundTrip,
         price: calculatedPrice,
         distance: distanceMiles > 0 ? Math.round(distanceMiles * 10) / 10 : null,

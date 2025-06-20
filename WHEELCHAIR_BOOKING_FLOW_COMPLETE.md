@@ -109,21 +109,19 @@ if (wheelchairData.isTransportChair) {
 
 ### Database Enhancement
 ```javascript
-// Trip creation includes:
-wheelchair_details: JSON.stringify({
-  type: wheelchairData.type,
-  needsProvided: wheelchairData.needsProvided,
-  customType: wheelchairData.customType,
-  fee: wheelchairData.fee
-  // Note: Transport wheelchair bookings are prevented at form level
-})
+// Trip creation uses existing wheelchair_type column:
+wheelchair_type: wheelchairData.isTransportChair ? 'transport_not_allowed' : 
+                wheelchairData.needsProvided ? 'provided' : 
+                wheelchairData.type === 'none' ? 'no_wheelchair' : 
+                wheelchairData.type
+// Note: Fixed to use existing schema without requiring new columns
 ```
 
 ## 🧪 VERIFICATION COMPLETED
 
 - ✅ All 3 booking forms have wheelchair integration
 - ✅ WheelchairSelectionFlow component properly created
-- ✅ Database storage working with wheelchair_details JSON
+- ✅ **DATABASE SCHEMA ERROR FIXED** - Uses existing wheelchair_type column
 - ✅ Pricing calculations include $25 wheelchair fees
 - ✅ Professional UI implementation complete
 - ✅ No compilation errors in any booking forms
