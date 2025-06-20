@@ -184,6 +184,12 @@ export default function StreamlinedBookingForm({ user }) {
       setError('Please select pickup date and time');
       return;
     }
+
+    // Validate wheelchair selection
+    if (wheelchairData.isTransportChair) {
+      setError('We are unable to accommodate transport wheelchairs due to safety regulations. Please select a different wheelchair option or choose "None" for us to provide suitable accommodation.');
+      return;
+    }
     
     try {
       setLoading(true);

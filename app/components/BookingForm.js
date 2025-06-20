@@ -519,6 +519,14 @@ export default function BookingForm({ user }) {
       return;
     }
 
+    // Validate wheelchair selection
+    if (wheelchairData.isTransportChair) {
+      setError('We are unable to accommodate transport wheelchairs due to safety regulations. Please select a different wheelchair option or choose "None" for us to provide suitable accommodation.');
+      setIsLoading(false);
+      setBookingStatus('error');
+      return;
+    }
+
     try {
       // Calculate final price (in case route hasn't been calculated yet)
       let calculatedPrice = estimatedFare;

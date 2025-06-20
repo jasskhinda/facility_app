@@ -30,12 +30,17 @@ export default function WheelchairSelectionFlow({
 
   useEffect(() => {
     // Notify parent component of changes
+    const isTransportChair = wheelchairType === 'transport';
+    const hasValidWheelchair = (wheelchairType !== 'none' && wheelchairType !== 'transport') || needsWheelchair;
+    
     const wheelchairData = {
       type: wheelchairType,
       needsProvided: needsWheelchair,
       customType: customWheelchairType,
-      hasWheelchairFee: wheelchairType !== 'none' || needsWheelchair,
-      fee: (wheelchairType !== 'none' || needsWheelchair) ? WHEELCHAIR_PRICE : 0
+      hasWheelchairFee: hasValidWheelchair,
+      fee: hasValidWheelchair ? WHEELCHAIR_PRICE : 0,
+      isTransportChair: isTransportChair,
+      isValidSelection: !isTransportChair
     };
     
     if (onWheelchairChange) {
@@ -160,34 +165,55 @@ export default function WheelchairSelectionFlow({
             </label>
 
             {/* Transport Wheelchair */}
-            <label className="flex items-center p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg hover:bg-[#F8F9FA] dark:hover:bg-[#2A3A3D] cursor-pointer transition-colors">
+            <label className="flex items-center p-3 border border-amber-200 dark:border-amber-700 rounded-lg bg-amber-50 dark:bg-amber-900/20 cursor-pointer transition-colors">
               <input
                 type="radio"
                 name="wheelchairType"
                 value="transport"
                 checked={wheelchairType === 'transport'}
                 onChange={(e) => handleWheelchairTypeChange(e.target.value)}
-                className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#3F5E63] focus:ring-[#7CCFD0] focus:ring-2"
+                className="w-4 h-4 text-amber-600 border-amber-300 dark:border-amber-600 focus:ring-amber-500 focus:ring-2"
               />
               <div className="ml-3 flex-1">
-                <span className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
-                  Transport wheelchair
-                </span>
-                <p className="text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
-                  Lightweight transport chair
-                </p>
-                <div className="flex items-center mt-1">
-                  <span className="text-xs font-semibold text-[#7CCFD0]">
-                    +${WHEELCHAIR_PRICE}
+                <div className="flex items-center">
+                  <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                    Transport wheelchair
                   </span>
-                  <span className="text-xs text-[#2E4F54]/50 dark:text-[#E0F4F5]/50 ml-1">
-                    accessibility fee
+                  <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200">
+                    Not Available
                   </span>
                 </div>
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  Lightweight transport chair - Not permitted for safety reasons
+                </p>
               </div>
             </label>
           </div>
         </div>
+
+        {/* Transport Wheelchair Safety Notice */}
+        {wheelchairType === 'transport' && (
+          <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-amber-600 dark:text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                  Important Safety Notice
+                </h4>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                  We're unable to accommodate transport wheelchairs due to safety regulations and vehicle accessibility requirements. Please consider selecting a manual or power wheelchair option, or choose "None" if you'd like us to provide suitable wheelchair accommodation.
+                </p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 italic">
+                  Our priority is ensuring safe and comfortable transportation for all passengers.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Provide Wheelchair Option */}
         {showProvideOption && (
