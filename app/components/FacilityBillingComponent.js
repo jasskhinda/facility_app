@@ -5,19 +5,39 @@ import { createClientSupabase } from '@/lib/client-supabase';
 
 export default function FacilityBillingComponent({ user, facilityId }) {
   const [monthlyTrips, setMonthlyTrips] = useState([]);
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
+  const [selectedMonth, setSelectedMonth] = useState('');
   const [totalAmount, setTotalAmount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [facility, setFacility] = useState(null);
+  const [error, setError] = useState('');
 
   const supabase = createClientSupabase();
 
+  // Initialize selectedMonth safely
   useEffect(() => {
-    fetchFacilityInfo();
-    fetchMonthlyTrips();
-  }, [selectedMonth]);
+    try {
+      const currentDate = new Date();
+      const currentMonth = currentDate.toISOString().slice(0, 7);
+      setSelectedMonth(currentMonth);
+    } catch (err) {
+      console.error('Error setting initial month:', err);
+      setError('Failed to initialize date selector');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedMonth && facilityId) {
+      fetchFacilityInfo();
+      fetchMonthlyTrips();
+    }
+  }, [selectedMonth, facilityId]);
 
   const fetchFacilityInfo = async () => {
+    if (!facilityId) {
+      setError('No facility ID provided');
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('facilities')
@@ -25,18 +45,40 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         .eq('id', facilityId)
         .single();
 
-      if (!error && data) {
-        setFacility(data);
+      if (error) {
+        console.error('Facility fetch error:', error);
+        setError('Failed to load facility information');
+        return;
       }
-    } catch (error) {
-      console.error('Error fetching facility info:', error);
+
+      if (data) {
+        setFacility(data);
+        setError('');
+      }
+    } catch (err) {
+      console.error('Error fetching facility info:', err);
+      setError('Failed to load facility information');
     }
   };
 
   const fetchMonthlyTrips = async () => {
+    if (!selectedMonth || !facilityId) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
+    setError('');
+    
     try {
+      // Safely parse the selected month
       const startDate = new Date(selectedMonth + '-01');
+      
+      // Validate the date
+      if (isNaN(startDate.getTime())) {
+        throw new Error('Invalid date selected');
+      }
+      
       const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
 
       const { data: trips, error } = await supabase
@@ -60,15 +102,28 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         .in('status', ['completed', 'pending', 'upcoming'])
         .order('pickup_time', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Trips fetch error:', error);
+        setError('Failed to load trip data');
+        setMonthlyTrips([]);
+        setTotalAmount(0);
+        return;
+      }
 
-      // Calculate total amount
-      const total = trips?.reduce((sum, trip) => sum + (trip.price || 0), 0) || 0;
+      // Safely calculate total amount
+      const total = (trips || []).reduce((sum, trip) => {
+        const price = parseFloat(trip.price) || 0;
+        return sum + price;
+      }, 0);
       
       setMonthlyTrips(trips || []);
       setTotalAmount(total);
-    } catch (error) {
-      console.error('Error fetching monthly trips:', error);
+      setError('');
+    } catch (err) {
+      console.error('Error fetching monthly trips:', err);
+      setError('Failed to load monthly trip data');
+      setMonthlyTrips([]);
+      setTotalAmount(0);
     } finally {
       setLoading(false);
     }
@@ -76,13 +131,29 @@ export default function FacilityBillingComponent({ user, facilityId }) {
 
   const generateInvoice = async () => {
     try {
+      // Validate required data
+      if (!facility) {
+        setError('Facility information not loaded. Please refresh the page.');
+        return;
+      }
+
+      if (!selectedMonth) {
+        setError('Please select a month to generate invoice.');
+        return;
+      }
+
+      if (!monthlyTrips || monthlyTrips.length === 0) {
+        setError('No trips found for the selected month.');
+        return;
+      }
+
       const invoiceData = {
         facilityName: facility?.name || 'Unknown Facility',
         month: selectedMonth,
-        trips: monthlyTrips,
-        totalAmount: totalAmount,
-        billingEmail: facility?.billing_email,
-        facilityAddress: facility?.address
+        trips: monthlyTrips || [],
+        totalAmount: totalAmount || 0,
+        billingEmail: facility?.billing_email || '',
+        facilityAddress: facility?.address || ''
       };
 
       // Here you would integrate with your invoice generation system
@@ -90,27 +161,49 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       downloadRideSummary(invoiceData);
     } catch (error) {
       console.error('Error generating invoice:', error);
+      setError('Failed to generate invoice. Please try again.');
     }
   };
 
   const downloadRideSummary = (invoiceData) => {
-    const monthName = new Date(selectedMonth + '-01').toLocaleDateString('en-US', { 
-      month: 'long', 
-      year: 'numeric' 
-    });
+    try {
+      // Safely parse the month name
+      let monthName;
+      try {
+        monthName = new Date(selectedMonth + '-01').toLocaleDateString('en-US', { 
+          month: 'long', 
+          year: 'numeric' 
+        });
+      } catch (dateError) {
+        console.error('Date parsing error:', dateError);
+        monthName = selectedMonth; // Fallback to raw string
+      }
 
-    const csvContent = `Compassionate Care Transportation - Monthly Invoice
-Facility: ${invoiceData.facilityName}
+      // Safely process trips data
+      const safeTrips = (invoiceData.trips || []).map(trip => {
+        try {
+          const date = trip.pickup_time ? new Date(trip.pickup_time).toLocaleDateString() : 'N/A';
+          const wheelchair = trip.wheelchair_type === 'no_wheelchair' ? 'No' : 'Yes';
+          const roundTrip = trip.is_round_trip ? 'Yes' : 'No';
+          const pickupAddress = (trip.pickup_address || '').replace(/"/g, '""'); // Escape quotes
+          const destinationAddress = (trip.destination_address || '').replace(/"/g, '""'); // Escape quotes
+          const price = parseFloat(trip.price) || 0;
+          const status = trip.status || 'unknown';
+          
+          return `${date},"${pickupAddress}","${destinationAddress}","$${price.toFixed(2)}",${wheelchair},${roundTrip},${status}`;
+        } catch (tripError) {
+          console.error('Trip processing error:', tripError);
+          return `N/A,"Error processing trip","","$0.00",No,No,error`;
+        }
+      });
+
+      const csvContent = `Compassionate Care Transportation - Monthly Invoice
+Facility: ${invoiceData.facilityName || 'Unknown Facility'}
 Month: ${monthName}
-Total Amount: $${invoiceData.totalAmount.toFixed(2)}
+Total Amount: $${(invoiceData.totalAmount || 0).toFixed(2)}
 
 Date,Pickup Address,Destination,Price,Wheelchair,Round Trip,Status
-${invoiceData.trips.map(trip => {
-  const date = new Date(trip.pickup_time).toLocaleDateString();
-  const wheelchair = trip.wheelchair_type === 'no_wheelchair' ? 'No' : 'Yes';
-  const roundTrip = trip.is_round_trip ? 'Yes' : 'No';
-  return `${date},"${trip.pickup_address}","${trip.destination_address}","$${(trip.price || 0).toFixed(2)}",${wheelchair},${roundTrip},${trip.status}`;
-}).join('\n')}
+${safeTrips.join('\n')}
 
 Payment Instructions:
 Please mail check payment to:
@@ -122,44 +215,121 @@ Invoice Date: ${new Date().toLocaleDateString()}
 Due Date: ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
 `;
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `CCT-Invoice-${invoiceData.facilityName.replace(/\s+/g, '-')}-${selectedMonth}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `CCT-Invoice-${(invoiceData.facilityName || 'Unknown').replace(/\s+/g, '-')}-${selectedMonth}.csv`;
+      
+      // Ensure elements are cleaned up properly
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up with a small delay to ensure download starts
+      setTimeout(() => {
+        try {
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        } catch (cleanupError) {
+          console.error('Cleanup error:', cleanupError);
+        }
+      }, 100);
+      
+    } catch (error) {
+      console.error('Download error:', error);
+      setError('Failed to generate download. Please try again.');
+    }
   };
 
   const sendInvoiceEmail = async () => {
     try {
+      // Validate required data
+      if (!facility?.billing_email) {
+        setError('No billing email address found. Please update your facility information.');
+        return;
+      }
+
+      if (!selectedMonth) {
+        setError('Please select a month to send invoice.');
+        return;
+      }
+
+      if (!monthlyTrips || monthlyTrips.length === 0) {
+        setError('No trips found for the selected month.');
+        return;
+      }
+
       // This would integrate with your email service
       // For now, we'll show a success message
-      alert(`Invoice for ${selectedMonth} will be sent to ${facility?.billing_email}`);
+      alert(`Invoice for ${selectedMonth} will be sent to ${facility.billing_email}`);
     } catch (error) {
       console.error('Error sending invoice email:', error);
+      setError('Failed to send invoice email. Please try again.');
     }
   };
 
   const getMonthOptions = () => {
-    const options = [];
-    const currentDate = new Date();
-    
-    // Generate last 12 months
-    for (let i = 0; i < 12; i++) {
-      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-      const value = date.toISOString().slice(0, 7);
-      const label = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-      options.push({ value, label });
+    try {
+      const options = [];
+      const currentDate = new Date();
+      
+      // Validate current date
+      if (isNaN(currentDate.getTime())) {
+        console.error('Invalid current date');
+        return [{ value: '2025-06', label: 'June 2025' }]; // Fallback
+      }
+      
+      // Generate last 12 months
+      for (let i = 0; i < 12; i++) {
+        try {
+          const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+          
+          // Validate generated date
+          if (isNaN(date.getTime())) {
+            console.error(`Invalid date generated for index ${i}`);
+            continue;
+          }
+          
+          const value = date.toISOString().slice(0, 7);
+          const label = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+          options.push({ value, label });
+        } catch (dateError) {
+          console.error(`Error generating month option ${i}:`, dateError);
+        }
+      }
+      
+      // Ensure we have at least one option
+      if (options.length === 0) {
+        options.push({ value: '2025-06', label: 'June 2025' });
+      }
+      
+      return options;
+    } catch (error) {
+      console.error('Error generating month options:', error);
+      return [{ value: '2025-06', label: 'June 2025' }];
     }
-    
-    return options;
   };
 
   return (
     <div className="space-y-6">
+      {/* Error Display - Show at top if there's an error */}
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-red-700 dark:text-red-300 text-sm">
+                {error}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Payment Information Banner */}
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
         <div className="flex items-start">
@@ -287,33 +457,46 @@ Due Date: ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#DDE5E7] dark:divide-[#3F5E63]">
-                {monthlyTrips.map((trip) => (
-                  <tr key={trip.id} className="hover:bg-[#F8F9FA] dark:hover:bg-[#24393C]">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
-                      {new Date(trip.pickup_time).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
-                      <div className="max-w-xs">
-                        <p className="truncate font-medium">{trip.pickup_address}</p>
-                        <p className="truncate text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
-                          → {trip.destination_address}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#7CCFD0]">
-                      ${(trip.price || 0).toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        trip.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        trip.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-blue-100 text-blue-800'
-                      }`}>
-                        {trip.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {monthlyTrips.map((trip) => {
+                  // Safely format the date
+                  let formattedDate;
+                  try {
+                    formattedDate = trip.pickup_time ? 
+                      new Date(trip.pickup_time).toLocaleDateString() : 
+                      'N/A';
+                  } catch (dateError) {
+                    console.error('Date formatting error for trip:', trip.id, dateError);
+                    formattedDate = 'Invalid Date';
+                  }
+
+                  return (
+                    <tr key={trip.id} className="hover:bg-[#F8F9FA] dark:hover:bg-[#24393C]">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
+                        {formattedDate}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
+                        <div className="max-w-xs">
+                          <p className="truncate font-medium">{trip.pickup_address || 'Unknown pickup'}</p>
+                          <p className="truncate text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+                            → {trip.destination_address || 'Unknown destination'}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#7CCFD0]">
+                        ${(trip.price || 0).toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          trip.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          trip.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-blue-100 text-blue-800'
+                        }`}>
+                          {trip.status || 'unknown'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -321,7 +504,19 @@ Due Date: ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()
       ) : (
         <div className="text-center py-8">
           <p className="text-[#2E4F54] dark:text-[#E0F4F5]">
-            No trips found for {new Date(selectedMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            {(() => {
+              try {
+                if (!selectedMonth) return 'Please select a month to view trips';
+                const monthDisplay = new Date(selectedMonth + '-01').toLocaleDateString('en-US', { 
+                  month: 'long', 
+                  year: 'numeric' 
+                });
+                return `No trips found for ${monthDisplay}`;
+              } catch (error) {
+                console.error('Date formatting error:', error);
+                return `No trips found for ${selectedMonth}`;
+              }
+            })()}
           </p>
         </div>
       )}
