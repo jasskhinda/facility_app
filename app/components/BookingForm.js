@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from './DashboardLayout';
+import WheelchairSelectionFlow from './WheelchairSelectionFlow';
 import Script from 'next/script';
 
 // Helper function to format date in AM/PM format
@@ -68,6 +69,15 @@ export default function BookingForm({ user }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
+  
+  // Wheelchair selection data
+  const [wheelchairData, setWheelchairData] = useState({
+    type: 'none',
+    needsProvided: false,
+    customType: '',
+    hasWheelchairFee: false,
+    fee: 0
+  });
   
   // Date/time picker state
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -177,6 +187,11 @@ export default function BookingForm({ user }) {
             basePrice += 40;
           }
           
+          // Wheelchair fee adjustment
+          if (wheelchairData.hasWheelchairFee) {
+            basePrice += wheelchairData.fee;
+          }
+          
           // Set the price as an integer without the $ prefix
           const finalPrice = Math.round(basePrice);
           setEstimatedFare(finalPrice);
@@ -186,7 +201,7 @@ export default function BookingForm({ user }) {
         console.error('Error calculating route:', status);
       }
     });
-  }, [mapInstance, directionsRenderer, formData.isRoundTrip, formData.pickupTime]);
+  }, [mapInstance, directionsRenderer, formData.isRoundTrip, formData.pickupTime, wheelchairData]);
 
   // References to PlaceAutocompleteElement containers
   const pickupAutocompleteContainerRef = useRef(null);
@@ -364,11 +379,47 @@ export default function BookingForm({ user }) {
     }
   }, [pickupLocation, destinationLocation, mapInstance, directionsRenderer, calculateRoute, formData]);
 
+  // Recalculate pricing when wheelchair data changes (for cases without route calculation)
+  useEffect(() => {
+    if (estimatedFare !== null) {
+      // If we have an existing fare, update it with wheelchair fee changes
+      let basePrice = estimatedFare;
+      
+      // Remove previous wheelchair fee if any (rough estimate)
+      if (wheelchairData.hasWheelchairFee) {
+        // Add wheelchair fee
+        basePrice = estimatedFare + wheelchairData.fee;
+      } else {
+        // Remove wheelchair fee (estimate by subtracting 25 if it was there)
+        basePrice = estimatedFare - 25;
+        if (basePrice < 50) basePrice = estimatedFare; // Don't go below reasonable minimum
+      }
+      
+      setEstimatedFare(Math.round(basePrice));
+    }
+  }, [wheelchairData.hasWheelchairFee, wheelchairData.fee]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  // Handle wheelchair selection changes
+  const handleWheelchairChange = (newWheelchairData) => {
+    setWheelchairData(newWheelchairData);
+    
+    // Update form data wheelchair type for database compatibility
+    let wheelchairType = 'no_wheelchair';
+    if (newWheelchairData.type !== 'none' || newWheelchairData.needsProvided) {
+      wheelchairType = newWheelchairData.type === 'none' ? 'provided' : newWheelchairData.type;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      wheelchairType: wheelchairType
     }));
   };
   
@@ -477,6 +528,11 @@ export default function BookingForm({ user }) {
         calculatedPrice = 50;  // Base rate without route
       }
       
+      // Add wheelchair fee if applicable
+      if (wheelchairData.hasWheelchairFee) {
+        calculatedPrice += wheelchairData.fee;
+      }
+      
       setBookingStatus('submitting');
       
       // Insert the trip into the database
@@ -490,6 +546,12 @@ export default function BookingForm({ user }) {
           status: 'pending', // Changed from 'upcoming' to 'pending'
           special_requirements: null,
           wheelchair_type: formData.wheelchairType,
+          wheelchair_details: JSON.stringify({
+            type: wheelchairData.type,
+            needsProvided: wheelchairData.needsProvided,
+            customType: wheelchairData.customType,
+            fee: wheelchairData.fee
+          }),
           is_round_trip: formData.isRoundTrip,
           price: calculatedPrice, // Save estimated price
           distance: distanceMiles > 0 ? Math.round(distanceMiles * 10) / 10 : null, // Save distance in miles, rounded to 1 decimal
@@ -758,28 +820,12 @@ export default function BookingForm({ user }) {
                   </div>
                 </div>
                 
-                {/* Wheelchair Type */}
-                <div>
-                  <label htmlFor="wheelchairType" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-1">
-                    Wheelchair Requirements
-                  </label>
-                  <div className="relative">
-                    <select
-                      id="wheelchairType"
-                      name="wheelchairType"
-                      value={formData.wheelchairType}
-                      onChange={handleChange}
-                      className="w-full appearance-none px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] dark:bg-[#1C2C2F] text-[#2E4F54] dark:text-[#E0F4F5] pr-10"
-                    >
-                      <option value="no_wheelchair">No Wheelchair</option>
-                      <option value="wheelchair">Wheelchair</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[#2E4F54] dark:text-[#E0F4F5]">
-                      <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                      </svg>
-                    </div>
-                  </div>
+                {/* Wheelchair Selection */}
+                <div className="md:col-span-2">
+                  <WheelchairSelectionFlow 
+                    wheelchairData={wheelchairData}
+                    onChange={handleWheelchairChange}
+                  />
                 </div>
                 
               </div>

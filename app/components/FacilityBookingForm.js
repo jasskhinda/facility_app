@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import WheelchairSelectionFlow from './WheelchairSelectionFlow';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import DashboardLayout from './DashboardLayout';
@@ -74,6 +74,15 @@ export default function FacilityBookingForm({ user }) {
     isRoundTrip: false,
     clientNotes: '',
     paymentMethod: 'facility', // facility or client
+  });
+  
+  // Wheelchair selection data
+  const [wheelchairData, setWheelchairData] = useState({
+    type: 'none',
+    needsProvided: false,
+    customType: '',
+    hasWheelchairFee: false,
+    fee: 0
   });
   
   const [isLoading, setIsLoading] = useState(false);
@@ -323,6 +332,11 @@ export default function FacilityBookingForm({ user }) {
             basePrice += 40;
           }
           
+          // Wheelchair accessibility fee
+          if (wheelchairData.hasWheelchairFee) {
+            basePrice += wheelchairData.fee;
+          }
+          
           // Set the price as an integer without the $ prefix
           const finalPrice = Math.round(basePrice);
           setEstimatedFare(finalPrice);
@@ -517,6 +531,61 @@ export default function FacilityBookingForm({ user }) {
       [name]: value
     }));
   };
+
+  // Handle wheelchair selection changes
+  const handleWheelchairChange = (newWheelchairData) => {
+    setWheelchairData(newWheelchairData);
+    
+    // Update form data wheelchair type for database compatibility
+    let wheelchairType = 'no_wheelchair';
+    if (newWheelchairData.type !== 'none' || newWheelchairData.needsProvided) {
+      wheelchairType = newWheelchairData.type === 'none' ? 'provided' : newWheelchairData.type;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      wheelchairType: wheelchairType
+    }));
+    
+    // Recalculate pricing if route exists
+    if (pickupLocation && destinationLocation && distanceMiles > 0) {
+      calculatePricingWithWheelchair(distanceMiles, newWheelchairData);
+    }
+  };
+
+  // Calculate pricing including wheelchair fee
+  const calculatePricingWithWheelchair = (miles, wheelchairInfo) => {
+    let basePrice = 50; // Base price
+
+    // Round trip adjustment
+    if (formData.isRoundTrip) {
+      basePrice = 100;
+    }
+    
+    // Mileage calculation ($3 per mile)
+    basePrice += miles * 3;
+    
+    // Weekend adjustment
+    const pickupDate = new Date(formData.pickupTime);
+    const day = pickupDate.getDay();
+    if (day === 0 || day === 6) { // Weekend
+      basePrice += 40;
+    }
+    
+    // Extra hour adjustment (before 8am or after 8pm)
+    const hour = pickupDate.getHours();
+    if (hour <= 8 || hour >= 20) {
+      basePrice += 40;
+    }
+    
+    // Wheelchair accessibility fee
+    if (wheelchairInfo.hasWheelchairFee) {
+      basePrice += wheelchairInfo.fee;
+    }
+    
+    const finalPrice = Math.round(basePrice);
+    setEstimatedFare(finalPrice);
+  };
   
   // Handle client selection
   const handleClientChange = (e) => {
@@ -669,6 +738,12 @@ export default function FacilityBookingForm({ user }) {
         status: 'pending',
         special_requirements: formData.clientNotes || null,
         wheelchair_type: formData.wheelchairType,
+        wheelchair_details: JSON.stringify({
+          type: wheelchairData.type,
+          needsProvided: wheelchairData.needsProvided,
+          customType: wheelchairData.customType,
+          fee: wheelchairData.fee
+        }),
         is_round_trip: formData.isRoundTrip,
         price: calculatedPrice,
         distance: distanceMiles > 0 ? Math.round(distanceMiles * 10) / 10 : null,
@@ -1018,28 +1093,13 @@ export default function FacilityBookingForm({ user }) {
                   </div>
                 </div>
                 
-                {/* Wheelchair Type */}
-                <div>
-                  <label htmlFor="wheelchairType" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-1">
-                    Wheelchair Requirements
-                  </label>
-                  <div className="relative">
-                    <select
-                      id="wheelchairType"
-                      name="wheelchairType"
-                      value={formData.wheelchairType}
-                      onChange={handleChange}
-                      className="w-full appearance-none px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] dark:bg-[#1C2C2F] text-[#2E4F54] dark:text-[#E0F4F5] pr-10"
-                    >
-                      <option value="no_wheelchair">No Wheelchair</option>
-                      <option value="wheelchair">Wheelchair</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[#2E4F54] dark:text-[#E0F4F5]">
-                      <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                      </svg>
-                    </div>
-                  </div>
+                {/* Wheelchair Selection */}
+                <div className="col-span-1 md:col-span-2">
+                  <WheelchairSelectionFlow
+                    onWheelchairChange={handleWheelchairChange}
+                    initialValue={wheelchairData.type}
+                    className="mt-2"
+                  />
                 </div>
                 
                 {/* Client Notes */}
