@@ -16,12 +16,14 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   // Initialize selectedMonth safely
   useEffect(() => {
     try {
-      const currentDate = new Date();
+      // Set to current date: June 20, 2025
+      const currentDate = new Date('2025-06-20');
       const currentMonth = currentDate.toISOString().slice(0, 7);
       setSelectedMonth(currentMonth);
     } catch (err) {
       console.error('Error setting initial month:', err);
       setError('Failed to initialize date selector');
+      setSelectedMonth('2025-06'); // Fallback to June 2025
     }
   }, []);
 
@@ -332,7 +334,8 @@ Questions? Contact us at billing@compassionatecaretransportation.com
   const getMonthOptions = () => {
     try {
       const options = [];
-      const currentDate = new Date();
+      // Set current date to June 20, 2025 as per context
+      const currentDate = new Date('2025-06-20');
       
       // Validate current date
       if (isNaN(currentDate.getTime())) {
@@ -340,7 +343,7 @@ Questions? Contact us at billing@compassionatecaretransportation.com
         return [{ value: '2025-06', label: 'June 2025' }]; // Fallback
       }
       
-      // Generate last 12 months
+      // Generate last 12 months from current date
       for (let i = 0; i < 12; i++) {
         try {
           const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
