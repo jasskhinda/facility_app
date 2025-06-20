@@ -39,7 +39,7 @@ export default function BillingView() {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      if (statusFilter) params.append('status', statusFilter);
+      // Only apply year and month filters server-side for performance
       if (yearFilter) params.append('year', yearFilter);
       if (monthFilter) params.append('month', monthFilter);
       
@@ -50,13 +50,16 @@ export default function BillingView() {
       const data = await response.json();
       let filteredBills = data.bills || [];
       
-      // Apply client-side filters
+      // Apply client-side filters for immediate response
       if (statusFilter) {
         filteredBills = filteredBills.filter(bill => bill.status === statusFilter);
       }
       
       if (clientFilter) {
-        filteredBills = filteredBills.filter(bill => bill.client_id === clientFilter);
+        // Filter by client name since client_id might not be available
+        filteredBills = filteredBills.filter(bill => 
+          bill.client_name && bill.client_name.toLowerCase().includes(clientFilter.toLowerCase())
+        );
       }
       
       if (amountFilter.min) {
@@ -426,7 +429,7 @@ export default function BillingView() {
                     >
                       <option value="">All Clients</option>
                       {allClients.map(client => (
-                        <option key={client.id} value={client.id}>
+                        <option key={client.id} value={`${client.first_name} ${client.last_name}`}>
                           {client.first_name} {client.last_name}
                         </option>
                       ))}
