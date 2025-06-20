@@ -81,7 +81,48 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       
       const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
 
-      const { data: trips, error } = await supabase
+      // First get all users belonging to this facility
+      const { data: facilityUsers, error: facilityUsersError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('facility_id', facilityId);
+      
+      if (facilityUsersError) {
+        console.error('Facility users fetch error:', facilityUsersError);
+        setError('Failed to load facility users');
+        setMonthlyTrips([]);
+        setTotalAmount(0);
+        return;
+      }
+
+      const facilityUserIds = facilityUsers?.map(user => user.id) || [];
+      
+      // Get managed clients for this facility (if table exists)
+      let facilityManagedClientIds = [];
+      try {
+        const { data: managedClientsForFacility, error: managedClientsError } = await supabase
+          .from('managed_clients')
+          .select('id')
+          .eq('facility_id', facilityId);
+        
+        if (!managedClientsError && managedClientsForFacility) {
+          facilityManagedClientIds = managedClientsForFacility.map(client => client.id);
+        }
+      } catch (error) {
+        // managed_clients table might not exist - continue without it
+        console.log('managed_clients table not found, continuing without managed clients');
+      }
+
+      // If no users or managed clients, return empty
+      if (facilityUserIds.length === 0 && facilityManagedClientIds.length === 0) {
+        setMonthlyTrips([]);
+        setTotalAmount(0);
+        setError('No users or clients found for this facility');
+        return;
+      }
+
+      // Now query trips for these users and managed clients
+      let query = supabase
         .from('trips')
         .select(`
           id,
@@ -96,11 +137,23 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           user_id,
           managed_client_id
         `)
-        .eq('facility_id', facilityId)
         .gte('pickup_time', startDate.toISOString())
         .lte('pickup_time', endDate.toISOString())
         .in('status', ['completed', 'pending', 'upcoming'])
+        .not('price', 'is', null)
+        .gt('price', 0)
         .order('pickup_time', { ascending: false });
+
+      // Filter for trips by facility users OR managed clients  
+      if (facilityUserIds.length > 0 && facilityManagedClientIds.length > 0) {
+        query = query.or(`user_id.in.(${facilityUserIds.join(',')}),managed_client_id.in.(${facilityManagedClientIds.join(',')})`);
+      } else if (facilityUserIds.length > 0) {
+        query = query.in('user_id', facilityUserIds);
+      } else if (facilityManagedClientIds.length > 0) {
+        query = query.in('managed_client_id', facilityManagedClientIds);
+      }
+
+      const { data: trips, error } = await query;
 
       if (error) {
         console.error('Trips fetch error:', error);
@@ -205,14 +258,22 @@ Total Amount: $${(invoiceData.totalAmount || 0).toFixed(2)}
 Date,Pickup Address,Destination,Price,Wheelchair,Round Trip,Status
 ${safeTrips.join('\n')}
 
-Payment Instructions:
+PAYMENT OPTIONS:
+
+Option 1 - Check Payment (Current):
 Please mail check payment to:
 Compassionate Care Transportation
 [Your Business Address]
 [City, State ZIP]
 
+Option 2 - Credit Card Payment (Coming Soon):
+Pay online at: https://facility.compassionatecaretransportation.com/billing
+Secure payment processing via Stripe
+
 Invoice Date: ${new Date().toLocaleDateString()}
 Due Date: ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+
+Questions? Contact us at billing@compassionatecaretransportation.com
 `;
 
       const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -340,14 +401,25 @@ Due Date: ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()
           </div>
           <div className="ml-3">
             <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200">
-              Monthly Billing Information
+              Monthly Billing & Payment Options
             </h3>
             <p className="text-blue-700 dark:text-blue-300 mt-2">
-              This facility is billed monthly. Payment is expected via check unless otherwise arranged.
+              This facility is billed monthly with flexible payment options available.
             </p>
-            <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
-              Invoices are generated at the end of each month and sent to your billing email address.
-            </p>
+            <div className="mt-3 space-y-2 text-sm text-blue-600 dark:text-blue-400">
+              <div className="flex items-center">
+                <span className="mr-2">💳</span>
+                <span>Credit Card: Pay securely online (available soon)</span>
+              </div>
+              <div className="flex items-center">
+                <span className="mr-2">📄</span>
+                <span>Check Payment: Mail payment with invoice</span>
+              </div>
+              <div className="flex items-center">
+                <span className="mr-2">📧</span>
+                <span>Invoices sent monthly to your billing email</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -405,22 +477,66 @@ Due Date: ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={generateInvoice}
-            disabled={loading || monthlyTrips.length === 0}
-            className="flex-1 bg-[#7CCFD0] hover:bg-[#6BB8BA] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
-          >
-            📥 Download Monthly Summary
-          </button>
-          
-          <button
-            onClick={sendInvoiceEmail}
-            disabled={loading || monthlyTrips.length === 0 || !facility?.billing_email}
-            className="flex-1 bg-[#2E4F54] hover:bg-[#1F3A3F] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
-          >
-            📧 Send Invoice Email
-          </button>
+        <div className="space-y-4">
+          {/* Primary Actions */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={generateInvoice}
+              disabled={loading || monthlyTrips.length === 0}
+              className="flex-1 bg-[#7CCFD0] hover:bg-[#6BB8BA] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+            >
+              📥 Download Monthly Summary
+            </button>
+            
+            <button
+              onClick={sendInvoiceEmail}
+              disabled={loading || monthlyTrips.length === 0 || !facility?.billing_email}
+              className="flex-1 bg-[#2E4F54] hover:bg-[#1F3A3F] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+            >
+              📧 Send Invoice Email
+            </button>
+          </div>
+
+          {/* Payment Options */}
+          <div className="border-t border-[#DDE5E7] dark:border-[#3F5E63] pt-4">
+            <h4 className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-3">
+              Payment Options
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-[#F8F9FA] dark:bg-[#24393C]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h5 className="font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Check Payment</h5>
+                    <p className="text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">Traditional monthly billing</p>
+                  </div>
+                  <div className="text-green-600 dark:text-green-400">
+                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-[#F8F9FA] dark:bg-[#24393C] opacity-50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h5 className="font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Credit Card</h5>
+                    <p className="text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">Coming soon - online payments</p>
+                  </div>
+                  <div className="text-[#2E4F54]/50 dark:text-[#E0F4F5]/50">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-3 text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+              <p>💡 <strong>Current:</strong> Download invoice and mail check payment</p>
+              <p>🔮 <strong>Soon:</strong> Pay monthly invoices instantly with credit card</p>
+            </div>
+          </div>
         </div>
       </div>
 
