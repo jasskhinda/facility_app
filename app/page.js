@@ -187,15 +187,19 @@ function HomeContent() {
               <div className="space-y-4 text-left">
                 <div>
                   <strong className="text-[#2E4F54] dark:text-[#E0F4F5]">Email:</strong>
-                  <span className="text-[#7CCFD0] ml-2">facilities@compassionaterides.com</span>
+                  <span className="text-[#7CCFD0] ml-2">info@compassionatecaretransportation.com</span>
                 </div>
                 <div>
                   <strong className="text-[#2E4F54] dark:text-[#E0F4F5]">Phone:</strong>
-                  <span className="text-[#2E4F54]/80 dark:text-[#E0F4F5]/80 ml-2">1-800-RIDES-4U</span>
+                  <span className="text-[#2E4F54]/80 dark:text-[#E0F4F5]/80 ml-2">614-967-9887</span>
                 </div>
                 <div>
                   <strong className="text-[#2E4F54] dark:text-[#E0F4F5]">Hours:</strong>
-                  <span className="text-[#2E4F54]/80 dark:text-[#E0F4F5]/80 ml-2">Monday-Friday 8am-6pm EST</span>
+                  <span className="text-[#2E4F54]/80 dark:text-[#E0F4F5]/80 ml-2">Monday – Sunday 8:00 am to 10:00 pm</span>
+                </div>
+                <div>
+                  <strong className="text-[#2E4F54] dark:text-[#E0F4F5]">Address:</strong>
+                  <span className="text-[#2E4F54]/80 dark:text-[#E0F4F5]/80 ml-2">5050 Blazer Pkwy Suite 100-B, Dublin, OH 43017</span>
                 </div>
               </div>
               <Link href="/login" className="inline-block mt-6 bg-[#7CCFD0] text-white px-6 py-3 rounded-lg hover:bg-[#60BFC0] font-medium">

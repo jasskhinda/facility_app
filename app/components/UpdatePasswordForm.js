@@ -69,22 +69,22 @@ export default function UpdatePasswordForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="p-3 text-sm text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400 rounded">
+        <div className="p-3 text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
           {error}
         </div>
       )}
       
       {message && (
-        <div className="p-3 text-sm text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400 rounded">
+        <div className="p-3 text-sm text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
           {message}
         </div>
       )}
       
       <div className="space-y-4">
         <div>
-          <label htmlFor="password" className="block text-sm font-medium">
+          <label htmlFor="password" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
             New password
           </label>
           <input
@@ -95,12 +95,13 @@ export default function UpdatePasswordForm() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-900"
+            className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5]"
+            placeholder="Enter your new password"
           />
         </div>
         
         <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium">
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
             Confirm new password
           </label>
           <input
@@ -111,7 +112,8 @@ export default function UpdatePasswordForm() {
             required
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-900"
+            className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5]"
+            placeholder="Confirm your new password"
           />
         </div>
       </div>
@@ -120,15 +122,23 @@ export default function UpdatePasswordForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#7CCFD0] hover:bg-[#60BFC0] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7CCFD0] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {isLoading ? 'Updating...' : 'Update password'}
+          {isLoading ? (
+            <span className="flex items-center">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Updating...
+            </span>
+          ) : 'Update password'}
         </button>
         
         <div className="text-center">
           <a 
             href="/login" 
-            className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
+            className="text-sm font-medium text-[#7CCFD0] hover:text-[#60BFC0] transition-colors"
           >
             Back to login
           </a>
