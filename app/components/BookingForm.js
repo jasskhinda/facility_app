@@ -408,7 +408,7 @@ export default function BookingForm({ user }) {
   };
 
   // Handle wheelchair selection changes
-  const handleWheelchairChange = (newWheelchairData) => {
+  const handleWheelchairChange = useCallback((newWheelchairData) => {
     setWheelchairData(newWheelchairData);
     
     // Update form data wheelchair type for database compatibility
@@ -421,7 +421,7 @@ export default function BookingForm({ user }) {
       ...prev,
       wheelchairType: wheelchairType
     }));
-  };
+  }, []);
   
   // Generate an array of dates for the next 30 days
   const getDateOptions = () => {

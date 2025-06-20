@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { createClientSupabase } from '@/lib/client-supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -150,7 +150,7 @@ export default function StreamlinedBookingForm({ user }) {
   }
 
   // Handle wheelchair selection changes
-  const handleWheelchairChange = (newWheelchairData) => {
+  const handleWheelchairChange = useCallback((newWheelchairData) => {
     setWheelchairData(newWheelchairData);
     
     // Update form data wheelchair type for database compatibility
@@ -163,7 +163,7 @@ export default function StreamlinedBookingForm({ user }) {
       ...prev,
       wheelchairType: wheelchairType
     }));
-  };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

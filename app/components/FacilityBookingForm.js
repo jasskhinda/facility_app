@@ -533,7 +533,8 @@ export default function FacilityBookingForm({ user }) {
   };
 
   // Handle wheelchair selection changes
-  const handleWheelchairChange = (newWheelchairData) => {
+  // Handle wheelchair selection changes
+  const handleWheelchairChange = useCallback((newWheelchairData) => {
     setWheelchairData(newWheelchairData);
     
     // Update form data wheelchair type for database compatibility
@@ -551,7 +552,7 @@ export default function FacilityBookingForm({ user }) {
     if (pickupLocation && destinationLocation && distanceMiles > 0) {
       calculatePricingWithWheelchair(distanceMiles, newWheelchairData);
     }
-  };
+  }, [pickupLocation, destinationLocation, distanceMiles]);
 
   // Calculate pricing including wheelchair fee
   const calculatePricingWithWheelchair = (miles, wheelchairInfo) => {

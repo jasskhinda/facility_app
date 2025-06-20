@@ -38,8 +38,10 @@ export default function WheelchairSelectionFlow({
       fee: (wheelchairType !== 'none' || needsWheelchair) ? WHEELCHAIR_PRICE : 0
     };
     
-    onWheelchairChange?.(wheelchairData);
-  }, [wheelchairType, needsWheelchair, customWheelchairType, onWheelchairChange]);
+    if (onWheelchairChange) {
+      onWheelchairChange(wheelchairData);
+    }
+  }, [wheelchairType, needsWheelchair, customWheelchairType]);
 
   const handleWheelchairTypeChange = (type) => {
     setWheelchairType(type);
