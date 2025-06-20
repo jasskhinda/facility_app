@@ -33,7 +33,7 @@ export default function BillingView() {
       fetchClientSummary();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, statusFilter, yearFilter, monthFilter, clientFilter, dateRange, amountFilter]);
+  }, [activeTab, statusFilter, yearFilter, monthFilter, clientFilter, dateRange, amountFilter, sortBy, sortOrder]);
 
   const fetchInvoices = async () => {
     try {
@@ -51,6 +51,10 @@ export default function BillingView() {
       let filteredBills = data.bills || [];
       
       // Apply client-side filters
+      if (statusFilter) {
+        filteredBills = filteredBills.filter(bill => bill.status === statusFilter);
+      }
+      
       if (clientFilter) {
         filteredBills = filteredBills.filter(bill => bill.client_id === clientFilter);
       }
@@ -72,22 +76,22 @@ export default function BillingView() {
             bValue = parseFloat(b.total || 0);
             break;
           case 'client':
-            aValue = a.client_name;
-            bValue = b.client_name;
+            aValue = (a.client_name || '').toLowerCase();
+            bValue = (b.client_name || '').toLowerCase();
             break;
           case 'status':
-            aValue = a.status;
-            bValue = b.status;
+            aValue = a.status || '';
+            bValue = b.status || '';
             break;
-          default:
-            aValue = new Date(a.created_at);
-            bValue = new Date(b.created_at);
+          default: // date
+            aValue = new Date(a.created_at || a.trip_date);
+            bValue = new Date(b.created_at || b.trip_date);
         }
         
         if (sortOrder === 'asc') {
-          return aValue > bValue ? 1 : -1;
+          return aValue > bValue ? 1 : (aValue < bValue ? -1 : 0);
         } else {
-          return aValue < bValue ? 1 : -1;
+          return aValue < bValue ? 1 : (aValue > bValue ? -1 : 0);
         }
       });
       
@@ -115,12 +119,70 @@ export default function BillingView() {
       params.append('start_date', dateRange.start);
       params.append('end_date', dateRange.end);
       
-      const response = await fetch(`/api/facility/billing/client-summary?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch client summary');
+      // Use trips-billing data instead of non-existent client-summary API
+      const response = await fetch(`/api/facility/trips-billing?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch billing data');
       
       const data = await response.json();
-      setClientSummary(data);
-      setAllClients(data.allClients || []);
+      
+      // Transform trips-billing data into client summary format
+      const clientSummaryMap = {};
+      let totalAmount = 0;
+      let totalInvoices = 0;
+      
+      (data.bills || []).forEach(bill => {
+        const clientId = bill.client_id;
+        const amount = parseFloat(bill.total || 0);
+        
+        if (!clientSummaryMap[clientId]) {
+          clientSummaryMap[clientId] = {
+            client: {
+              id: clientId,
+              first_name: bill.client_name?.split(' ')[0] || 'Unknown',
+              last_name: bill.client_name?.split(' ').slice(1).join(' ') || '',
+            },
+            invoice_count: 0,
+            total_amount: 0,
+            invoices: []
+          };
+        }
+        
+        clientSummaryMap[clientId].invoice_count += 1;
+        clientSummaryMap[clientId].total_amount += amount;
+        clientSummaryMap[clientId].invoices.push({
+          id: bill.id,
+          amount: bill.amount,
+          total: bill.total,
+          status: bill.status,
+          created_at: bill.created_at,
+          trip: {
+            pickup_address: bill.pickup_address,
+            destination_address: bill.destination_address,
+            trip_date: bill.trip_date
+          }
+        });
+        
+        totalAmount += amount;
+        totalInvoices += 1;
+      });
+      
+      // Convert to array and sort by total amount
+      const clientSummaryArray = Object.values(clientSummaryMap)
+        .sort((a, b) => b.total_amount - a.total_amount);
+      
+      const transformedData = {
+        summary: {
+          total_clients: clientSummaryArray.length,
+          total_invoices: totalInvoices,
+          total_amount: totalAmount,
+          average_invoice_amount: totalInvoices > 0 ? totalAmount / totalInvoices : 0
+        },
+        clients: clientSummaryArray,
+        allClients: clientSummaryArray.map(c => c.client)
+      };
+      
+      setClientSummary(transformedData);
+      setAllClients(transformedData.allClients || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -192,15 +254,21 @@ export default function BillingView() {
   };
 
   const exportToCSV = () => {
-    const headers = ['Invoice #', 'Client', 'Trip Details', 'Amount', 'Status', 'Date', 'Due Date'];
-    const csvData = invoices.map(invoice => [
-      invoice.invoice_number,
-      `${invoice.profiles?.first_name} ${invoice.profiles?.last_name}`,
-      invoice.trips ? `${invoice.trips.pickup_address} → ${invoice.trips.destination_address}` : 'N/A',
-      invoice.total,
-      invoice.status,
-      formatDate(invoice.created_at),
-      formatDate(invoice.due_date)
+    const headers = ['Invoice #', 'Trip ID', 'Client', 'Pickup Address', 'Destination Address', 'Trip Date', 'Distance', 'Wheelchair', 'Round Trip', 'Additional Passengers', 'Amount', 'Status', 'Created Date'];
+    const csvData = invoices.map(bill => [
+      bill.bill_number || 'N/A',
+      bill.trip_id || 'N/A',
+      bill.client_name || 'Unknown',
+      bill.pickup_address || 'N/A',
+      bill.destination_address || 'N/A',
+      bill.trip_date ? formatDate(bill.trip_date) : 'N/A',
+      bill.distance ? `${bill.distance} miles` : 'N/A',
+      bill.wheelchair_accessible ? 'Yes' : 'No',
+      bill.is_round_trip ? 'Yes' : 'No',
+      bill.additional_passengers || 0,
+      formatCurrency(bill.total || 0),
+      bill.status || 'Unknown',
+      formatDate(bill.created_at)
     ]);
 
     const csvContent = [headers, ...csvData]
@@ -441,10 +509,16 @@ export default function BillingView() {
                     className="w-24 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3] text-sm"
                   />
                   <button
-                    onClick={() => setAmountFilter({ min: '', max: '' })}
+                    onClick={() => {
+                      setStatusFilter('');
+                      setClientFilter('');
+                      setYearFilter(new Date().getFullYear());
+                      setMonthFilter('');
+                      setAmountFilter({ min: '', max: '' });
+                    }}
                     className="text-sm text-gray-500 dark:text-gray-400 hover:text-[#3B5B63] dark:hover:text-[#84CED3] transition-colors"
                   >
-                    Clear
+                    Clear All Filters
                   </button>
                 </div>
               </div>
@@ -633,11 +707,11 @@ export default function BillingView() {
                   className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
                 >
                   <option value="">All Statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="paid">Paid</option>
-                  <option value="overdue">Overdue</option>
-                  <option value="cancelled">Cancelled</option>
-                  <option value="refunded">Refunded</option>
+                  <option value="pending">⏳ Pending</option>
+                  <option value="paid">✅ Paid</option>
+                  <option value="overdue">⚠️ Overdue</option>
+                  <option value="cancelled">✕ Cancelled</option>
+                  <option value="refunded">↩️ Refunded</option>
                 </select>
 
                 <select
@@ -653,69 +727,77 @@ export default function BillingView() {
               </div>
 
               {/* Invoice Table */}
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-[#F5F7F8] dark:bg-[#121212]">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
-                        Invoice #
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
-                        Client
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
-                        Trip
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
-                        Amount
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
-                        Due Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-[#1E1E1E] divide-y divide-gray-200 dark:divide-gray-700">
-                    {invoices.map((invoice) => (
-                      <tr key={invoice.id} className="hover:bg-[#F5F7F8] dark:hover:bg-[#2A3A3D] transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#3B5B63] dark:text-white">
-                          {invoice.invoice_number}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                          {invoice.profiles?.first_name} {invoice.profiles?.last_name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                          {invoice.trips ? `${invoice.trips.pickup_address.substring(0, 30)}...` : 'N/A'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#3B5B63] dark:text-white font-medium">
-                          {formatCurrency(invoice.total)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(invoice.status)}`}>
-                            {invoice.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                          {formatDate(invoice.due_date)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                          <Link
-                            href={`/dashboard/billing/${invoice.id}`}
-                            className="text-[#3B5B63] dark:text-[#84CED3] hover:text-[#2E4A52] dark:hover:text-[#6CB8BD] transition-colors"
-                          >
-                            View Details
-                          </Link>
-                        </td>
+              {invoices.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-[#F5F7F8] dark:bg-[#121212]">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
+                          Trip #
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
+                          Client
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
+                          Trip Details
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
+                          Amount
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
+                          Trip Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
+                          Actions
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="bg-white dark:bg-[#1E1E1E] divide-y divide-gray-200 dark:divide-gray-700">
+                      {invoices.map((bill) => (
+                        <tr key={bill.id} className="hover:bg-[#F5F7F8] dark:hover:bg-[#2A3A3D] transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#3B5B63] dark:text-white">
+                            {bill.bill_number}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                            {bill.client_name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                            {bill.pickup_address ? `${bill.pickup_address.substring(0, 30)}...` : 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-[#3B5B63] dark:text-white font-medium">
+                            {formatCurrency(bill.total)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(bill.status)}`}>
+                              {bill.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                            {formatDate(bill.trip_date)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                            <Link
+                              href={`/dashboard/trips/${bill.trip_id}`}
+                              className="text-[#3B5B63] dark:text-[#84CED3] hover:text-[#2E4A52] dark:hover:text-[#6CB8BD] transition-colors"
+                            >
+                              View Trip
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="text-6xl opacity-30 mb-4">📄</div>
+                  <h3 className="text-lg font-medium text-[#3B5B63] dark:text-white mb-2">No trips found</h3>
+                  <p className="text-gray-500 dark:text-gray-400">Try adjusting your filters to see more trips for the selected period.</p>
+                </div>
+              )}
             </>
           ) : (
             <>
