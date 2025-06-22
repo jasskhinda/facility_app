@@ -31,14 +31,15 @@ export default function WheelchairSelectionFlow({
   useEffect(() => {
     // Notify parent component of changes
     const isTransportChair = wheelchairType === 'transport';
-    const hasValidWheelchair = (wheelchairType !== 'none' && wheelchairType !== 'transport') || needsWheelchair;
+    // Only charge fee when CCT provides wheelchair (rental), not when bringing own wheelchair
+    const hasWheelchairFee = needsWheelchair; // Only true when "Yes, please provide a wheelchair" is selected
     
     const wheelchairData = {
       type: wheelchairType,
       needsProvided: needsWheelchair,
       customType: customWheelchairType,
-      hasWheelchairFee: hasValidWheelchair,
-      fee: hasValidWheelchair ? WHEELCHAIR_PRICE : 0,
+      hasWheelchairFee: hasWheelchairFee,
+      fee: hasWheelchairFee ? WHEELCHAIR_PRICE : 0,
       isTransportChair: isTransportChair,
       isValidSelection: !isTransportChair
     };
@@ -120,17 +121,14 @@ export default function WheelchairSelectionFlow({
               />
               <div className="ml-3 flex-1">
                 <span className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
-                  Manual wheelchair
+                  Manual wheelchair (I have my own)
                 </span>
                 <p className="text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
-                  Standard manual wheelchair
+                  Standard manual wheelchair that you bring
                 </p>
                 <div className="flex items-center mt-1">
-                  <span className="text-xs font-semibold text-[#7CCFD0]">
-                    +${WHEELCHAIR_PRICE}
-                  </span>
-                  <span className="text-xs text-[#2E4F54]/50 dark:text-[#E0F4F5]/50 ml-1">
-                    accessibility fee
+                  <span className="text-xs font-semibold text-green-600 dark:text-green-400">
+                    No additional fee
                   </span>
                 </div>
               </div>
@@ -148,17 +146,14 @@ export default function WheelchairSelectionFlow({
               />
               <div className="ml-3 flex-1">
                 <span className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
-                  Power wheelchair
+                  Power wheelchair (I have my own)
                 </span>
                 <p className="text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
-                  Electric/motorized wheelchair
+                  Electric/motorized wheelchair that you bring
                 </p>
                 <div className="flex items-center mt-1">
-                  <span className="text-xs font-semibold text-[#7CCFD0]">
-                    +${WHEELCHAIR_PRICE}
-                  </span>
-                  <span className="text-xs text-[#2E4F54]/50 dark:text-[#E0F4F5]/50 ml-1">
-                    accessibility fee
+                  <span className="text-xs font-semibold text-green-600 dark:text-green-400">
+                    No additional fee
                   </span>
                 </div>
               </div>
@@ -223,7 +218,7 @@ export default function WheelchairSelectionFlow({
             </h4>
             
             <div className="space-y-2">
-              <label className="flex items-center">
+              <label className="flex items-center p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg hover:bg-white dark:hover:bg-[#1E1E1E] cursor-pointer transition-colors">
                 <input
                   type="radio"
                   name="provideWheelchair"
@@ -231,15 +226,25 @@ export default function WheelchairSelectionFlow({
                   onChange={() => handleProvideWheelchairChange(true)}
                   className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#3F5E63] focus:ring-[#7CCFD0] focus:ring-2"
                 />
-                <span className="ml-2 text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
-                  Yes, please provide a wheelchair
-                </span>
-                <span className="ml-2 text-xs font-semibold text-[#7CCFD0]">
-                  +${WHEELCHAIR_PRICE}
-                </span>
+                <div className="ml-3 flex-1">
+                  <span className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+                    Yes, please provide a wheelchair
+                  </span>
+                  <p className="text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70 mt-1">
+                    We will provide a suitable wheelchair for your trip
+                  </p>
+                  <div className="flex items-center mt-1">
+                    <span className="text-xs font-semibold text-[#7CCFD0]">
+                      +${WHEELCHAIR_PRICE}
+                    </span>
+                    <span className="text-xs text-[#2E4F54]/50 dark:text-[#E0F4F5]/50 ml-1">
+                      wheelchair rental fee
+                    </span>
+                  </div>
+                </div>
               </label>
               
-              <label className="flex items-center">
+              <label className="flex items-center p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg hover:bg-white dark:hover:bg-[#1E1E1E] cursor-pointer transition-colors">
                 <input
                   type="radio"
                   name="provideWheelchair"
@@ -247,9 +252,14 @@ export default function WheelchairSelectionFlow({
                   onChange={() => handleProvideWheelchairChange(false)}
                   className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#3F5E63] focus:ring-[#7CCFD0] focus:ring-2"
                 />
-                <span className="ml-2 text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
-                  No, wheelchair not needed
-                </span>
+                <div className="ml-3 flex-1">
+                  <span className="text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
+                    No, wheelchair not needed
+                  </span>
+                  <p className="text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70 mt-1">
+                    Passenger can walk or transfer independently
+                  </p>
+                </div>
               </label>
             </div>
           </div>
@@ -275,18 +285,18 @@ export default function WheelchairSelectionFlow({
         )}
 
         {/* Pricing Summary */}
-        {(wheelchairType !== 'none' || needsWheelchair) && (
+        {needsWheelchair && (
           <div className="mt-4 p-3 bg-[#7CCFD0]/10 dark:bg-[#7CCFD0]/20 rounded-lg border border-[#7CCFD0]/30">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
-                Wheelchair Accessibility Fee
+                Wheelchair Rental Fee
               </span>
               <span className="text-sm font-bold text-[#7CCFD0]">
                 +${WHEELCHAIR_PRICE}
               </span>
             </div>
             <p className="text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70 mt-1">
-              This fee covers specialized vehicle accessibility and assistance
+              This fee covers wheelchair rental and assistance
             </p>
           </div>
         )}
