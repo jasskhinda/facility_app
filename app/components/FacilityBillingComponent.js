@@ -13,13 +13,23 @@ export default function FacilityBillingComponent({ user, facilityId }) {
 
   const supabase = createClientSupabase();
 
+  // Log the received props
+  useEffect(() => {
+    console.log('🔧 FacilityBillingComponent initialized with:', {
+      userId: user?.id || 'none',
+      facilityId: facilityId || 'none',
+      userEmail: user?.email || 'none'
+    });
+  }, [user, facilityId]);
+
   // Initialize selectedMonth safely
   useEffect(() => {
     try {
-      // Set to current date: June 22, 2025
+      // Use current date - June 22, 2025
       const currentDate = new Date('2025-06-22');
       const currentMonth = currentDate.toISOString().slice(0, 7);
       setSelectedMonth(currentMonth);
+      console.log('📅 Selected month initialized to:', currentMonth);
     } catch (err) {
       console.error('Error setting initial month:', err);
       setError('Failed to initialize date selector');
@@ -193,9 +203,35 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       
       console.log('💰 Calculated total:', total);
       
+      // If no trips found for the selected month, try to find ANY trips for debugging
+      if (!trips || trips.length === 0) {
+        console.log('🔍 No trips found for selected month, checking for ANY trips...');
+        
+        const { data: anyTrips, error: anyTripsError } = await supabase
+          .from('trips')
+          .select('id, pickup_time, price, status, user_id')
+          .in('user_id', facilityUserIds)
+          .not('price', 'is', null)
+          .gt('price', 0)
+          .order('pickup_time', { ascending: false })
+          .limit(10);
+        
+        if (!anyTripsError && anyTrips && anyTrips.length > 0) {
+          console.log(`📊 Found ${anyTrips.length} trips total for facility users:`, anyTrips);
+          setError(`No trips found for ${selectedMonth}. Found ${anyTrips.length} trips in other months.`);
+        } else {
+          console.log('❌ No trips found at all for facility users');
+          setError('No trips found for this facility');
+        }
+      }
+      
       setMonthlyTrips(trips || []);
       setTotalAmount(total);
-      setError('');
+      if (!trips || trips.length === 0) {
+        // Keep the error message if we set one above
+      } else {
+        setError('');
+      }
     } catch (err) {
       console.error('Error fetching monthly trips:', err);
       setError('Failed to load monthly trip data');
@@ -356,8 +392,8 @@ Questions? Contact us at billing@compassionatecaretransportation.com
   const getMonthOptions = () => {
     try {
       const options = [];
-      // Set current date to June 20, 2025 as per context
-      const currentDate = new Date('2025-06-20');
+      // Use current date - June 22, 2025
+      const currentDate = new Date('2025-06-22');
       
       // Validate current date
       if (isNaN(currentDate.getTime())) {

@@ -44,6 +44,12 @@ export default function DashboardBillingPage() {
       }
 
       setProfile(profileData);
+      console.log('🏥 Billing Page - Profile loaded:', {
+        userId: session.user.id,
+        role: profileData.role,
+        facilityId: profileData.facility_id,
+        name: `${profileData.first_name} ${profileData.last_name}`
+      });
     } catch (error) {
       console.error('Error fetching user data:', error);
       setError('Failed to load user data. Please try again.');
