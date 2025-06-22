@@ -16,8 +16,8 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   // Initialize selectedMonth safely
   useEffect(() => {
     try {
-      // Set to current date: June 20, 2025
-      const currentDate = new Date('2025-06-20');
+      // Set to current date: June 22, 2025
+      const currentDate = new Date('2025-06-22');
       const currentMonth = currentDate.toISOString().slice(0, 7);
       setSelectedMonth(currentMonth);
     } catch (err) {
@@ -73,6 +73,8 @@ export default function FacilityBillingComponent({ user, facilityId }) {
     setError('');
     
     try {
+      console.log('🔍 fetchMonthlyTrips called with:', { selectedMonth, facilityId });
+      
       // Safely parse the selected month
       const startDate = new Date(selectedMonth + '-01');
       
@@ -82,12 +84,15 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       }
       
       const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+      console.log('📅 Date range:', { startDate: startDate.toISOString(), endDate: endDate.toISOString() });
 
       // First get all users belonging to this facility
       const { data: facilityUsers, error: facilityUsersError } = await supabase
         .from('profiles')
         .select('id')
         .eq('facility_id', facilityId);
+      
+      console.log('👥 Facility users query result:', { facilityUsers, facilityUsersError });
       
       if (facilityUsersError) {
         console.error('Facility users fetch error:', facilityUsersError);
@@ -98,6 +103,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       }
 
       const facilityUserIds = facilityUsers?.map(user => user.id) || [];
+      console.log('🆔 Facility user IDs:', facilityUserIds);
       
       // Get managed clients for this facility (if table exists)
       let facilityManagedClientIds = [];
@@ -117,11 +123,19 @@ export default function FacilityBillingComponent({ user, facilityId }) {
 
       // If no users or managed clients, return empty
       if (facilityUserIds.length === 0 && facilityManagedClientIds.length === 0) {
+        console.log('❌ No users or managed clients found for facility');
         setMonthlyTrips([]);
         setTotalAmount(0);
         setError('No users or clients found for this facility');
         return;
       }
+
+      console.log('🔍 About to query trips with filters:', {
+        facilityUserIds: facilityUserIds.length,
+        facilityManagedClientIds: facilityManagedClientIds.length,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString()
+      });
 
       // Now query trips for these users and managed clients
       let query = supabase
@@ -157,6 +171,12 @@ export default function FacilityBillingComponent({ user, facilityId }) {
 
       const { data: trips, error } = await query;
 
+      console.log('🚗 Trips query result:', { 
+        trips: trips?.length || 0, 
+        error: error?.message || 'none',
+        sampleTrip: trips?.[0] || 'none'
+      });
+
       if (error) {
         console.error('Trips fetch error:', error);
         setError('Failed to load trip data');
@@ -170,6 +190,8 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         const price = parseFloat(trip.price) || 0;
         return sum + price;
       }, 0);
+      
+      console.log('💰 Calculated total:', total);
       
       setMonthlyTrips(trips || []);
       setTotalAmount(total);
