@@ -93,8 +93,15 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         throw new Error('Invalid date selected');
       }
       
-      const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
-      console.log('📅 Date range:', { startDate: startDate.toISOString(), endDate: endDate.toISOString() });
+      // Set end date to the end of the last day of the month (23:59:59.999)
+      const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0, 23, 59, 59, 999);
+      console.log('📅 Date range:', { 
+        selectedMonth,
+        startDate: startDate.toISOString(), 
+        endDate: endDate.toISOString(),
+        startDateLocal: startDate.toString(),
+        endDateLocal: endDate.toString()
+      });
 
       // First get all users belonging to this facility
       const { data: facilityUsers, error: facilityUsersError } = await supabase
@@ -170,6 +177,14 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         .gt('price', 0)
         .order('pickup_time', { ascending: false });
 
+      console.log('🔍 Query filters being applied:', {
+        pickup_time_gte: startDate.toISOString(),
+        pickup_time_lte: endDate.toISOString(),
+        status_in: ['completed', 'pending', 'upcoming'],
+        price_not_null: true,
+        price_gt: 0
+      });
+
       // Filter for trips by facility users OR managed clients  
       if (facilityUserIds.length > 0 && facilityManagedClientIds.length > 0) {
         query = query.or(`user_id.in.(${facilityUserIds.join(',')}),managed_client_id.in.(${facilityManagedClientIds.join(',')})`);
@@ -186,6 +201,63 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         error: error?.message || 'none',
         sampleTrip: trips?.[0] || 'none'
       });
+
+      // If no trips found with ISO filtering, try date-only filtering as fallback
+      if ((!trips || trips.length === 0) && !error) {
+        console.log('🔍 Trying date-only filtering as fallback...');
+        
+        const dateOnlyStart = selectedMonth + '-01';
+        const nextMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
+        const dateOnlyEnd = nextMonth.toISOString().split('T')[0];
+        
+        let fallbackQuery = supabase
+          .from('trips')
+          .select(`
+            id,
+            pickup_address,
+            destination_address,
+            pickup_time,
+            price,
+            wheelchair_type,
+            is_round_trip,
+            additional_passengers,
+            status,
+            user_id,
+            managed_client_id
+          `)
+          .gte('pickup_time', dateOnlyStart)
+          .lt('pickup_time', dateOnlyEnd)
+          .in('status', ['completed', 'pending', 'upcoming'])
+          .not('price', 'is', null)
+          .gt('price', 0)
+          .order('pickup_time', { ascending: false });
+
+        if (facilityUserIds.length > 0) {
+          fallbackQuery = fallbackQuery.in('user_id', facilityUserIds);
+        }
+        
+        console.log('🔍 Fallback query filters:', {
+          pickup_time_gte: dateOnlyStart,
+          pickup_time_lt: dateOnlyEnd
+        });
+        
+        const { data: fallbackTrips, error: fallbackError } = await fallbackQuery;
+        
+        console.log('🚗 Fallback trips query result:', { 
+          trips: fallbackTrips?.length || 0, 
+          error: fallbackError?.message || 'none',
+          sampleTrip: fallbackTrips?.[0] || 'none'
+        });
+        
+        if (!fallbackError && fallbackTrips && fallbackTrips.length > 0) {
+          console.log('✅ Found trips with date-only filtering! Using fallback results.');
+          setMonthlyTrips(fallbackTrips);
+          const total = fallbackTrips.reduce((sum, trip) => sum + (parseFloat(trip.price) || 0), 0);
+          setTotalAmount(total);
+          setError('');
+          return;
+        }
+      }
 
       if (error) {
         console.error('Trips fetch error:', error);
@@ -218,7 +290,22 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         
         if (!anyTripsError && anyTrips && anyTrips.length > 0) {
           console.log(`📊 Found ${anyTrips.length} trips total for facility users:`, anyTrips);
-          setError(`No trips found for ${selectedMonth}. Found ${anyTrips.length} trips in other months.`);
+          
+          // Show which trips fall outside the date range and why
+          const tripsInRange = anyTrips.filter(trip => {
+            const tripDate = new Date(trip.pickup_time);
+            const inRange = tripDate >= startDate && tripDate <= endDate;
+            console.log(`🔍 Trip ${trip.id}: ${trip.pickup_time} -> ${inRange ? 'IN RANGE' : 'OUT OF RANGE'}`);
+            return inRange;
+          });
+          
+          console.log(`📊 Trips in date range: ${tripsInRange.length}/${anyTrips.length}`);
+          
+          // Check status filtering
+          const validStatusTrips = anyTrips.filter(trip => ['completed', 'pending', 'upcoming'].includes(trip.status));
+          console.log(`📊 Trips with valid status: ${validStatusTrips.length}/${anyTrips.length}`);
+          
+          setError(`No trips found for ${selectedMonth}. Found ${anyTrips.length} trips in other months. Check console for details.`);
         } else {
           console.log('❌ No trips found at all for facility users');
           setError('No trips found for this facility');
