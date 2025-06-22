@@ -154,8 +154,13 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         endDate: endDate.toISOString()
       });
 
-      // Now query trips for these users and managed clients
-      let query = supabase
+      // STRATEGY: Try multiple query approaches in sequence
+      let trips = null;
+      let error = null;
+      
+      // Approach 1: Standard datetime filtering with expanded status list
+      console.log('🔄 Attempt 1: Standard datetime filtering...');
+      let query1 = supabase
         .from('trips')
         .select(`
           id,
@@ -172,45 +177,45 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         `)
         .gte('pickup_time', startDate.toISOString())
         .lte('pickup_time', endDate.toISOString())
-        .in('status', ['completed', 'pending', 'upcoming'])
         .not('price', 'is', null)
         .gt('price', 0)
         .order('pickup_time', { ascending: false });
 
-      console.log('🔍 Query filters being applied:', {
-        pickup_time_gte: startDate.toISOString(),
-        pickup_time_lte: endDate.toISOString(),
-        status_in: ['completed', 'pending', 'upcoming'],
-        price_not_null: true,
-        price_gt: 0
-      });
-
-      // Filter for trips by facility users OR managed clients  
+      // Add user filtering
       if (facilityUserIds.length > 0 && facilityManagedClientIds.length > 0) {
-        query = query.or(`user_id.in.(${facilityUserIds.join(',')}),managed_client_id.in.(${facilityManagedClientIds.join(',')})`);
+        query1 = query1.or(`user_id.in.(${facilityUserIds.join(',')}),managed_client_id.in.(${facilityManagedClientIds.join(',')})`);
       } else if (facilityUserIds.length > 0) {
-        query = query.in('user_id', facilityUserIds);
+        query1 = query1.in('user_id', facilityUserIds);
       } else if (facilityManagedClientIds.length > 0) {
-        query = query.in('managed_client_id', facilityManagedClientIds);
+        query1 = query1.in('managed_client_id', facilityManagedClientIds);
       }
 
-      const { data: trips, error } = await query;
-
-      console.log('🚗 Trips query result:', { 
-        trips: trips?.length || 0, 
-        error: error?.message || 'none',
-        sampleTrip: trips?.[0] || 'none'
-      });
-
-      // If no trips found with ISO filtering, try date-only filtering as fallback
-      if ((!trips || trips.length === 0) && !error) {
-        console.log('🔍 Trying date-only filtering as fallback...');
+      const { data: trips1, error: error1 } = await query1;
+      console.log('🚗 Attempt 1 result (no status filter):', { trips: trips1?.length || 0, error: error1?.message || 'none' });
+      
+      if (!error1 && trips1 && trips1.length > 0) {
+        // Filter by status in JavaScript to be more flexible
+        const validTrips = trips1.filter(trip => {
+          const validStatuses = ['completed', 'pending', 'upcoming', 'confirmed', 'in_progress', 'finished', 'active', 'booked'];
+          return validStatuses.includes(trip.status?.toLowerCase());
+        });
+        console.log(`📊 Valid status trips: ${validTrips.length}/${trips1.length}`);
+        
+        if (validTrips.length > 0) {
+          trips = validTrips;
+          console.log('✅ Found trips with Approach 1!');
+        }
+      }
+      
+      // Approach 2: Date-only filtering if Approach 1 failed
+      if (!trips || trips.length === 0) {
+        console.log('🔄 Attempt 2: Date-only filtering...');
         
         const dateOnlyStart = selectedMonth + '-01';
         const nextMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
         const dateOnlyEnd = nextMonth.toISOString().split('T')[0];
         
-        let fallbackQuery = supabase
+        let query2 = supabase
           .from('trips')
           .select(`
             id,
@@ -227,47 +232,77 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           `)
           .gte('pickup_time', dateOnlyStart)
           .lt('pickup_time', dateOnlyEnd)
-          .in('status', ['completed', 'pending', 'upcoming'])
           .not('price', 'is', null)
           .gt('price', 0)
           .order('pickup_time', { ascending: false });
 
+        // Add user filtering
+        if (facilityUserIds.length > 0 && facilityManagedClientIds.length > 0) {
+          query2 = query2.or(`user_id.in.(${facilityUserIds.join(',')}),managed_client_id.in.(${facilityManagedClientIds.join(',')})`);
+        } else if (facilityUserIds.length > 0) {
+          query2 = query2.in('user_id', facilityUserIds);
+        } else if (facilityManagedClientIds.length > 0) {
+          query2 = query2.in('managed_client_id', facilityManagedClientIds);
+        }
+        
+        const { data: trips2, error: error2 } = await query2;
+        console.log('🚗 Attempt 2 result:', { trips: trips2?.length || 0, error: error2?.message || 'none' });
+        
+        if (!error2 && trips2 && trips2.length > 0) {
+          // Filter by status in JavaScript
+          const validTrips = trips2.filter(trip => {
+            const validStatuses = ['completed', 'pending', 'upcoming', 'confirmed', 'in_progress', 'finished', 'active', 'booked'];
+            return validStatuses.includes(trip.status?.toLowerCase());
+          });
+          console.log(`📊 Valid status trips (Approach 2): ${validTrips.length}/${trips2.length}`);
+          
+          if (validTrips.length > 0) {
+            trips = validTrips;
+            console.log('✅ Found trips with Approach 2!');
+          }
+        }
+      }
+      
+      // Approach 3: Remove status filtering entirely if still no trips
+      if (!trips || trips.length === 0) {
+        console.log('🔄 Attempt 3: No status filtering...');
+        
+        let query3 = supabase
+          .from('trips')
+          .select(`
+            id,
+            pickup_address,
+            destination_address,
+            pickup_time,
+            price,
+            wheelchair_type,
+            is_round_trip,
+            additional_passengers,
+            status,
+            user_id,
+            managed_client_id
+          `)
+          .gte('pickup_time', selectedMonth + '-01')
+          .lt('pickup_time', selectedMonth.slice(0, 4) + '-' + String(parseInt(selectedMonth.slice(5, 7)) + 1).padStart(2, '0') + '-01')
+          .not('price', 'is', null)
+          .gt('price', 0)
+          .order('pickup_time', { ascending: false });
+
+        // Add user filtering
         if (facilityUserIds.length > 0) {
-          fallbackQuery = fallbackQuery.in('user_id', facilityUserIds);
+          query3 = query3.in('user_id', facilityUserIds);
         }
         
-        console.log('🔍 Fallback query filters:', {
-          pickup_time_gte: dateOnlyStart,
-          pickup_time_lt: dateOnlyEnd
-        });
+        const { data: trips3, error: error3 } = await query3;
+        console.log('🚗 Attempt 3 result (no status filter):', { trips: trips3?.length || 0, error: error3?.message || 'none' });
         
-        const { data: fallbackTrips, error: fallbackError } = await fallbackQuery;
-        
-        console.log('🚗 Fallback trips query result:', { 
-          trips: fallbackTrips?.length || 0, 
-          error: fallbackError?.message || 'none',
-          sampleTrip: fallbackTrips?.[0] || 'none'
-        });
-        
-        if (!fallbackError && fallbackTrips && fallbackTrips.length > 0) {
-          console.log('✅ Found trips with date-only filtering! Using fallback results.');
-          setMonthlyTrips(fallbackTrips);
-          const total = fallbackTrips.reduce((sum, trip) => sum + (parseFloat(trip.price) || 0), 0);
-          setTotalAmount(total);
-          setError('');
-          return;
+        if (!error3 && trips3 && trips3.length > 0) {
+          trips = trips3;
+          console.log('✅ Found trips with Approach 3 (no status filter)!');
         }
       }
 
-      if (error) {
-        console.error('Trips fetch error:', error);
-        setError('Failed to load trip data');
-        setMonthlyTrips([]);
-        setTotalAmount(0);
-        return;
-      }
-
-      // Safely calculate total amount
+      // Calculate total amount
       const total = (trips || []).reduce((sum, trip) => {
         const price = parseFloat(trip.price) || 0;
         return sum + price;
@@ -275,10 +310,15 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       
       console.log('💰 Calculated total:', total);
       
-      // If no trips found for the selected month, try to find ANY trips for debugging
+      // Set the data
+      setMonthlyTrips(trips || []);
+      setTotalAmount(total);
+      
+      // Handle success/error messages
       if (!trips || trips.length === 0) {
-        console.log('🔍 No trips found for selected month, checking for ANY trips...');
+        console.log('🔍 No trips found, running final diagnostic...');
         
+        // Final diagnostic: check if ANY trips exist for facility users
         const { data: anyTrips, error: anyTripsError } = await supabase
           .from('trips')
           .select('id, pickup_time, price, status, user_id')
@@ -289,36 +329,38 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           .limit(10);
         
         if (!anyTripsError && anyTrips && anyTrips.length > 0) {
-          console.log(`📊 Found ${anyTrips.length} trips total for facility users:`, anyTrips);
+          console.log(`📊 Found ${anyTrips.length} trips in other months:`, anyTrips);
           
-          // Show which trips fall outside the date range and why
-          const tripsInRange = anyTrips.filter(trip => {
+          // Show month distribution
+          const monthCounts = {};
+          anyTrips.forEach(trip => {
             const tripDate = new Date(trip.pickup_time);
-            const inRange = tripDate >= startDate && tripDate <= endDate;
-            console.log(`🔍 Trip ${trip.id}: ${trip.pickup_time} -> ${inRange ? 'IN RANGE' : 'OUT OF RANGE'}`);
-            return inRange;
+            const monthKey = `${tripDate.getFullYear()}-${String(tripDate.getMonth() + 1).padStart(2, '0')}`;
+            monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
           });
+          console.log('📊 Trips by month:', monthCounts);
           
-          console.log(`📊 Trips in date range: ${tripsInRange.length}/${anyTrips.length}`);
+          // Format selected month for display
+          let selectedMonthDisplay;
+          try {
+            selectedMonthDisplay = new Date(selectedMonth + '-01').toLocaleDateString('en-US', { 
+              month: 'long', 
+              year: 'numeric' 
+            });
+          } catch (err) {
+            selectedMonthDisplay = selectedMonth;
+          }
           
-          // Check status filtering
-          const validStatusTrips = anyTrips.filter(trip => ['completed', 'pending', 'upcoming'].includes(trip.status));
-          console.log(`📊 Trips with valid status: ${validStatusTrips.length}/${anyTrips.length}`);
-          
-          setError(`No trips found for ${selectedMonth}. Found ${anyTrips.length} trips in other months. Check console for details.`);
+          setError(`No trips found for ${selectedMonthDisplay}. Found ${anyTrips.length} trips in other months. Check console for details.`);
         } else {
           console.log('❌ No trips found at all for facility users');
           setError('No trips found for this facility');
         }
+      } else {
+        console.log('✅ Trips found and displayed successfully!');
+        setError(''); // Clear any previous errors
       }
       
-      setMonthlyTrips(trips || []);
-      setTotalAmount(total);
-      if (!trips || trips.length === 0) {
-        // Keep the error message if we set one above
-      } else {
-        setError('');
-      }
     } catch (err) {
       console.error('Error fetching monthly trips:', err);
       setError('Failed to load monthly trip data');
@@ -582,7 +624,10 @@ Questions? Contact us at billing@compassionatecaretransportation.com
           <div className="flex items-center space-x-4">
             <select
               value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
+              onChange={(e) => {
+                console.log('📅 Month selection changed:', { from: selectedMonth, to: e.target.value });
+                setSelectedMonth(e.target.value);
+              }}
               className="px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
             >
               {getMonthOptions().map(option => (
