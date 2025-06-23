@@ -61,16 +61,16 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       try {
         // CRITICAL FIX: Parse the YYYY-MM format correctly
         const [year, month] = selectedMonth.split('-');
-        console.log('🔧 DEBUG: Parsing selectedMonth:', selectedMonth, '→ year:', year, 'month:', month);
+        console.log('🆘 EMERGENCY DEBUG: selectedMonth=', selectedMonth, 'year=', year, 'month=', month);
         
         const monthDisplay = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('en-US', { 
           month: 'long', 
           year: 'numeric' 
         });
         
-        console.log('🔧 DEBUG: Calculated display month:', monthDisplay);
+        console.log('🆘 EMERGENCY DEBUG: calculated monthDisplay=', monthDisplay);
         setDisplayMonth(monthDisplay);
-        console.log('📅 FIXED: Display month updated to:', monthDisplay, 'from selectedMonth:', selectedMonth);
+        console.log('🆘 EMERGENCY DEBUG: setDisplayMonth called with:', monthDisplay);
       } catch (error) {
         console.error('📅 Date parsing error:', error);
         setDisplayMonth(selectedMonth);

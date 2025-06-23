@@ -45,12 +45,14 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   useEffect(() => {
     if (selectedMonth) {
       try {
-        const monthDisplay = new Date(selectedMonth + '-01').toLocaleDateString('en-US', { 
+        // CRITICAL FIX: Parse the YYYY-MM format correctly
+        const [year, month] = selectedMonth.split('-');
+        const monthDisplay = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('en-US', { 
           month: 'long', 
           year: 'numeric' 
         });
         setDisplayMonth(monthDisplay);
-        console.log('📅 Display month updated to:', monthDisplay, 'from selected:', selectedMonth);
+        console.log('📅 FIXED: Display month updated to:', monthDisplay, 'from selected:', selectedMonth);
       } catch (error) {
         console.error('📅 Date parsing error:', error);
         setDisplayMonth(selectedMonth);
@@ -201,7 +203,9 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           });
           console.log('📊 DIAGNOSTIC: Trips distribution by month:', monthCounts);
           
-          const displayMonth = new Date(monthToFetch + '-01').toLocaleDateString('en-US', { 
+          // FIXED: Consistent date parsing for error message
+          const [year, month] = monthToFetch.split('-');
+          const displayMonth = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('en-US', { 
             month: 'long', year: 'numeric' 
           });
           setError(`No trips found for ${displayMonth}. Found ${anyTrips.length} trips in other months (see console for details).`);
@@ -303,7 +307,9 @@ ${monthlyTrips.map(trip => {
   };
 
   const generateInvoiceData = () => {
-    const monthName = new Date(selectedMonth + '-01').toLocaleDateString('en-US', { 
+    // FIXED: Consistent date parsing
+    const [year, month] = selectedMonth.split('-');
+    const monthName = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('en-US', { 
       month: 'long', year: 'numeric' 
     });
 
@@ -480,13 +486,14 @@ ${monthlyTrips.map(trip => {
                 setMonthlyTrips([]);
                 setTotalAmount(0);
                 
-                // Update display immediately for better UX
+                // Update display immediately for better UX - FIXED DATE PARSING
                 try {
-                  const newDisplay = new Date(newMonth + '-01').toLocaleDateString('en-US', { 
+                  const [year, month] = newMonth.split('-');
+                  const newDisplay = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('en-US', { 
                     month: 'long', year: 'numeric' 
                   });
                   setDisplayMonth(newDisplay);
-                  console.log('📅 Display immediately updated to:', newDisplay);
+                  console.log('📅 FIXED: Display immediately updated to:', newDisplay);
                 } catch (err) {
                   console.error('📅 Display update error:', err);
                   setDisplayMonth(newMonth);
