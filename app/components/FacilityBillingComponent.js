@@ -61,10 +61,14 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       try {
         // CRITICAL FIX: Parse the YYYY-MM format correctly
         const [year, month] = selectedMonth.split('-');
+        console.log('🔧 DEBUG: Parsing selectedMonth:', selectedMonth, '→ year:', year, 'month:', month);
+        
         const monthDisplay = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('en-US', { 
           month: 'long', 
           year: 'numeric' 
         });
+        
+        console.log('🔧 DEBUG: Calculated display month:', monthDisplay);
         setDisplayMonth(monthDisplay);
         console.log('📅 FIXED: Display month updated to:', monthDisplay, 'from selectedMonth:', selectedMonth);
       } catch (error) {
@@ -211,7 +215,9 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         
         if (anyTrips?.length > 0) {
           console.log(`📊 DIAGNOSTIC: Found ${anyTrips.length} trips in other months`);
-          const displayMonth = new Date(monthToFetch + '-01').toLocaleDateString('en-US', { 
+          // FIXED: Consistent date parsing for error message
+          const [year, month] = monthToFetch.split('-');
+          const displayMonth = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('en-US', { 
             month: 'long', year: 'numeric' 
           });
           setError(`No trips found for ${displayMonth}. Found ${anyTrips.length} trips in other months (see console for details).`);
