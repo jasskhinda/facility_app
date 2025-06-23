@@ -16,10 +16,15 @@ export default function FacilityBillingComponent({ user, facilityId }) {
 
   // Initialize selectedMonth
   useEffect(() => {
-    const currentMonth = '2025-06'; // June 2025
+    // Get the current month that should be the first in dropdown
+    const currentDate = new Date('2025-06-23'); // June 23, 2025
+    const currentMonth = currentDate.toISOString().slice(0, 7); // '2025-06'
+    
+    console.log('🔧 INIT FIX: Initializing to current month:', currentMonth);
     setSelectedMonth(currentMonth);
     setDisplayMonth('June 2025');
-    console.log('📅 Initialized to June 2025');
+    
+    console.log('🔧 INIT FIX: Billing component initialized to June 2025');
   }, []);
 
   // Update display month when selectedMonth changes
@@ -42,7 +47,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   useEffect(() => {
     if (selectedMonth && facilityId) {
       fetchFacilityInfo();
-      fetchMonthlyTrips();
+      fetchMonthlyTrips(selectedMonth); // CRITICAL FIX: Pass selectedMonth parameter
     }
   }, [selectedMonth, facilityId]);
 
@@ -740,39 +745,42 @@ Questions? Contact us at billing@compassionatecaretransportation.com
               value={selectedMonth}
               onChange={(e) => {
                 const newMonth = e.target.value;
-                console.log('📅 Month selection changed:', { 
+                console.log('🔧 DROPDOWN FIX: Month selection changed:', { 
                   from: selectedMonth, 
                   to: newMonth,
                   timestamp: new Date().toISOString()
                 });
                 
-                // CRITICAL: Update both states immediately
+                // IMMEDIATE STATE UPDATES - Fix dropdown sync issue
                 setSelectedMonth(newMonth);
                 
-                // Update display month immediately for instant UI feedback
+                // Force display month to match dropdown selection exactly
                 try {
                   const newDisplayMonth = new Date(newMonth + '-01').toLocaleDateString('en-US', { 
                     month: 'long', 
                     year: 'numeric' 
                   });
                   setDisplayMonth(newDisplayMonth);
-                  console.log('📅 Display month immediately updated to:', newDisplayMonth);
+                  console.log('🔧 DROPDOWN FIX: Display forced to match dropdown:', newDisplayMonth);
                 } catch (error) {
+                  console.error('🔧 DROPDOWN FIX: Date parsing error:', error);
                   setDisplayMonth(newMonth);
                 }
                 
+                // Clear previous data immediately
                 setError('');
                 setLoading(true);
                 setMonthlyTrips([]);
                 setTotalAmount(0);
                 
-                console.log('📅 All states updated for month:', newMonth);
+                console.log('🔧 DROPDOWN FIX: All states cleared for new month:', newMonth);
                 
+                // Fetch new data with the selected month parameter
                 if (facilityId) {
-                  console.log('📅 Calling fetchMonthlyTrips with:', newMonth);
+                  console.log('🔧 DROPDOWN FIX: Fetching data for month:', newMonth);
                   fetchMonthlyTrips(newMonth);
                 } else {
-                  console.error('📅 No facilityId available for fetching trips');
+                  console.error('🔧 DROPDOWN FIX: No facilityId available');
                   setLoading(false);
                 }
               }}
