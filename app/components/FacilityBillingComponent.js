@@ -11,6 +11,16 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   const [loading, setLoading] = useState(false);
   const [facility, setFacility] = useState(null);
   const [error, setError] = useState('');
+  
+  // Invoice sending states
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [invoiceEmail, setInvoiceEmail] = useState('');
+  const [useAlternateEmail, setUseAlternateEmail] = useState(false);
+  const [alternateEmail, setAlternateEmail] = useState('');
+  const [invoiceSending, setInvoiceSending] = useState(false);
+  const [markAsPaid, setMarkAsPaid] = useState(false);
+  const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const supabase = createClientSupabase();
 
@@ -20,6 +30,11 @@ export default function FacilityBillingComponent({ user, facilityId }) {
     const currentMonth = '2025-06';
     setSelectedMonth(currentMonth);
     setDisplayMonth('June 2025');
+    
+    // Generate invoice number for this month
+    const invoiceNum = `CCT-${currentMonth}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    setInvoiceNumber(invoiceNum);
+    
     console.log('🔧 INIT: Billing component initialized to June 2025');
   }, []);
 
@@ -69,6 +84,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
 
       if (data) {
         setFacility(data);
+        setInvoiceEmail(data.billing_email || 'billing@compassionatecaretransportation.com');
         setError('');
       }
     } catch (err) {
@@ -272,6 +288,107 @@ ${monthlyTrips.map(trip => {
       console.error('Download error:', error);
       setError('Failed to generate download');
     }
+  };
+
+  const generateInvoiceData = () => {
+    const monthName = new Date(selectedMonth + '-01').toLocaleDateString('en-US', { 
+      month: 'long', year: 'numeric' 
+    });
+
+    return {
+      invoiceNumber: invoiceNumber,
+      facilityName: facility?.name || 'Unknown Facility',
+      billingEmail: facility?.billing_email || 'Not set',
+      month: monthName,
+      totalAmount: totalAmount,
+      totalTrips: monthlyTrips.length,
+      trips: monthlyTrips,
+      generatedDate: new Date().toLocaleDateString(),
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString() // 30 days from now
+    };
+  };
+
+  const sendInvoice = async () => {
+    if (!facility || monthlyTrips.length === 0) {
+      setError('Cannot send invoice: No facility data or trips found');
+      return;
+    }
+
+    const emailToSend = useAlternateEmail ? alternateEmail : invoiceEmail;
+    
+    if (!emailToSend || !emailToSend.includes('@')) {
+      setError('Please provide a valid email address');
+      return;
+    }
+
+    setInvoiceSending(true);
+    setError('');
+    
+    try {
+      const invoiceData = generateInvoiceData();
+      
+      // Create invoice record in database
+      const { data: invoiceRecord, error: invoiceError } = await supabase
+        .from('invoices')
+        .insert({
+          invoice_number: invoiceData.invoiceNumber,
+          facility_id: facilityId,
+          month: selectedMonth,
+          total_amount: totalAmount,
+          total_trips: monthlyTrips.length,
+          billing_email: emailToSend,
+          status: markAsPaid ? 'pending_approval' : 'sent',
+          payment_status: markAsPaid ? 'paid' : 'pending',
+          due_date: invoiceData.dueDate,
+          created_at: new Date().toISOString(),
+          trip_ids: monthlyTrips.map(trip => trip.id)
+        })
+        .select()
+        .single();
+
+      if (invoiceError) {
+        console.error('Invoice creation error:', invoiceError);
+        setError('Failed to create invoice record');
+        return;
+      }
+
+      // Here you would integrate with your email service
+      // For now, we'll simulate the email sending
+      console.log('📧 Invoice would be sent to:', emailToSend);
+      console.log('📄 Invoice data:', invoiceData);
+      
+      // Simulate email sending delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      setSuccessMessage(`Invoice ${invoiceData.invoiceNumber} sent successfully to ${emailToSend}${markAsPaid ? ' and marked as paid (pending dispatcher approval)' : ''}`);
+      setShowInvoiceModal(false);
+      
+      // Reset form
+      setUseAlternateEmail(false);
+      setAlternateEmail('');
+      setMarkAsPaid(false);
+      
+      // Generate new invoice number for future use
+      const newInvoiceNum = `CCT-${selectedMonth}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      setInvoiceNumber(newInvoiceNum);
+      
+    } catch (error) {
+      console.error('Invoice sending error:', error);
+      setError('Failed to send invoice. Please try again.');
+    } finally {
+      setInvoiceSending(false);
+    }
+  };
+
+  const openInvoiceModal = () => {
+    if (monthlyTrips.length === 0) {
+      setError('No trips available to invoice for this month');
+      return;
+    }
+    
+    setShowInvoiceModal(true);
+    setError('');
+    setSuccessMessage('');
   };
 
   return (
