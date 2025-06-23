@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createClientSupabase } from '@/lib/client-supabase';
 
 export default function FacilityBillingComponent({ user, facilityId }) {
@@ -21,6 +21,23 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   const [markAsPaid, setMarkAsPaid] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  
+  // Memoized month options to prevent excessive recalculation
+  const monthOptions = useMemo(() => {
+    const options = [];
+    // Generate last 12 months from June 2025 (current date)
+    const currentDate = new Date('2025-06-23');
+    
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const value = date.toISOString().slice(0, 7);
+      const label = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      options.push({ value, label });
+    }
+    
+    console.log('📅 Generated month options once:', options.slice(0, 3));
+    return options;
+  }, []); // Empty dependency array - only calculate once
 
   const supabase = createClientSupabase();
 
@@ -42,12 +59,14 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   useEffect(() => {
     if (selectedMonth) {
       try {
-        const monthDisplay = new Date(selectedMonth + '-01').toLocaleDateString('en-US', { 
+        // CRITICAL FIX: Parse the YYYY-MM format correctly
+        const [year, month] = selectedMonth.split('-');
+        const monthDisplay = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('en-US', { 
           month: 'long', 
           year: 'numeric' 
         });
         setDisplayMonth(monthDisplay);
-        console.log('📅 Display month updated to:', monthDisplay, 'from selectedMonth:', selectedMonth);
+        console.log('📅 FIXED: Display month updated to:', monthDisplay, 'from selectedMonth:', selectedMonth);
       } catch (error) {
         console.error('📅 Date parsing error:', error);
         setDisplayMonth(selectedMonth);
@@ -237,24 +256,11 @@ export default function FacilityBillingComponent({ user, facilityId }) {
     }
   };
 
-  const getMonthOptions = () => {
-    const options = [];
-    // Generate last 12 months from June 2025 (current date)
-    const currentDate = new Date('2025-06-23');
-    
-    for (let i = 0; i < 12; i++) {
-      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-      const value = date.toISOString().slice(0, 7);
-      const label = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-      options.push({ value, label });
-    }
-    
-    return options;
-  };
-
   const downloadRideSummary = () => {
     try {
-      const monthName = new Date(selectedMonth + '-01').toLocaleDateString('en-US', { 
+      // FIXED: Consistent date parsing
+      const [year, month] = selectedMonth.split('-');
+      const monthName = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('en-US', { 
         month: 'long', year: 'numeric' 
       });
 
@@ -291,7 +297,9 @@ ${monthlyTrips.map(trip => {
   };
 
   const generateInvoiceData = () => {
-    const monthName = new Date(selectedMonth + '-01').toLocaleDateString('en-US', { 
+    // FIXED: Consistent date parsing
+    const [year, month] = selectedMonth.split('-');
+    const monthName = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('en-US', { 
       month: 'long', year: 'numeric' 
     });
 
@@ -463,14 +471,15 @@ ${monthlyTrips.map(trip => {
                 // CRITICAL FIX: Update states immediately and synchronously
                 setSelectedMonth(newMonth);
                 
-                // Force display month to match dropdown selection exactly
+                // Force display month to match dropdown selection exactly - FIXED DATE PARSING
                 try {
-                  const newDisplayMonth = new Date(newMonth + '-01').toLocaleDateString('en-US', { 
+                  const [year, month] = newMonth.split('-');
+                  const newDisplayMonth = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('en-US', { 
                     month: 'long', 
                     year: 'numeric' 
                   });
                   setDisplayMonth(newDisplayMonth);
-                  console.log('🔧 DROPDOWN FIX: Display forced to match:', newDisplayMonth);
+                  console.log('🔧 DROPDOWN FIX: Display forced to match:', newDisplayMonth, 'for month:', newMonth);
                 } catch (error) {
                   console.error('🔧 DROPDOWN FIX: Date parsing error:', error);
                   setDisplayMonth(newMonth);
@@ -493,7 +502,7 @@ ${monthlyTrips.map(trip => {
               }}
               className="px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
             >
-              {getMonthOptions().map(option => (
+              {monthOptions.map(option => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
