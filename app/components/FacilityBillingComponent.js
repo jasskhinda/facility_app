@@ -129,12 +129,12 @@ export default function FacilityBillingComponent({ user, facilityId }) {
     try {
       console.log('🔧 fetchMonthlyTrips: Starting for month:', monthToFetch, 'facility:', facilityId);
       
-      // Get facility users
+      // FIXED: Get ALL users associated with this facility (staff + clients)
+      // Facility trips come from CLIENTS managed by the facility, not facility staff
       const { data: facilityUsers, error: facilityUsersError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name')
-        .eq('facility_id', facilityId)
-        .eq('role', 'facility');
+        .select('id, first_name, last_name, role')
+        .eq('facility_id', facilityId);
       
       if (facilityUsersError) {
         console.error('Facility users fetch error:', facilityUsersError);

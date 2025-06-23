@@ -103,12 +103,12 @@ export default function FacilityBillingComponent({ user, facilityId }) {
     try {
       console.log('🔍 fetchMonthlyTrips: Starting fetch for month:', monthToFetch, 'facility:', facilityId);
       
-      // Get facility users first
+      // FIXED: Get ALL users associated with this facility (staff + clients)
+      // Facility trips come from CLIENTS managed by the facility, not facility staff
       const { data: facilityUsers, error: usersError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name')
-        .eq('facility_id', facilityId)
-        .eq('role', 'facility');
+        .select('id, first_name, last_name, role')
+        .eq('facility_id', facilityId);
       
       if (usersError) {
         console.error('❌ User fetch error:', usersError);
@@ -119,14 +119,14 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       }
 
       if (!facilityUsers?.length) {
-        console.log('👥 No facility users found');
-        setError('No facility users found');
+        console.log('👥 No users found for this facility');
+        setError('No users found for this facility');
         setMonthlyTrips([]);
         setTotalAmount(0);
         return;
       }
 
-      console.log(`✅ Found ${facilityUsers.length} facility users`);
+      console.log(`✅ Found ${facilityUsers.length} facility users:`, facilityUsers.map(u => `${u.first_name} ${u.last_name} (${u.role})`));
       const userIds = facilityUsers.map(u => u.id);
 
       // Calculate date range using the passed month parameter (CRITICAL FIX)
