@@ -99,18 +99,12 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0, 23, 59, 59, 999);
       
       console.log('📅 Date range:', {
-      console.error('Error setting initial month:', err);
-      setError('Failed to initialize date selector');
-      setSelectedMonth('2025-06'); // Fallback to June 2025
-    }
-  }, []);
+        start: startDate.toISOString(),
+        end: endDate.toISOString()
+      });
 
-  useEffect(() => {
-    console.log('📅 selectedMonth changed to:', selectedMonth);
-    if (selectedMonth && facilityId) {
-      console.log('📅 Fetching data for month:', selectedMonth);
-      fetchFacilityInfo();
-      fetchMonthlyTrips(selectedMonth);
+      // Query trips with simplified approach
+      const { data: trips, error: tripsError } = await supabase
     }
   }, [selectedMonth, facilityId]);
 

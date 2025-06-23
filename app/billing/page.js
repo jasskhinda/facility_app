@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClientSupabase } from '@/lib/client-supabase';
 import DashboardLayout from '@/app/components/DashboardLayout';
-import FacilityBillingComponent from '@/app/components/FacilityBillingComponent';
+import FacilityBillingComponent from '@/app/components/NewBillingComponent';
 
 export default function BillingPage() {
   const [user, setUser] = useState(null);
