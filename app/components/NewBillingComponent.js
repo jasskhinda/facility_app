@@ -16,19 +16,14 @@ export default function FacilityBillingComponent({ user, facilityId }) {
 
   // Initialize selectedMonth
   useEffect(() => {
-    // Set to current month (June 2025) which should be the first option
-    const currentDate = new Date('2025-06-23');
-    const currentMonth = currentDate.toISOString().slice(0, 7); // '2025-06'
+    // Set to current month (June 2025) - Fixed initialization
+    const currentMonth = '2025-06'; // June 2025 - hardcoded for consistency
     setSelectedMonth(currentMonth);
     
-    // Set display month to match
-    const displayText = currentDate.toLocaleDateString('en-US', { 
-      month: 'long', 
-      year: 'numeric' 
-    });
-    setDisplayMonth(displayText);
+    // Set display month to match exactly
+    setDisplayMonth('June 2025');
     
-    console.log('📅 Initialized to:', currentMonth, '(' + displayText + ')');
+    console.log('📅 Initialized billing component to:', currentMonth, '(June 2025)');
   }, []);
 
   // Update display month when selectedMonth changes
@@ -40,8 +35,9 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           year: 'numeric' 
         });
         setDisplayMonth(monthDisplay);
-        console.log('📅 Display month updated to:', monthDisplay);
+        console.log('📅 Display month updated to:', monthDisplay, 'from selected:', selectedMonth);
       } catch (error) {
+        console.error('📅 Date parsing error:', error);
         setDisplayMonth(selectedMonth);
       }
     }
@@ -77,23 +73,35 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   };
 
   const fetchMonthlyTrips = async (monthToFetch = selectedMonth) => {
-    if (!monthToFetch || !facilityId) return;
+    if (!monthToFetch || !facilityId) {
+      console.log('📅 fetchMonthlyTrips: Missing required params:', { monthToFetch, facilityId });
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     setError('');
     
     try {
-      console.log('🔍 Fetching trips for:', { monthToFetch, facilityId });
+      console.log('🔍 fetchMonthlyTrips: Starting fetch for month:', monthToFetch, 'facility:', facilityId);
       
-      // Get facility users
+      // Get facility users first
       const { data: facilityUsers, error: usersError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name')
         .eq('facility_id', facilityId)
         .eq('role', 'facility');
       
-      if (usersError || !facilityUsers?.length) {
-        console.error('No facility users found:', usersError);
+      if (usersError) {
+        console.error('❌ User fetch error:', usersError);
+        setError('Failed to fetch facility users');
+        setMonthlyTrips([]);
+        setTotalAmount(0);
+        return;
+      }
+
+      if (!facilityUsers?.length) {
+        console.log('👥 No facility users found');
         setError('No facility users found');
         setMonthlyTrips([]);
         setTotalAmount(0);
@@ -103,11 +111,12 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       console.log(`✅ Found ${facilityUsers.length} facility users`);
       const userIds = facilityUsers.map(u => u.id);
 
-      // Calculate date range using the passed month parameter
+      // Calculate date range using the passed month parameter (CRITICAL FIX)
       const startDate = new Date(monthToFetch + '-01');
       const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0, 23, 59, 59, 999);
       
-      console.log('📅 Date range:', {
+      console.log('📅 Date range for query:', {
+        monthToFetch,
         start: startDate.toISOString(),
         end: endDate.toISOString()
       });
@@ -148,10 +157,45 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       }
 
       if (!trips || trips.length === 0) {
-        console.log('📊 No trips found for this month');
+        console.log('📊 No trips found for selected month');
+        
+        // Enhanced diagnostic: Check if ANY trips exist for these users
+        const { data: anyTrips, error: anyTripsError } = await supabase
+          .from('trips')
+          .select('id, pickup_time, price, status')
+          .in('user_id', userIds)
+          .not('price', 'is', null)
+          .gt('price', 0)
+          .order('pickup_time', { ascending: false })
+          .limit(10);
+        
+        if (!anyTripsError && anyTrips?.length > 0) {
+          console.log(`📊 DIAGNOSTIC: Found ${anyTrips.length} trips in other months for these users:`);
+          anyTrips.forEach(trip => {
+            const tripDate = new Date(trip.pickup_time);
+            console.log(`   - Trip ${trip.id}: ${tripDate.toDateString()} | $${trip.price} | ${trip.status}`);
+          });
+          
+          // Show month distribution
+          const monthCounts = {};
+          anyTrips.forEach(trip => {
+            const tripDate = new Date(trip.pickup_time);
+            const monthKey = `${tripDate.getFullYear()}-${String(tripDate.getMonth() + 1).padStart(2, '0')}`;
+            monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
+          });
+          console.log('📊 DIAGNOSTIC: Trips distribution by month:', monthCounts);
+          
+          const displayMonth = new Date(monthToFetch + '-01').toLocaleDateString('en-US', { 
+            month: 'long', year: 'numeric' 
+          });
+          setError(`No trips found for ${displayMonth}. Found ${anyTrips.length} trips in other months (see console for details).`);
+        } else {
+          console.log('📊 DIAGNOSTIC: No trips found at all for facility users');
+          setError('No trips found for this facility. Please contact support if this seems incorrect.');
+        }
+        
         setMonthlyTrips([]);
         setTotalAmount(0);
-        setError('');
         return;
       }
 
@@ -269,7 +313,7 @@ ${monthlyTrips.map(trip => {
               value={selectedMonth}
               onChange={(e) => {
                 const newMonth = e.target.value;
-                console.log('📅 Month changed to:', newMonth);
+                console.log('📅 Month dropdown changed from', selectedMonth, 'to', newMonth);
                 
                 setSelectedMonth(newMonth);
                 setError('');
@@ -277,19 +321,25 @@ ${monthlyTrips.map(trip => {
                 setMonthlyTrips([]);
                 setTotalAmount(0);
                 
-                // Update display immediately
+                // Update display immediately for better UX
                 try {
                   const newDisplay = new Date(newMonth + '-01').toLocaleDateString('en-US', { 
                     month: 'long', year: 'numeric' 
                   });
                   setDisplayMonth(newDisplay);
+                  console.log('📅 Display immediately updated to:', newDisplay);
                 } catch (err) {
+                  console.error('📅 Display update error:', err);
                   setDisplayMonth(newMonth);
                 }
                 
-                // CRITICAL FIX: Fetch data for the new month
+                // CRITICAL FIX: Fetch data for the new month immediately
                 if (facilityId) {
+                  console.log('📅 Triggering data fetch for month:', newMonth);
                   fetchMonthlyTrips(newMonth);
+                } else {
+                  console.error('📅 No facilityId available for data fetch');
+                  setLoading(false);
                 }
               }}
               className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
