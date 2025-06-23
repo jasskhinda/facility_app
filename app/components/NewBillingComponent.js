@@ -42,7 +42,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   useEffect(() => {
     if (selectedMonth && facilityId) {
       fetchFacilityInfo();
-      fetchMonthlyTrips();
+      fetchMonthlyTrips(selectedMonth);
     }
   }, [selectedMonth, facilityId]);
 
@@ -67,14 +67,14 @@ export default function FacilityBillingComponent({ user, facilityId }) {
     }
   };
 
-  const fetchMonthlyTrips = async () => {
-    if (!selectedMonth || !facilityId) return;
+  const fetchMonthlyTrips = async (monthToFetch = selectedMonth) => {
+    if (!monthToFetch || !facilityId) return;
 
     setLoading(true);
     setError('');
     
     try {
-      console.log('🔍 Fetching trips for:', { selectedMonth, facilityId });
+      console.log('🔍 Fetching trips for:', { monthToFetch, facilityId });
       
       // Get facility users
       const { data: facilityUsers, error: usersError } = await supabase
@@ -94,8 +94,8 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       console.log(`✅ Found ${facilityUsers.length} facility users`);
       const userIds = facilityUsers.map(u => u.id);
 
-      // Calculate date range
-      const startDate = new Date(selectedMonth + '-01');
+      // Calculate date range using the passed month parameter
+      const startDate = new Date(monthToFetch + '-01');
       const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0, 23, 59, 59, 999);
       
       console.log('📅 Date range:', {
@@ -276,6 +276,11 @@ ${monthlyTrips.map(trip => {
                   setDisplayMonth(newDisplay);
                 } catch (err) {
                   setDisplayMonth(newMonth);
+                }
+                
+                // CRITICAL FIX: Fetch data for the new month
+                if (facilityId) {
+                  fetchMonthlyTrips(newMonth);
                 }
               }}
               className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
