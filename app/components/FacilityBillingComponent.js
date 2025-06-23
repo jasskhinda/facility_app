@@ -30,6 +30,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       const currentMonth = currentDate.toISOString().slice(0, 7);
       setSelectedMonth(currentMonth);
       console.log('📅 Selected month initialized to:', currentMonth);
+      console.log('📅 Current selectedMonth state:', selectedMonth);
     } catch (err) {
       console.error('Error setting initial month:', err);
       setError('Failed to initialize date selector');
@@ -38,9 +39,11 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   }, []);
 
   useEffect(() => {
+    console.log('📅 selectedMonth changed to:', selectedMonth);
     if (selectedMonth && facilityId) {
+      console.log('📅 Fetching data for month:', selectedMonth);
       fetchFacilityInfo();
-      fetchMonthlyTrips();
+      fetchMonthlyTrips(selectedMonth);
     }
   }, [selectedMonth, facilityId]);
 
@@ -73,8 +76,8 @@ export default function FacilityBillingComponent({ user, facilityId }) {
     }
   };
 
-  const fetchMonthlyTrips = async () => {
-    if (!selectedMonth || !facilityId) {
+  const fetchMonthlyTrips = async (monthToFetch = selectedMonth) => {
+    if (!monthToFetch || !facilityId) {
       setLoading(false);
       return;
     }
@@ -83,10 +86,10 @@ export default function FacilityBillingComponent({ user, facilityId }) {
     setError('');
     
     try {
-      console.log('🔍 fetchMonthlyTrips called with:', { selectedMonth, facilityId });
+      console.log('🔍 fetchMonthlyTrips called with:', { monthToFetch, selectedMonth, facilityId });
       
       // Safely parse the selected month
-      const startDate = new Date(selectedMonth + '-01');
+      const startDate = new Date(monthToFetch + '-01');
       
       // Validate the date
       if (isNaN(startDate.getTime())) {
@@ -96,6 +99,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       // Set end date to the end of the last day of the month (23:59:59.999)
       const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0, 23, 59, 59, 999);
       console.log('📅 Date range:', { 
+        monthToFetch,
         selectedMonth,
         startDate: startDate.toISOString(), 
         endDate: endDate.toISOString(),
@@ -213,7 +217,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       if (!trips || trips.length === 0) {
         console.log('🔄 Attempt 2: Date-only filtering...');
         
-        const dateOnlyStart = selectedMonth + '-01';
+        const dateOnlyStart = monthToFetch + '-01';
         const nextMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
         const dateOnlyEnd = nextMonth.toISOString().split('T')[0];
         
@@ -288,8 +292,8 @@ export default function FacilityBillingComponent({ user, facilityId }) {
             user:profiles!trips_user_id_fkey(first_name, last_name),
             managed_client:managed_clients!trips_managed_client_id_fkey(first_name, last_name)
           `)
-          .gte('pickup_time', selectedMonth + '-01')
-          .lt('pickup_time', selectedMonth.slice(0, 4) + '-' + String(parseInt(selectedMonth.slice(5, 7)) + 1).padStart(2, '0') + '-01')
+          .gte('pickup_time', monthToFetch + '-01')
+          .lt('pickup_time', monthToFetch.slice(0, 4) + '-' + String(parseInt(monthToFetch.slice(5, 7)) + 1).padStart(2, '0') + '-01')
           .not('price', 'is', null)
           .gt('price', 0)
           .order('pickup_time', { ascending: false });
@@ -349,15 +353,20 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           // Format selected month for display
           let selectedMonthDisplay;
           try {
-            selectedMonthDisplay = new Date(selectedMonth + '-01').toLocaleDateString('en-US', { 
+            console.log('📅 Formatting month for error message:', monthToFetch);
+            selectedMonthDisplay = new Date(monthToFetch + '-01').toLocaleDateString('en-US', { 
               month: 'long', 
               year: 'numeric' 
             });
+            console.log('📅 Formatted month display:', selectedMonthDisplay);
           } catch (err) {
-            selectedMonthDisplay = selectedMonth;
+            console.error('📅 Date formatting error:', err);
+            selectedMonthDisplay = monthToFetch;
           }
           
-          setError(`No trips found for ${selectedMonthDisplay}. Found ${anyTrips.length} trips in other months. Check console for details.`);
+          const errorMessage = `No trips found for ${selectedMonthDisplay}. Found ${anyTrips.length} trips in other months. Check console for details.`;
+          console.log('📅 Setting error message:', errorMessage);
+          setError(errorMessage);
         } else {
           console.log('❌ No trips found at all for facility users');
           setError('No trips found for this facility');
@@ -677,13 +686,15 @@ Questions? Contact us at billing@compassionatecaretransportation.com
               {(() => {
                 try {
                   if (!selectedMonth) return 'Select a month to view trips';
+                  console.log('📅 Rendering month display for:', selectedMonth);
                   const monthDisplay = new Date(selectedMonth + '-01').toLocaleDateString('en-US', { 
                     month: 'long', 
                     year: 'numeric' 
                   });
+                  console.log('📅 Month display result:', monthDisplay);
                   return `Showing trips for ${monthDisplay}`;
                 } catch (error) {
-                  console.error('Date formatting error:', error);
+                  console.error('📅 Date formatting error in display:', error);
                   return `Showing trips for ${selectedMonth}`;
                 }
               })()}
@@ -694,8 +705,20 @@ Questions? Contact us at billing@compassionatecaretransportation.com
             <select
               value={selectedMonth}
               onChange={(e) => {
-                console.log('📅 Month selection changed:', { from: selectedMonth, to: e.target.value });
-                setSelectedMonth(e.target.value);
+                const newMonth = e.target.value;
+                console.log('📅 Month selection changed:', { 
+                  from: selectedMonth, 
+                  to: newMonth,
+                  timestamp: new Date().toISOString()
+                });
+                setSelectedMonth(newMonth);
+                // Clear any existing error to show fresh data
+                setError('');
+                console.log('📅 State should update to:', newMonth);
+                // Immediately fetch data for the new month to avoid stale closure issues
+                if (facilityId) {
+                  fetchMonthlyTrips(newMonth);
+                }
               }}
               className="px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
             >
@@ -901,13 +924,15 @@ Questions? Contact us at billing@compassionatecaretransportation.com
             {(() => {
               try {
                 if (!selectedMonth) return 'Please select a month to view trips';
+                console.log('📅 Bottom message - selectedMonth:', selectedMonth);
                 const monthDisplay = new Date(selectedMonth + '-01').toLocaleDateString('en-US', { 
                   month: 'long', 
                   year: 'numeric' 
                 });
+                console.log('📅 Bottom message - monthDisplay:', monthDisplay);
                 return `No trips found for ${monthDisplay}`;
               } catch (error) {
-                console.error('Date formatting error:', error);
+                console.error('📅 Bottom message date formatting error:', error);
                 return `No trips found for ${selectedMonth}`;
               }
             })()}
