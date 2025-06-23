@@ -43,36 +43,8 @@ export async function GET(request) {
     //   return NextResponse.json({ error: 'No facility associated with this account' }, { status: 400 });
     // }
     
-    // Build query for trips with costs for facility clients
-    // First get all users belonging to this facility
-    const { data: facilityUsers, error: facilityUsersError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('facility_id', profile.facility_id);
-    
-    if (facilityUsersError) {
-      return NextResponse.json({ error: facilityUsersError.message }, { status: 500 });
-    }
-    
-    const facilityUserIds = facilityUsers.map(user => user.id);
-    
-    // Get managed clients for this facility (if table exists)
-    let facilityManagedClientIds = [];
-    try {
-      const { data: managedClientsForFacility, error: managedClientsError } = await supabase
-        .from('managed_clients')
-        .select('id')
-        .eq('facility_id', profile.facility_id);
-      
-      if (!managedClientsError && managedClientsForFacility) {
-        facilityManagedClientIds = managedClientsForFacility.map(client => client.id);
-      }
-    } catch (error) {
-      // managed_clients table might not exist - continue without it
-      console.log('managed_clients table not found, continuing without managed clients');
-    }
-    
-    // Now query trips for these users and managed clients
+    // ✅ CRITICAL FIX: Query trips by facility_id to only get facility-created trips
+    // This excludes individual client trips booked through other apps
     let query = supabase
       .from('trips')
       .select(`
@@ -88,26 +60,14 @@ export async function GET(request) {
         additional_passengers,
         created_at,
         user_id,
-        managed_client_id
+        managed_client_id,
+        profiles:user_id(first_name, last_name),
+        managed_clients:managed_client_id(first_name, last_name)
       `)
+      .eq('facility_id', profile.facility_id)
       .not('price', 'is', null)
       .gt('price', 0)
       .order('created_at', { ascending: false });
-    
-    // Filter for trips by facility users OR managed clients  
-    if (facilityUserIds.length > 0 && facilityManagedClientIds.length > 0) {
-      query = query.or(`user_id.in.(${facilityUserIds.join(',')}),managed_client_id.in.(${facilityManagedClientIds.join(',')})`);
-    } else if (facilityUserIds.length > 0) {
-      query = query.in('user_id', facilityUserIds);
-    } else if (facilityManagedClientIds.length > 0) {
-      query = query.in('managed_client_id', facilityManagedClientIds);
-    } else {
-      // No users or managed clients for this facility - return empty
-      return NextResponse.json({ 
-        bills: [], 
-        summary: { total_bills: 0, total_amount: 0, paid_amount: 0, outstanding_amount: 0, overdue_count: 0, completed_trips: 0, pending_trips: 0, cancelled_trips: 0 }
-      });
-    }
     
     // Apply filters
     const status = searchParams.get('status');
@@ -137,51 +97,20 @@ export async function GET(request) {
       return NextResponse.json({ error: tripsError.message }, { status: 500 });
     }
     
-    // Fetch user profiles for the trips
-    const userIds = [...new Set(trips.filter(trip => trip.user_id).map(trip => trip.user_id))];
-    let userProfiles = [];
-    
-    if (userIds.length > 0) {
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name')
-        .in('id', userIds);
-      
-      if (!profileError && profileData) {
-        userProfiles = profileData;
-      }
-    }
-    
-    // Fetch managed clients if needed (if table exists)
-    const managedClientIds = [...new Set(trips.filter(trip => trip.managed_client_id).map(trip => trip.managed_client_id))];
-    let managedClients = [];
-    
-    if (managedClientIds.length > 0) {
-      try {
-        const { data: managedData, error: managedError } = await supabase
-          .from('managed_clients')
-          .select('id, first_name, last_name')
-          .in('id', managedClientIds);
-        
-        if (!managedError && managedData) {
-          managedClients = managedData;
-        }
-      } catch (error) {
-        // managed_clients table might not exist - continue without it
-        console.log('managed_clients table not found during fetch, continuing without managed clients');
-      }
-    }
-    
-    // Transform trips into bill format
+    // Transform trips into bill format with enhanced client name resolution
     const bills = trips.map(trip => {
-      const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
-      const managedClient = managedClients.find(mc => mc.id === trip.managed_client_id);
-      const client = userProfile || managedClient;
+      // Smart client name detection - matches billing components logic
+      let clientName = 'Unknown Client';
+      if (trip.profiles && trip.profiles.first_name) {
+        clientName = `${trip.profiles.first_name} ${trip.profiles.last_name || ''}`.trim();
+      } else if (trip.managed_clients && trip.managed_clients.first_name) {
+        clientName = `${trip.managed_clients.first_name} ${trip.managed_clients.last_name || ''} (Managed)`.trim();
+      }
       
       return {
         id: trip.id,
         bill_number: `TRIP-${trip.id.split('-')[0].toUpperCase()}`,
-        client_name: client ? `${client.first_name} ${client.last_name}` : 'Unknown Client',
+        client_name: clientName,
         client_id: trip.user_id || trip.managed_client_id,
         trip_id: trip.id,
         pickup_address: trip.pickup_address,
@@ -198,7 +127,7 @@ export async function GET(request) {
         payment_status: trip.status === 'completed' ? 'paid' : 'pending',
         created_at: trip.created_at,
         due_date: trip.status === 'completed' ? trip.pickup_time : null,
-        profiles: client
+        profiles: trip.profiles || trip.managed_clients
       };
     });
     

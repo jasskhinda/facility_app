@@ -4,7 +4,22 @@ import { useState, useEffect, useMemo } from 'react';
 import { createClientSupabase } from '@/lib/client-supabase';
 
 export default function FacilityBillingComponent({ user, facilityId }) {
-  const [monthlyTrips, setMonthlyTrips] = useState([]);
+  const [monthlyTrips, setMonthlyTri      const csvContent = `Compassionate Care Transportation - Monthly Invoice
+Facility: ${facility?.name || 'Unknown Facility'}
+Month: ${monthName}
+Total Amount: $${totalAmount.toFixed(2)}
+Total Trips: ${monthlyTrips.length}
+
+Date,Client,Pickup Address,Destination,Price,Status
+${monthlyTrips.map(trip => {
+  const date = trip.pickup_time ? new Date(trip.pickup_time).toLocaleDateString() : 'N/A';
+  const client = trip.clientName || 'Unknown Client';
+  const pickup = (trip.pickup_address || '').replace(/"/g, '""');
+  const destination = (trip.destination_address || '').replace(/"/g, '""');
+  const price = (trip.price || 0).toFixed(2);
+  const status = trip.status || 'unknown';
+  return `${date},"${client}","${pickup}","${destination}","$${price}",${status}`;
+}).join('\n')}`;`]);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [displayMonth, setDisplayMonth] = useState('');
   const [totalAmount, setTotalAmount] = useState(0);
@@ -129,32 +144,6 @@ export default function FacilityBillingComponent({ user, facilityId }) {
     try {
       console.log('🔧 fetchMonthlyTrips: Starting for month:', monthToFetch, 'facility:', facilityId);
       
-      // FIXED: Get ALL users associated with this facility (staff + clients)
-      // Facility trips come from CLIENTS managed by the facility, not facility staff
-      const { data: facilityUsers, error: facilityUsersError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, role')
-        .eq('facility_id', facilityId);
-      
-      if (facilityUsersError) {
-        console.error('Facility users fetch error:', facilityUsersError);
-        setError('Failed to load facility users');
-        setMonthlyTrips([]);
-        setTotalAmount(0);
-        return;
-      }
-
-      if (!facilityUsers?.length) {
-        console.log('❌ No users found for facility');
-        setMonthlyTrips([]);
-        setTotalAmount(0);
-        setError('No users found for this facility');
-        return;
-      }
-
-      const facilityUserIds = facilityUsers.map(user => user.id);
-      console.log('✅ Found', facilityUserIds.length, 'facility users');
-
       // Calculate date range using monthToFetch parameter
       const startDate = new Date(monthToFetch + '-01');
       const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0, 23, 59, 59, 999);
@@ -165,7 +154,8 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         end: endDate.toISOString()
       });
 
-      // Query trips with proper date filtering
+      // ✅ CRITICAL FIX: Query trips by facility_id to only get facility-created trips
+      // This excludes individual client trips booked through other apps
       const { data: trips, error: tripsError } = await supabase
         .from('trips')
         .select(`
@@ -178,9 +168,12 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           is_round_trip,
           additional_passengers,
           status,
-          user_id
+          user_id,
+          managed_client_id,
+          profiles:user_id(first_name, last_name),
+          managed_clients:managed_client_id(first_name, last_name)
         `)
-        .in('user_id', facilityUserIds)
+        .eq('facility_id', facilityId)
         .gte('pickup_time', startDate.toISOString())
         .lte('pickup_time', endDate.toISOString())
         .not('price', 'is', null)
@@ -201,42 +194,33 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       }
 
       if (!trips || trips.length === 0) {
-        console.log('📊 No trips found for selected month');
+        console.log('📊 No facility-created trips found for selected month');
         
-        // Check if ANY trips exist for these users (diagnostic)
-        const { data: anyTrips } = await supabase
-          .from('trips')
-          .select('id, pickup_time, price, status')
-          .in('user_id', facilityUserIds)
-          .not('price', 'is', null)
-          .gt('price', 0)
-          .order('pickup_time', { ascending: false })
-          .limit(5);
-        
-        if (anyTrips?.length > 0) {
-          console.log(`📊 DIAGNOSTIC: Found ${anyTrips.length} trips in other months`);
-          // FIXED: Consistent date parsing for error message
-          const [year, month] = monthToFetch.split('-');
-          const displayMonth = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('en-US', { 
-            month: 'long', year: 'numeric' 
-          });
-          setError(`No trips found for ${displayMonth}. Found ${anyTrips.length} trips in other months (see console for details).`);
-        } else {
-          console.log('📊 DIAGNOSTIC: No trips found at all');
-          setError('No trips found for this facility');
-        }
+        // FIXED: Consistent date parsing for error message
+        const [year, month] = monthToFetch.split('-');
+        const displayMonth = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('en-US', { 
+          month: 'long', year: 'numeric' 
+        });
+        setError(`No facility-created trips found for ${displayMonth}. Only trips booked through the facility interface appear in billing.`);
         
         setMonthlyTrips([]);
         setTotalAmount(0);
         return;
       }
 
-      // Add user information to trips
+      // Process trips with enhanced client name resolution
       const enhancedTrips = trips.map(trip => {
-        const user = facilityUsers.find(u => u.id === trip.user_id);
+        // Smart client name detection - matches NewBillingComponent.js logic
+        let clientName = 'Unknown Client';
+        if (trip.profiles && trip.profiles.first_name) {
+          clientName = `${trip.profiles.first_name} ${trip.profiles.last_name || ''}`.trim();
+        } else if (trip.managed_clients && trip.managed_clients.first_name) {
+          clientName = `${trip.managed_clients.first_name} ${trip.managed_clients.last_name || ''} (Managed)`.trim();
+        }
+        
         return {
           ...trip,
-          user: user || null
+          clientName
         };
       });
 
@@ -279,7 +263,7 @@ Total Trips: ${monthlyTrips.length}
 Date,Client,Pickup Address,Destination,Price,Status
 ${monthlyTrips.map(trip => {
   const date = trip.pickup_time ? new Date(trip.pickup_time).toLocaleDateString() : 'N/A';
-  const client = trip.user ? `${trip.user.first_name} ${trip.user.last_name}` : 'Unknown Client';
+  const client = trip.clientName || 'Unknown Client';
   const pickup = (trip.pickup_address || '').replace(/"/g, '""');
   const destination = (trip.destination_address || '').replace(/"/g, '""');
   const price = (trip.price || 0).toFixed(2);

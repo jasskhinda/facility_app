@@ -103,32 +103,6 @@ export default function FacilityBillingComponent({ user, facilityId }) {
     try {
       console.log('🔍 fetchMonthlyTrips: Starting fetch for month:', monthToFetch, 'facility:', facilityId);
       
-      // FIXED: Get ALL users associated with this facility (staff + clients)
-      // Facility trips come from CLIENTS managed by the facility, not facility staff
-      const { data: facilityUsers, error: usersError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, role')
-        .eq('facility_id', facilityId);
-      
-      if (usersError) {
-        console.error('❌ User fetch error:', usersError);
-        setError('Failed to fetch facility users');
-        setMonthlyTrips([]);
-        setTotalAmount(0);
-        return;
-      }
-
-      if (!facilityUsers?.length) {
-        console.log('👥 No users found for this facility');
-        setError('No users found for this facility');
-        setMonthlyTrips([]);
-        setTotalAmount(0);
-        return;
-      }
-
-      console.log(`✅ Found ${facilityUsers.length} facility users:`, facilityUsers.map(u => `${u.first_name} ${u.last_name} (${u.role})`));
-      const userIds = facilityUsers.map(u => u.id);
-
       // Calculate date range using the passed month parameter (CRITICAL FIX)
       const [year, month] = monthToFetch.split('-');
       const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
@@ -146,7 +120,8 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         endDate: endDate.toISOString()
       });
 
-      // Query trips with improved approach - check for both completed and pending trips
+      // ✅ CRITICAL FIX: Query trips by facility_id instead of user association
+      // This ensures we only get facility-created trips, not individual bookings
       const { data: trips, error: tripsError } = await supabase
         .from('trips')
         .select(`
@@ -159,65 +134,68 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           is_round_trip,
           additional_passengers,
           status,
-          user_id
+          user_id,
+          managed_client_id,
+          profiles:user_id(first_name, last_name),
+          managed_clients:managed_client_id(first_name, last_name)
         `)
-        .in('user_id', userIds)
+        .eq('facility_id', facilityId)
         .gte('pickup_time', startISO)
         .lte('pickup_time', endISO)
         .in('status', ['completed', 'pending', 'upcoming', 'confirmed'])
         .order('pickup_time', { ascending: false });
 
-      console.log('🚗 Query result:', { 
+      console.log('🚗 FACILITY TRIPS Query result:', { 
         trips: trips?.length || 0, 
         error: tripsError?.message || 'none'
       });
 
       if (tripsError) {
-        console.error('Trips query error:', tripsError);
-        setError(`Failed to fetch trips: ${tripsError.message}`);
+        console.error('❌ Facility trips query error:', tripsError);
+        setError(`Failed to fetch facility trips: ${tripsError.message}`);
         setMonthlyTrips([]);
         setTotalAmount(0);
         return;
       }
 
       if (!trips || trips.length === 0) {
-        console.log('📊 No trips found for selected month');
+        console.log('📊 No facility trips found for selected month');
         
-        // Enhanced diagnostic: Check if ANY trips exist for these users
-        const { data: anyTrips, error: anyTripsError } = await supabase
+        // Enhanced diagnostic: Check if ANY facility trips exist
+        const { data: anyFacilityTrips, error: anyTripsError } = await supabase
           .from('trips')
           .select('id, pickup_time, price, status')
-          .in('user_id', userIds)
+          .eq('facility_id', facilityId)
           .not('price', 'is', null)
           .gt('price', 0)
           .order('pickup_time', { ascending: false })
           .limit(10);
         
-        if (!anyTripsError && anyTrips?.length > 0) {
-          console.log(`📊 DIAGNOSTIC: Found ${anyTrips.length} trips in other months for these users:`);
-          anyTrips.forEach(trip => {
+        if (!anyTripsError && anyFacilityTrips?.length > 0) {
+          console.log(`📊 DIAGNOSTIC: Found ${anyFacilityTrips.length} facility trips in other months:`);
+          anyFacilityTrips.forEach(trip => {
             const tripDate = new Date(trip.pickup_time);
             console.log(`   - Trip ${trip.id}: ${tripDate.toDateString()} | $${trip.price} | ${trip.status}`);
           });
           
           // Show month distribution
           const monthCounts = {};
-          anyTrips.forEach(trip => {
+          anyFacilityTrips.forEach(trip => {
             const tripDate = new Date(trip.pickup_time);
             const monthKey = `${tripDate.getFullYear()}-${String(tripDate.getMonth() + 1).padStart(2, '0')}`;
             monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
           });
-          console.log('📊 DIAGNOSTIC: Trips distribution by month:', monthCounts);
+          console.log('📊 DIAGNOSTIC: Facility trips distribution by month:', monthCounts);
           
           // FIXED: Consistent date parsing for error message
           const [year, month] = monthToFetch.split('-');
           const displayMonth = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('en-US', { 
             month: 'long', year: 'numeric' 
           });
-          setError(`No trips found for ${displayMonth}. Found ${anyTrips.length} trips in other months (see console for details).`);
+          setError(`No facility-created trips found for ${displayMonth}. Found ${anyFacilityTrips.length} facility trips in other months (see console for details).`);
         } else {
-          console.log('📊 DIAGNOSTIC: No trips found at all for facility users');
-          setError('No trips found for this facility. Please contact support if this seems incorrect.');
+          console.log('📊 DIAGNOSTIC: No facility trips found at all');
+          setError('No facility-created trips found. Only trips booked through the facility interface will appear here.');
         }
         
         setMonthlyTrips([]);
@@ -227,7 +205,13 @@ export default function FacilityBillingComponent({ user, facilityId }) {
 
       // Process and categorize trips with enhanced logic
       const enhancedTrips = trips.map(trip => {
-        const user = facilityUsers.find(u => u.id === trip.user_id);
+        // Get client name from either authenticated user or managed client
+        let clientName = 'Unknown Client';
+        if (trip.profiles && trip.profiles.first_name) {
+          clientName = `${trip.profiles.first_name} ${trip.profiles.last_name || ''}`;
+        } else if (trip.managed_clients && trip.managed_clients.first_name) {
+          clientName = `${trip.managed_clients.first_name} ${trip.managed_clients.last_name || ''} (Managed)`;
+        }
         
         // BILLING LOGIC:
         // - BILLABLE: Only completed trips with valid prices
@@ -238,7 +222,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         
         return {
           ...trip,
-          user: user || null,
+          clientName,
           billable: isBillable,
           displayPrice: hasValidPrice ? parseFloat(trip.price) : 0,
           category: isCompleted ? 'completed' : 'pending'
@@ -312,12 +296,11 @@ Total Trips: ${monthlyTrips.length}
 Date,Client,Pickup Address,Destination,Price,Status
 ${monthlyTrips.map(trip => {
   const date = trip.pickup_time ? new Date(trip.pickup_time).toLocaleDateString() : 'N/A';
-  const client = trip.user ? `${trip.user.first_name} ${trip.user.last_name}` : 'Unknown Client';
   const pickup = (trip.pickup_address || '').replace(/"/g, '""');
   const destination = (trip.destination_address || '').replace(/"/g, '""');
   const price = (trip.price || 0).toFixed(2);
   const status = trip.status || 'unknown';
-  return `${date},"${client}","${pickup}","${destination}","$${price}",${status}`;
+  return `${date},"${trip.clientName}","${pickup}","${destination}","$${price}",${status}`;
 }).join('\n')}`;
 
       const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -628,13 +611,11 @@ ${monthlyTrips.map(trip => {
                 {monthlyTrips.map((trip) => {
                   const formattedDate = trip.pickup_time ? 
                     new Date(trip.pickup_time).toLocaleDateString() : 'N/A';
-                  const clientName = trip.user ? 
-                    `${trip.user.first_name} ${trip.user.last_name}` : 'Unknown Client';
 
                   return (
                     <tr key={trip.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 text-sm text-gray-900">{formattedDate}</td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{clientName}</td>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{trip.clientName}</td>
                       <td className="px-6 py-4 text-sm text-gray-900">
                         <div className="max-w-xs">
                           <p className="truncate font-medium">{trip.pickup_address || 'Unknown pickup'}</p>
