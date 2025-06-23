@@ -60,9 +60,7 @@ export async function GET(request) {
         additional_passengers,
         created_at,
         user_id,
-        managed_client_id,
-        profiles:user_id(first_name, last_name),
-        managed_clients:managed_client_id(first_name, last_name)
+        managed_client_id
       `)
       .eq('facility_id', profile.facility_id)
       .not('price', 'is', null)
@@ -97,14 +95,56 @@ export async function GET(request) {
       return NextResponse.json({ error: tripsError.message }, { status: 500 });
     }
     
+    // Fetch user profiles for the trips to get client names
+    const userIds = [...new Set(trips.filter(trip => trip.user_id).map(trip => trip.user_id))];
+    let userProfiles = [];
+    
+    if (userIds.length > 0) {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', userIds);
+      
+      if (!profileError && profileData) {
+        userProfiles = profileData;
+      }
+    }
+    
+    // Fetch managed clients for the trips to get client names
+    const managedClientIds = [...new Set(trips.filter(trip => trip.managed_client_id).map(trip => trip.managed_client_id))];
+    let managedClients = [];
+    
+    if (managedClientIds.length > 0) {
+      try {
+        const { data: managedData, error: managedError } = await supabase
+          .from('managed_clients')
+          .select('id, first_name, last_name')
+          .in('id', managedClientIds);
+        
+        if (!managedError && managedData) {
+          managedClients = managedData;
+        }
+      } catch (error) {
+        // managed_clients table might not exist - continue without it
+        console.log('managed_clients table not found during fetch, continuing without managed clients');
+      }
+    }
+    
     // Transform trips into bill format with enhanced client name resolution
     const bills = trips.map(trip => {
-      // Smart client name detection - matches billing components logic
+      // Smart client name detection using fetched profile data
       let clientName = 'Unknown Client';
-      if (trip.profiles && trip.profiles.first_name) {
-        clientName = `${trip.profiles.first_name} ${trip.profiles.last_name || ''}`.trim();
-      } else if (trip.managed_clients && trip.managed_clients.first_name) {
-        clientName = `${trip.managed_clients.first_name} ${trip.managed_clients.last_name || ''} (Managed)`.trim();
+      
+      if (trip.user_id) {
+        const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
+        if (userProfile && userProfile.first_name) {
+          clientName = `${userProfile.first_name} ${userProfile.last_name || ''}`.trim();
+        }
+      } else if (trip.managed_client_id) {
+        const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
+        if (managedClient && managedClient.first_name) {
+          clientName = `${managedClient.first_name} ${managedClient.last_name || ''} (Managed)`.trim();
+        }
       }
       
       return {
@@ -127,7 +167,7 @@ export async function GET(request) {
         payment_status: trip.status === 'completed' ? 'paid' : 'pending',
         created_at: trip.created_at,
         due_date: trip.status === 'completed' ? trip.pickup_time : null,
-        profiles: trip.profiles || trip.managed_clients
+        profiles: trip.user_id ? userProfiles.find(p => p.id === trip.user_id) : managedClients.find(c => c.id === trip.managed_client_id)
       };
     });
     
