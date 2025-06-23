@@ -6,15 +6,23 @@ import { createClientSupabase } from '@/lib/client-supabase';
 export default function FacilityBillingComponent({ user, facilityId }) {
   const [monthlyTrips, setMonthlyTrips] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState('');
+  const [displayMonth, setDisplayMonth] = useState('');
   const [totalAmount, setTotalAmount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [facility, setFacility] = useState(null);
   const [error, setError] = useState('');
 
-  // Add a separate state for display month to force re-renders
-  const [displayMonth, setDisplayMonth] = useState('');
-  
-  // Update display month whenever selectedMonth changes
+  const supabase = createClientSupabase();
+
+  // Initialize selectedMonth
+  useEffect(() => {
+    const currentMonth = '2025-06'; // June 2025
+    setSelectedMonth(currentMonth);
+    setDisplayMonth('June 2025');
+    console.log('📅 Initialized to June 2025');
+  }, []);
+
+  // Update display month when selectedMonth changes
   useEffect(() => {
     if (selectedMonth) {
       try {
@@ -25,30 +33,72 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         setDisplayMonth(monthDisplay);
         console.log('📅 Display month updated to:', monthDisplay);
       } catch (error) {
-        console.error('📅 Display month error:', error);
         setDisplayMonth(selectedMonth);
       }
     }
   }, [selectedMonth]);
 
-  // Log the received props
+  // Fetch data when month or facility changes
   useEffect(() => {
-    console.log('🔧 FacilityBillingComponent initialized with:', {
-      userId: user?.id || 'none',
-      facilityId: facilityId || 'none',
-      userEmail: user?.email || 'none'
-    });
-  }, [user, facilityId]);
+    if (selectedMonth && facilityId) {
+      fetchFacilityInfo();
+      fetchMonthlyTrips();
+    }
+  }, [selectedMonth, facilityId]);
 
-  // Initialize selectedMonth safely
-  useEffect(() => {
+  const fetchFacilityInfo = async () => {
+    if (!facilityId) return;
+
     try {
-      // Use current date - June 23, 2025 (today)
-      const currentDate = new Date('2025-06-23');
-      const currentMonth = currentDate.toISOString().slice(0, 7);
-      console.log('📅 Initializing selectedMonth to:', currentMonth);
-      setSelectedMonth(currentMonth);
+      const { data, error } = await supabase
+        .from('facilities')
+        .select('name, billing_email, address, phone_number')
+        .eq('id', facilityId)
+        .single();
+
+      if (error) {
+        console.error('Facility fetch error:', error);
+        return;
+      }
+
+      setFacility(data);
     } catch (err) {
+      console.error('Error fetching facility info:', err);
+    }
+  };
+
+  const fetchMonthlyTrips = async () => {
+    if (!selectedMonth || !facilityId) return;
+
+    setLoading(true);
+    setError('');
+    
+    try {
+      console.log('🔍 Fetching trips for:', { selectedMonth, facilityId });
+      
+      // Get facility users
+      const { data: facilityUsers, error: usersError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .eq('facility_id', facilityId)
+        .eq('role', 'facility');
+      
+      if (usersError || !facilityUsers?.length) {
+        console.error('No facility users found:', usersError);
+        setError('No facility users found');
+        setMonthlyTrips([]);
+        setTotalAmount(0);
+        return;
+      }
+
+      console.log(`✅ Found ${facilityUsers.length} facility users`);
+      const userIds = facilityUsers.map(u => u.id);
+
+      // Calculate date range
+      const startDate = new Date(selectedMonth + '-01');
+      const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0, 23, 59, 59, 999);
+      
+      console.log('📅 Date range:', {
       console.error('Error setting initial month:', err);
       setError('Failed to initialize date selector');
       setSelectedMonth('2025-06'); // Fallback to June 2025
@@ -145,26 +195,15 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       
       // Get managed clients for this facility (if table exists)
       let facilityManagedClientIds = [];
-      try {
-        const { data: managedClientsForFacility, error: managedClientsError } = await supabase
-          .from('managed_clients')
-          .select('id')
-          .eq('facility_id', facilityId);
-        
-        if (!managedClientsError && managedClientsForFacility) {
-          facilityManagedClientIds = managedClientsForFacility.map(client => client.id);
-        }
-      } catch (error) {
-        // managed_clients table might not exist - continue without it
-        console.log('managed_clients table not found, continuing without managed clients');
-      }
+      // Skip managed clients for now to avoid join errors
+      console.log('📝 Skipping managed_clients table (may not exist)');
 
-      // If no users or managed clients, return empty
-      if (facilityUserIds.length === 0 && facilityManagedClientIds.length === 0) {
-        console.log('❌ No users or managed clients found for facility');
+      // If no users, return empty
+      if (facilityUserIds.length === 0) {
+        console.log('❌ No users found for facility');
         setMonthlyTrips([]);
         setTotalAmount(0);
-        setError('No users or clients found for this facility');
+        setError('No users found for this facility');
         return;
       }
 
@@ -175,13 +214,10 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         endDate: endDate.toISOString()
       });
 
-      // STRATEGY: Try multiple query approaches in sequence
-      let trips = null;
-      let error = null;
+      // STRATEGY: Use a simplified approach without complex joins
+      console.log('🔄 Using simplified query approach...');
       
-      // Approach 1: Standard datetime filtering with expanded status list
-      console.log('🔄 Attempt 1: Standard datetime filtering...');
-      let query1 = supabase
+      const { data: trips1, error: error1 } = await supabase
         .from('trips')
         .select(`
           id,
@@ -194,27 +230,21 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           additional_passengers,
           status,
           user_id,
-          managed_client_id,
-          user:profiles!trips_user_id_fkey(first_name, last_name),
-          managed_client:managed_clients!trips_managed_client_id_fkey(first_name, last_name)
+          managed_client_id
         `)
+        .in('user_id', facilityUserIds)
         .gte('pickup_time', startDate.toISOString())
         .lte('pickup_time', endDate.toISOString())
         .not('price', 'is', null)
         .gt('price', 0)
         .order('pickup_time', { ascending: false });
 
-      // Add user filtering
-      if (facilityUserIds.length > 0 && facilityManagedClientIds.length > 0) {
-        query1 = query1.or(`user_id.in.(${facilityUserIds.join(',')}),managed_client_id.in.(${facilityManagedClientIds.join(',')})`);
-      } else if (facilityUserIds.length > 0) {
-        query1 = query1.in('user_id', facilityUserIds);
-      } else if (facilityManagedClientIds.length > 0) {
-        query1 = query1.in('managed_client_id', facilityManagedClientIds);
-      }
-
-      const { data: trips1, error: error1 } = await query1;
-      console.log('🚗 Attempt 1 result (no status filter):', { trips: trips1?.length || 0, error: error1?.message || 'none' });
+      console.log('🚗 Simplified query result:', { 
+        trips: trips1?.length || 0, 
+        error: error1?.message || 'none',
+        facilityUserIds: facilityUserIds.length,
+        dateRange: `${startDate.toISOString()} to ${endDate.toISOString()}`
+      });
       
       if (!error1 && trips1 && trips1.length > 0) {
         // Filter by status in JavaScript to be more flexible
