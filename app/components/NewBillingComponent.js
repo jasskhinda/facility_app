@@ -135,9 +135,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           additional_passengers,
           status,
           user_id,
-          managed_client_id,
-          profiles:user_id(first_name, last_name),
-          managed_clients:managed_client_id(first_name, last_name)
+          managed_client_id
         `)
         .eq('facility_id', facilityId)
         .gte('pickup_time', startISO)
@@ -203,14 +201,56 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         return;
       }
 
+      // Fetch user profiles for the trips to get client names
+      const userIds = [...new Set(trips.filter(trip => trip.user_id).map(trip => trip.user_id))];
+      let userProfiles = [];
+      
+      if (userIds.length > 0) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name')
+          .in('id', userIds);
+        
+        if (!profileError && profileData) {
+          userProfiles = profileData;
+        }
+      }
+      
+      // Fetch managed clients for the trips to get client names
+      const managedClientIds = [...new Set(trips.filter(trip => trip.managed_client_id).map(trip => trip.managed_client_id))];
+      let managedClients = [];
+      
+      if (managedClientIds.length > 0) {
+        try {
+          const { data: managedData, error: managedError } = await supabase
+            .from('managed_clients')
+            .select('id, first_name, last_name')
+            .in('id', managedClientIds);
+          
+          if (!managedError && managedData) {
+            managedClients = managedData;
+          }
+        } catch (error) {
+          // managed_clients table might not exist - continue without it
+          console.log('managed_clients table not found, continuing without managed clients');
+        }
+      }
+
       // Process and categorize trips with enhanced logic
       const enhancedTrips = trips.map(trip => {
-        // Get client name from either authenticated user or managed client
+        // Get client name using fetched profile data
         let clientName = 'Unknown Client';
-        if (trip.profiles && trip.profiles.first_name) {
-          clientName = `${trip.profiles.first_name} ${trip.profiles.last_name || ''}`;
-        } else if (trip.managed_clients && trip.managed_clients.first_name) {
-          clientName = `${trip.managed_clients.first_name} ${trip.managed_clients.last_name || ''} (Managed)`;
+        
+        if (trip.user_id) {
+          const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
+          if (userProfile && userProfile.first_name) {
+            clientName = `${userProfile.first_name} ${userProfile.last_name || ''}`.trim();
+          }
+        } else if (trip.managed_client_id) {
+          const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
+          if (managedClient && managedClient.first_name) {
+            clientName = `${managedClient.first_name} ${managedClient.last_name || ''} (Managed)`.trim();
+          }
         }
         
         // BILLING LOGIC:

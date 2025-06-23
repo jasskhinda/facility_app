@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { createClientSupabase } from '@/lib/client-supabase';
 
 export default function FacilityBillingComponent({ user, facilityId }) {
-  const [monthlyTrips, setMonthlyTri      const csvContent = `Compassionate Care Transportation - Monthly Invoice
+  const [monthlyTrips, setMonthlyTrips] = useState([]);
 Facility: ${facility?.name || 'Unknown Facility'}
 Month: ${monthName}
 Total Amount: $${totalAmount.toFixed(2)}
@@ -169,9 +169,7 @@ ${monthlyTrips.map(trip => {
           additional_passengers,
           status,
           user_id,
-          managed_client_id,
-          profiles:user_id(first_name, last_name),
-          managed_clients:managed_client_id(first_name, last_name)
+          managed_client_id
         `)
         .eq('facility_id', facilityId)
         .gte('pickup_time', startDate.toISOString())
