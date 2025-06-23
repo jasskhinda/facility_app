@@ -139,7 +139,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         end: endDate.toISOString()
       });
 
-      // Query trips with simplified approach
+      // Query trips with improved approach - check for both completed and pending trips
       const { data: trips, error: tripsError } = await supabase
         .from('trips')
         .select(`
@@ -157,8 +157,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         .in('user_id', userIds)
         .gte('pickup_time', startDate.toISOString())
         .lte('pickup_time', endDate.toISOString())
-        .not('price', 'is', null)
-        .gt('price', 0)
+        .in('status', ['completed', 'pending', 'upcoming', 'confirmed'])
         .order('pickup_time', { ascending: false });
 
       console.log('🚗 Query result:', { 
@@ -219,25 +218,33 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         return;
       }
 
-      // Add user information to trips
+      // Process and categorize trips
       const enhancedTrips = trips.map(trip => {
         const user = facilityUsers.find(u => u.id === trip.user_id);
         return {
           ...trip,
-          user: user || null
+          user: user || null,
+          billable: trip.status === 'completed' && trip.price && trip.price > 0,
+          displayPrice: trip.price && trip.price > 0 ? trip.price : 0
         };
       });
 
-      // Calculate total
-      const total = enhancedTrips.reduce((sum, trip) => sum + (parseFloat(trip.price) || 0), 0);
+      // Separate billable and non-billable trips
+      const billableTrips = enhancedTrips.filter(trip => trip.billable);
+      const pendingTrips = enhancedTrips.filter(trip => !trip.billable);
+
+      // Calculate totals
+      const billableTotal = billableTrips.reduce((sum, trip) => sum + (parseFloat(trip.price) || 0), 0);
       
       console.log('✅ Success:', {
-        trips: enhancedTrips.length,
-        total: `$${total.toFixed(2)}`
+        totalTrips: enhancedTrips.length,
+        billableTrips: billableTrips.length,
+        pendingTrips: pendingTrips.length,
+        billableTotal: `$${billableTotal.toFixed(2)}`
       });
 
       setMonthlyTrips(enhancedTrips);
-      setTotalAmount(total);
+      setTotalAmount(billableTotal);
       setError('');
 
     } catch (err) {
@@ -519,16 +526,23 @@ ${monthlyTrips.map(trip => {
           </div>
         </div>
 
-        {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-1">Total Trips</h3>
-            <p className="text-2xl font-bold text-gray-900">{monthlyTrips.length}</p>
+        {/* Enhanced Summary Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-blue-50 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-blue-700 mb-1">Total Trips</h3>
+            <p className="text-2xl font-bold text-blue-900">{monthlyTrips.length}</p>
           </div>
           
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-1">Total Amount</h3>
-            <p className="text-2xl font-bold text-blue-600">${totalAmount.toFixed(2)}</p>
+          <div className="bg-green-50 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-green-700 mb-1">Billable Amount</h3>
+            <p className="text-2xl font-bold text-green-600">${totalAmount.toFixed(2)}</p>
+          </div>
+          
+          <div className="bg-yellow-50 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-yellow-700 mb-1">Pending Trips</h3>
+            <p className="text-2xl font-bold text-yellow-600">
+              {monthlyTrips.filter(trip => !trip.billable).length}
+            </p>
           </div>
           
           <div className="bg-gray-50 rounded-lg p-4">
@@ -607,17 +621,33 @@ ${monthlyTrips.map(trip => {
                           </p>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium text-blue-600">
-                        ${(trip.price || 0).toFixed(2)}
+                      <td className="px-6 py-4 text-sm font-medium">
+                        {trip.billable ? (
+                          <span className="text-green-600 font-semibold">
+                            ${trip.price.toFixed(2)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">
+                            ${(trip.price || 0).toFixed(2)}
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          trip.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          trip.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-blue-100 text-blue-800'
-                        }`}>
-                          {trip.status || 'unknown'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            trip.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            trip.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            trip.status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {trip.status || 'unknown'}
+                          </span>
+                          {!trip.billable && (
+                            <span className="text-xs text-gray-500">
+                              (Not billable)
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -625,10 +655,58 @@ ${monthlyTrips.map(trip => {
               </tbody>
             </table>
           </div>
+          
+          {/* Trip Summary by Status */}
+          <div className="px-6 py-4 bg-gray-50 border-t">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {monthlyTrips.filter(trip => trip.billable).length}
+                </div>
+                <div className="text-gray-600">Billable Trips</div>
+                <div className="text-xs text-green-600 font-medium">
+                  ${monthlyTrips.filter(trip => trip.billable).reduce((sum, trip) => sum + (trip.price || 0), 0).toFixed(2)}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {monthlyTrips.filter(trip => !trip.billable && trip.status === 'pending').length}
+                </div>
+                <div className="text-gray-600">Pending Approval</div>
+                <div className="text-xs text-yellow-600">Awaiting pricing</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {monthlyTrips.filter(trip => !trip.billable && trip.status !== 'pending').length}
+                </div>
+                <div className="text-gray-600">Other Status</div>
+                <div className="text-xs text-blue-600">Upcoming/Confirmed</div>
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
-        <div className="text-center py-8">
-          <p className="text-gray-600">No trips found for {displayMonth}</p>
+        <div className="bg-white rounded-lg shadow-sm border p-8">
+          <div className="text-center">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">No trips found for {displayMonth}</h3>
+            <p className="mt-2 text-sm text-gray-600 max-w-md mx-auto">
+              There are no completed or pending trips for this month yet. Once trips are completed, they will appear here for billing.
+            </p>
+            
+            {monthlyTrips.length === 0 && (
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <h4 className="text-sm font-medium text-blue-900 mb-2">What you can do:</h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Check the trips dashboard to see upcoming trips</li>
+                  <li>• Try selecting a different month</li>
+                  <li>• Contact support if you believe trips are missing</li>
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
       )}
       
