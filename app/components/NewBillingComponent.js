@@ -225,29 +225,44 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         return;
       }
 
-      // Process and categorize trips
+      // Process and categorize trips with enhanced logic
       const enhancedTrips = trips.map(trip => {
         const user = facilityUsers.find(u => u.id === trip.user_id);
+        
+        // BILLING LOGIC:
+        // - BILLABLE: Only completed trips with valid prices
+        // - NON-BILLABLE: Pending, upcoming, confirmed trips (show but no charge)
+        const isCompleted = trip.status === 'completed';
+        const hasValidPrice = trip.price && parseFloat(trip.price) > 0;
+        const isBillable = isCompleted && hasValidPrice;
+        
         return {
           ...trip,
           user: user || null,
-          billable: trip.status === 'completed' && trip.price && trip.price > 0,
-          displayPrice: trip.price && trip.price > 0 ? trip.price : 0
+          billable: isBillable,
+          displayPrice: hasValidPrice ? parseFloat(trip.price) : 0,
+          category: isCompleted ? 'completed' : 'pending'
         };
       });
 
-      // Separate billable and non-billable trips
+      // Separate billable (completed with price) and non-billable (pending/upcoming)
       const billableTrips = enhancedTrips.filter(trip => trip.billable);
-      const pendingTrips = enhancedTrips.filter(trip => !trip.billable);
+      const nonBillableTrips = enhancedTrips.filter(trip => !trip.billable);
 
-      // Calculate totals
-      const billableTotal = billableTrips.reduce((sum, trip) => sum + (parseFloat(trip.price) || 0), 0);
+      // Calculate totals - only billable trips count toward revenue
+      const billableTotal = billableTrips.reduce((sum, trip) => sum + trip.displayPrice, 0);
       
       console.log('✅ Success:', {
         totalTrips: enhancedTrips.length,
         billableTrips: billableTrips.length,
-        pendingTrips: pendingTrips.length,
-        billableTotal: `$${billableTotal.toFixed(2)}`
+        nonBillableTrips: nonBillableTrips.length,
+        billableTotal: `$${billableTotal.toFixed(2)}`,
+        breakdown: {
+          completed: enhancedTrips.filter(t => t.status === 'completed').length,
+          pending: enhancedTrips.filter(t => t.status === 'pending').length,
+          upcoming: enhancedTrips.filter(t => t.status === 'upcoming').length,
+          confirmed: enhancedTrips.filter(t => t.status === 'confirmed').length
+        }
       });
 
       setMonthlyTrips(enhancedTrips);
