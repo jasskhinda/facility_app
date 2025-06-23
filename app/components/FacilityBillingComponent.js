@@ -11,7 +11,25 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   const [facility, setFacility] = useState(null);
   const [error, setError] = useState('');
 
-  const supabase = createClientSupabase();
+  // Add a separate state for display month to force re-renders
+  const [displayMonth, setDisplayMonth] = useState('');
+  
+  // Update display month whenever selectedMonth changes
+  useEffect(() => {
+    if (selectedMonth) {
+      try {
+        const monthDisplay = new Date(selectedMonth + '-01').toLocaleDateString('en-US', { 
+          month: 'long', 
+          year: 'numeric' 
+        });
+        setDisplayMonth(monthDisplay);
+        console.log('📅 Display month updated to:', monthDisplay);
+      } catch (error) {
+        console.error('📅 Display month error:', error);
+        setDisplayMonth(selectedMonth);
+      }
+    }
+  }, [selectedMonth]);
 
   // Log the received props
   useEffect(() => {
@@ -25,12 +43,11 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   // Initialize selectedMonth safely
   useEffect(() => {
     try {
-      // Use current date - June 22, 2025
-      const currentDate = new Date('2025-06-22');
+      // Use current date - June 23, 2025 (today)
+      const currentDate = new Date('2025-06-23');
       const currentMonth = currentDate.toISOString().slice(0, 7);
+      console.log('📅 Initializing selectedMonth to:', currentMonth);
       setSelectedMonth(currentMonth);
-      console.log('📅 Selected month initialized to:', currentMonth);
-      console.log('📅 Current selectedMonth state:', selectedMonth);
     } catch (err) {
       console.error('Error setting initial month:', err);
       setError('Failed to initialize date selector');
@@ -582,14 +599,16 @@ Questions? Contact us at billing@compassionatecaretransportation.com
   const getMonthOptions = () => {
     try {
       const options = [];
-      // Use current date - June 22, 2025
-      const currentDate = new Date('2025-06-22');
+      // Use current date - June 23, 2025 (today)
+      const currentDate = new Date('2025-06-23');
       
       // Validate current date
       if (isNaN(currentDate.getTime())) {
         console.error('Invalid current date');
         return [{ value: '2025-06', label: 'June 2025' }]; // Fallback
       }
+      
+      console.log('📅 Generating month options from current date:', currentDate.toISOString().slice(0, 10));
       
       // Generate last 12 months from current date
       for (let i = 0; i < 12; i++) {
@@ -605,6 +624,10 @@ Questions? Contact us at billing@compassionatecaretransportation.com
           const value = date.toISOString().slice(0, 7);
           const label = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
           options.push({ value, label });
+          
+          if (i === 0) {
+            console.log('📅 First month option (current):', { value, label });
+          }
         } catch (dateError) {
           console.error(`Error generating month option ${i}:`, dateError);
         }
@@ -615,6 +638,7 @@ Questions? Contact us at billing@compassionatecaretransportation.com
         options.push({ value: '2025-06', label: 'June 2025' });
       }
       
+      console.log('📅 Generated month options:', options.map(o => o.label));
       return options;
     } catch (error) {
       console.error('Error generating month options:', error);
@@ -683,21 +707,7 @@ Questions? Contact us at billing@compassionatecaretransportation.com
               Monthly Ride Summary
             </h2>
             <p className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
-              {(() => {
-                try {
-                  if (!selectedMonth) return 'Select a month to view trips';
-                  console.log('📅 Rendering month display for:', selectedMonth);
-                  const monthDisplay = new Date(selectedMonth + '-01').toLocaleDateString('en-US', { 
-                    month: 'long', 
-                    year: 'numeric' 
-                  });
-                  console.log('📅 Month display result:', monthDisplay);
-                  return `Showing trips for ${monthDisplay}`;
-                } catch (error) {
-                  console.error('📅 Date formatting error in display:', error);
-                  return `Showing trips for ${selectedMonth}`;
-                }
-              })()}
+              {displayMonth ? `Showing trips for ${displayMonth}` : 'Select a month to view trips'}
             </p>
           </div>
           
@@ -711,13 +721,35 @@ Questions? Contact us at billing@compassionatecaretransportation.com
                   to: newMonth,
                   timestamp: new Date().toISOString()
                 });
+                
+                // CRITICAL: Update both states immediately
                 setSelectedMonth(newMonth);
-                // Clear any existing error to show fresh data
+                
+                // Update display month immediately for instant UI feedback
+                try {
+                  const newDisplayMonth = new Date(newMonth + '-01').toLocaleDateString('en-US', { 
+                    month: 'long', 
+                    year: 'numeric' 
+                  });
+                  setDisplayMonth(newDisplayMonth);
+                  console.log('📅 Display month immediately updated to:', newDisplayMonth);
+                } catch (error) {
+                  setDisplayMonth(newMonth);
+                }
+                
                 setError('');
-                console.log('📅 State should update to:', newMonth);
-                // Immediately fetch data for the new month to avoid stale closure issues
+                setLoading(true);
+                setMonthlyTrips([]);
+                setTotalAmount(0);
+                
+                console.log('📅 All states updated for month:', newMonth);
+                
                 if (facilityId) {
+                  console.log('📅 Calling fetchMonthlyTrips with:', newMonth);
                   fetchMonthlyTrips(newMonth);
+                } else {
+                  console.error('📅 No facilityId available for fetching trips');
+                  setLoading(false);
                 }
               }}
               className="px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
