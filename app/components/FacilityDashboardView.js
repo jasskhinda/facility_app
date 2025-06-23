@@ -50,53 +50,84 @@ export default function FacilityDashboardView({ user }) {
           .from('profiles')
           .select('*', { count: 'exact', head: true })
           .eq('facility_id', profile.facility_id)
-          .eq('role', 'client');
+          .eq('role', 'facility');
 
         const { count: activeClients } = await supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
           .eq('facility_id', profile.facility_id)
-          .eq('role', 'client')
+          .eq('role', 'facility')
           .eq('status', 'active');
 
-        // Get trip stats
+        // Get all facility users for trip filtering
+        const { data: facilityUsers } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('facility_id', profile.facility_id);
+
+        const facilityUserIds = facilityUsers?.map(user => user.id) || [];
+
+        // Get trip stats - filter by user_id instead of facility_id
         const today = new Date().toISOString().split('T')[0];
-        const { count: todayTrips } = await supabase
+        let todayTripsQuery = supabase
           .from('trips')
           .select('*', { count: 'exact', head: true })
-          .eq('facility_id', profile.facility_id)
           .gte('pickup_time', today + 'T00:00:00')
           .lte('pickup_time', today + 'T23:59:59');
+        
+        if (facilityUserIds.length > 0) {
+          todayTripsQuery = todayTripsQuery.in('user_id', facilityUserIds);
+        }
+        
+        const { count: todayTrips } = await todayTripsQuery;
 
         // Get weekly trips
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
-        const { count: weeklyTrips } = await supabase
+        let weeklyTripsQuery = supabase
           .from('trips')
           .select('*', { count: 'exact', head: true })
-          .eq('facility_id', profile.facility_id)
           .gte('pickup_time', weekAgo.toISOString());
+        
+        if (facilityUserIds.length > 0) {
+          weeklyTripsQuery = weeklyTripsQuery.in('user_id', facilityUserIds);
+        }
+        
+        const { count: weeklyTrips } = await weeklyTripsQuery;
 
         // Get recent trips with client info
-        const { data: trips } = await supabase
+        let recentTripsQuery = supabase
           .from('trips')
           .select(`
             *,
-            client:profiles!user_id(first_name, last_name)
+            user:profiles!trips_user_id_fkey(first_name, last_name)
           `)
-          .eq('facility_id', profile.facility_id)
-          .order('created_at', { ascending: false })
-          .limit(5);
+          .order('pickup_time', { ascending: false })
+          .limit(10);
+        
+        if (facilityUserIds.length > 0) {
+          recentTripsQuery = recentTripsQuery.in('user_id', facilityUserIds);
+        }
+        
+        const { data: trips } = await recentTripsQuery;
 
-        // Get billing stats
-        const { data: invoices } = await supabase
-          .from('invoices')
-          .select('amount, status')
-          .eq('facility_id', profile.facility_id)
-          .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString());
+        // Calculate monthly spend from completed trips
+        const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        let monthlyTripsQuery = supabase
+          .from('trips')
+          .select('price')
+          .eq('status', 'completed')
+          .gte('pickup_time', firstOfMonth.toISOString());
+        
+        if (facilityUserIds.length > 0) {
+          monthlyTripsQuery = monthlyTripsQuery.in('user_id', facilityUserIds);
+        }
+        
+        const { data: monthlyCompletedTrips } = await monthlyTripsQuery;
+        const monthlySpend = monthlyCompletedTrips?.reduce((sum, trip) => sum + (parseFloat(trip.price) || 0), 0) || 0;
 
-        const pendingInvoices = invoices?.filter(inv => inv.status === 'pending').length || 0;
-        const monthlySpend = invoices?.reduce((sum, inv) => sum + (inv.amount || 0), 0) || 0;
+        // For now, set pending invoices to 0 since we don't have invoice system yet
+        const pendingInvoices = 0;
 
         setStats({
           totalClients: totalClients || 0,
@@ -104,7 +135,7 @@ export default function FacilityDashboardView({ user }) {
           todayTrips: todayTrips || 0,
           weeklyTrips: weeklyTrips || 0,
           pendingInvoices,
-          monthlySpend: monthlySpend / 100 // Convert cents to dollars
+          monthlySpend: monthlySpend // Already in dollars
         });
 
         setRecentTrips(trips || []);
@@ -231,7 +262,10 @@ export default function FacilityDashboardView({ user }) {
                       </div>
                       <div>
                         <p className="font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
-                          {trip.client?.first_name} {trip.client?.last_name}
+                          {trip.user?.first_name && trip.user?.last_name ? 
+                            `${trip.user.first_name} ${trip.user.last_name}` : 
+                            'Unknown Client'
+                          }
                         </p>
                         <p className="text-sm text-[#2E4F54]/60 dark:text-[#E0F4F5]/60">
                           {new Date(trip.pickup_time).toLocaleDateString()} at {new Date(trip.pickup_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

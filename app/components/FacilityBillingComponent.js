@@ -173,7 +173,9 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           additional_passengers,
           status,
           user_id,
-          managed_client_id
+          managed_client_id,
+          user:profiles!trips_user_id_fkey(first_name, last_name),
+          managed_client:managed_clients!trips_managed_client_id_fkey(first_name, last_name)
         `)
         .gte('pickup_time', startDate.toISOString())
         .lte('pickup_time', endDate.toISOString())
@@ -228,7 +230,9 @@ export default function FacilityBillingComponent({ user, facilityId }) {
             additional_passengers,
             status,
             user_id,
-            managed_client_id
+            managed_client_id,
+            user:profiles!trips_user_id_fkey(first_name, last_name),
+            managed_client:managed_clients!trips_managed_client_id_fkey(first_name, last_name)
           `)
           .gte('pickup_time', dateOnlyStart)
           .lt('pickup_time', dateOnlyEnd)
@@ -280,7 +284,9 @@ export default function FacilityBillingComponent({ user, facilityId }) {
             additional_passengers,
             status,
             user_id,
-            managed_client_id
+            managed_client_id,
+            user:profiles!trips_user_id_fkey(first_name, last_name),
+            managed_client:managed_clients!trips_managed_client_id_fkey(first_name, last_name)
           `)
           .gte('pickup_time', selectedMonth + '-01')
           .lt('pickup_time', selectedMonth.slice(0, 4) + '-' + String(parseInt(selectedMonth.slice(5, 7)) + 1).padStart(2, '0') + '-01')
@@ -357,8 +363,54 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           setError('No trips found for this facility');
         }
       } else {
-        console.log('✅ Trips found and displayed successfully!');
+        console.log('✅ Trips found, now fetching client information...');
+        
+        // Enhance trips with client information
+        const userIds = [...new Set(trips.filter(trip => trip.user_id).map(trip => trip.user_id))];
+        const managedClientIds = [...new Set(trips.filter(trip => trip.managed_client_id).map(trip => trip.managed_client_id))];
+        
+        // Fetch user profiles
+        let userProfiles = [];
+        if (userIds.length > 0) {
+          const { data: profiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, phone_number')
+            .in('id', userIds);
+          
+          if (!profilesError) {
+            userProfiles = profiles || [];
+            console.log(`✅ Loaded ${userProfiles.length} user profiles`);
+          }
+        }
+        
+        // Fetch managed clients
+        let managedClients = [];
+        if (managedClientIds.length > 0) {
+          try {
+            const { data: managed, error: managedError } = await supabase
+              .from('managed_clients')
+              .select('id, first_name, last_name, phone_number')
+              .in('id', managedClientIds);
+            
+            if (!managedError) {
+              managedClients = managed || [];
+              console.log(`✅ Loaded ${managedClients.length} managed clients`);
+            }
+          } catch (managedErr) {
+            console.log('ℹ️ Managed clients table not accessible, skipping');
+          }
+        }
+        
+        // Enhance trips with client information
+        const enhancedTrips = trips.map(trip => ({
+          ...trip,
+          user_profile: trip.user_id ? userProfiles.find(profile => profile.id === trip.user_id) : null,
+          managed_client: trip.managed_client_id ? managedClients.find(client => client.id === trip.managed_client_id) : null
+        }));
+        
+        setMonthlyTrips(enhancedTrips);
         setError(''); // Clear any previous errors
+        console.log('✅ Trips enhanced with client information successfully!');
       }
       
     } catch (err) {
@@ -755,6 +807,9 @@ Questions? Contact us at billing@compassionatecaretransportation.com
                     Date
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-[#2E4F54] dark:text-[#E0F4F5] uppercase tracking-wider">
+                    Client
+                  </th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-[#2E4F54] dark:text-[#E0F4F5] uppercase tracking-wider">
                     Route
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-[#2E4F54] dark:text-[#E0F4F5] uppercase tracking-wider">
@@ -778,10 +833,23 @@ Questions? Contact us at billing@compassionatecaretransportation.com
                     formattedDate = 'Invalid Date';
                   }
 
+                  // Get client name from either user or managed_client
+                  const clientName = (() => {
+                    if (trip.user && trip.user.first_name) {
+                      return `${trip.user.first_name} ${trip.user.last_name || ''}`.trim();
+                    } else if (trip.managed_client && trip.managed_client.first_name) {
+                      return `${trip.managed_client.first_name} ${trip.managed_client.last_name || ''}`.trim();
+                    }
+                    return 'Unknown Client';
+                  })();
+
                   return (
                     <tr key={trip.id} className="hover:bg-[#F8F9FA] dark:hover:bg-[#24393C]">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
                         {formattedDate}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
+                        <div className="font-medium">{clientName}</div>
                       </td>
                       <td className="px-6 py-4 text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
                         <div className="max-w-xs">
