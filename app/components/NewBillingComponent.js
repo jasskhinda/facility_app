@@ -16,10 +16,19 @@ export default function FacilityBillingComponent({ user, facilityId }) {
 
   // Initialize selectedMonth
   useEffect(() => {
-    const currentMonth = '2025-06'; // June 2025
+    // Set to current month (June 2025) which should be the first option
+    const currentDate = new Date('2025-06-23');
+    const currentMonth = currentDate.toISOString().slice(0, 7); // '2025-06'
     setSelectedMonth(currentMonth);
-    setDisplayMonth('June 2025');
-    console.log('📅 Initialized to June 2025');
+    
+    // Set display month to match
+    const displayText = currentDate.toLocaleDateString('en-US', { 
+      month: 'long', 
+      year: 'numeric' 
+    });
+    setDisplayMonth(displayText);
+    
+    console.log('📅 Initialized to:', currentMonth, '(' + displayText + ')');
   }, []);
 
   // Update display month when selectedMonth changes
