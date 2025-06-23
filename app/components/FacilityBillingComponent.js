@@ -393,6 +393,22 @@ ${monthlyTrips.map(trip => {
 
   return (
     <div className="space-y-6">
+      {/* Success Message */}
+      {successMessage && (
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-green-700 dark:text-green-300 text-sm font-medium">{successMessage}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Error Display */}
       {error && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
@@ -409,21 +425,18 @@ ${monthlyTrips.map(trip => {
         </div>
       )}
 
-      {/* Payment Information Banner */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
-        <div className="flex items-start">
-          <div className="flex-shrink-0">
-            <svg className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div className="ml-3">
-            <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200">
-              Monthly Billing & Invoices
-            </h3>
-            <p className="text-blue-700 dark:text-blue-300 mt-2">
-              View and download monthly ride summaries, manage invoices and billing information.
+      {/* Professional Billing Header */}
+      <div className="bg-gradient-to-r from-[#7CCFD0] to-[#6BB8BA] rounded-lg p-6 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Monthly Billing & Invoices</h1>
+            <p className="text-white/90 mt-1">
+              Professional invoice management for {facility?.name || 'your facility'}
             </p>
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-white/80">Invoice #</div>
+            <div className="text-lg font-mono font-semibold">{invoiceNumber}</div>
           </div>
         </div>
       </div>
@@ -509,14 +522,28 @@ ${monthlyTrips.map(trip => {
           </div>
         </div>
 
-        {/* Download Button */}
-        <div className="flex justify-center">
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <button
+            onClick={openInvoiceModal}
+            disabled={loading || monthlyTrips.length === 0}
+            className="bg-[#7CCFD0] hover:bg-[#6BB8BA] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+            Send Invoice
+          </button>
+          
           <button
             onClick={downloadRideSummary}
             disabled={loading || monthlyTrips.length === 0}
-            className="bg-[#7CCFD0] hover:bg-[#6BB8BA] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-2 px-6 rounded-lg transition-colors"
+            className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-3 px-8 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
-            📥 Download Monthly Summary
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Download Summary
           </button>
         </div>
       </div>
@@ -593,6 +620,175 @@ ${monthlyTrips.map(trip => {
           <p className="text-[#2E4F54] dark:text-[#E0F4F5]">
             No trips found for {displayMonth}
           </p>
+        </div>
+      )}
+      
+      {/* Professional Invoice Modal */}
+      {showInvoiceModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#1C2C2F] rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-[#7CCFD0] to-[#6BB8BA] text-white p-6 rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold">Send Invoice</h2>
+                  <p className="text-white/90 mt-1">Invoice #{invoiceNumber}</p>
+                </div>
+                <button
+                  onClick={() => setShowInvoiceModal(false)}
+                  className="text-white/80 hover:text-white transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* Invoice Summary */}
+              <div className="bg-gray-50 dark:bg-[#24393C] rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-[#2E4F54] dark:text-[#E0F4F5] mb-3">Invoice Summary</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Period:</span>
+                    <p className="font-medium text-[#2E4F54] dark:text-[#E0F4F5]">{displayMonth}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Total Trips:</span>
+                    <p className="font-medium text-[#2E4F54] dark:text-[#E0F4F5]">{monthlyTrips.length}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Total Amount:</span>
+                    <p className="font-bold text-[#7CCFD0] text-lg">${totalAmount.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Due Date:</span>
+                    <p className="font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+                      {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Email Options */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-[#2E4F54] dark:text-[#E0F4F5]">Email Delivery</h3>
+                
+                {/* Default Email */}
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      name="emailOption"
+                      checked={!useAlternateEmail}
+                      onChange={() => setUseAlternateEmail(false)}
+                      className="w-4 h-4 text-[#7CCFD0] border-gray-300 focus:ring-[#7CCFD0]"
+                    />
+                    <span className="text-[#2E4F54] dark:text-[#E0F4F5] font-medium">Default Email Address</span>
+                  </label>
+                  <div className="ml-7 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
+                      {invoiceEmail || 'billing@compassionatecaretransportation.com'}
+                    </p>
+                    <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+                      This is your facility's registered billing email
+                    </p>
+                  </div>
+                </div>
+
+                {/* Alternate Email */}
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      name="emailOption"
+                      checked={useAlternateEmail}
+                      onChange={() => setUseAlternateEmail(true)}
+                      className="w-4 h-4 text-[#7CCFD0] border-gray-300 focus:ring-[#7CCFD0]"
+                    />
+                    <span className="text-[#2E4F54] dark:text-[#E0F4F5] font-medium">Send to Another Email Address</span>
+                  </label>
+                  {useAlternateEmail && (
+                    <div className="ml-7">
+                      <input
+                        type="email"
+                        value={alternateEmail}
+                        onChange={(e) => setAlternateEmail(e.target.value)}
+                        placeholder="Enter email address"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-transparent"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Payment Status */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-[#2E4F54] dark:text-[#E0F4F5]">Payment Status</h3>
+                
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <label className="flex items-start space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={markAsPaid}
+                      onChange={(e) => setMarkAsPaid(e.target.checked)}
+                      className="w-4 h-4 text-[#7CCFD0] border-gray-300 focus:ring-[#7CCFD0] mt-0.5"
+                    />
+                    <div>
+                      <span className="text-[#2E4F54] dark:text-[#E0F4F5] font-medium">Already Paid?</span>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Check this if the client has already paid this invoice
+                      </p>
+                      {markAsPaid && (
+                        <div className="mt-2 p-2 bg-blue-100 dark:bg-blue-900/30 rounded border-l-4 border-blue-500">
+                          <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
+                            Status: Pending Approval from Dispatcher
+                          </p>
+                          <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+                            This invoice will be marked as paid but require dispatcher approval
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setShowInvoiceModal(false)}
+                  className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={sendInvoice}
+                  disabled={invoiceSending || (!useAlternateEmail && !invoiceEmail) || (useAlternateEmail && !alternateEmail)}
+                  className="flex-1 px-6 py-3 bg-[#7CCFD0] hover:bg-[#6BB8BA] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  {invoiceSending ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                      Send Invoice
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
