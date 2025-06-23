@@ -66,6 +66,7 @@ export default function FacilityDashboardView({ user }) {
           .eq('facility_id', profile.facility_id);
 
         const facilityUserIds = facilityUsers?.map(user => user.id) || [];
+        console.log('Facility user IDs for dashboard:', facilityUserIds.length, 'users found');
 
         // Get trip stats - filter by user_id instead of facility_id
         const today = new Date().toISOString().split('T')[0];
@@ -109,7 +110,14 @@ export default function FacilityDashboardView({ user }) {
           recentTripsQuery = recentTripsQuery.in('user_id', facilityUserIds);
         }
         
-        const { data: trips } = await recentTripsQuery;
+        const { data: trips, error: tripsError } = await recentTripsQuery;
+        
+        if (tripsError) {
+          console.error('Recent trips query error:', tripsError);
+        }
+        
+        console.log('Recent trips data:', trips?.length || 0, 'trips found');
+        console.log('Recent trips sample:', trips?.slice(0, 2));
 
         // Calculate monthly spend from completed trips
         const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -139,6 +147,7 @@ export default function FacilityDashboardView({ user }) {
         });
 
         setRecentTrips(trips || []);
+        console.log('Set recent trips:', trips?.length || 0, 'trips');
       }
     } catch (error) {
       console.error('Error loading dashboard data:', error);

@@ -669,9 +669,26 @@ Questions? Contact us at billing@compassionatecaretransportation.com
       {/* Month Selection and Summary */}
       <div className="bg-white dark:bg-[#1C2C2F] rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-          <h2 className="text-xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5] mb-4 sm:mb-0">
-            Monthly Ride Summary
-          </h2>
+          <div>
+            <h2 className="text-xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5] mb-1">
+              Monthly Ride Summary
+            </h2>
+            <p className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+              {(() => {
+                try {
+                  if (!selectedMonth) return 'Select a month to view trips';
+                  const monthDisplay = new Date(selectedMonth + '-01').toLocaleDateString('en-US', { 
+                    month: 'long', 
+                    year: 'numeric' 
+                  });
+                  return `Showing trips for ${monthDisplay}`;
+                } catch (error) {
+                  console.error('Date formatting error:', error);
+                  return `Showing trips for ${selectedMonth}`;
+                }
+              })()}
+            </p>
+          </div>
           
           <div className="flex items-center space-x-4">
             <select
