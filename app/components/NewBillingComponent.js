@@ -130,13 +130,20 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       const userIds = facilityUsers.map(u => u.id);
 
       // Calculate date range using the passed month parameter (CRITICAL FIX)
-      const startDate = new Date(monthToFetch + '-01');
-      const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0, 23, 59, 59, 999);
+      const [year, month] = monthToFetch.split('-');
+      const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+      const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59, 999);
+      
+      // Use string-based filtering for better compatibility
+      const startISO = `${year}-${month.padStart(2, '0')}-01T00:00:00.000Z`;
+      const endISO = `${year}-${month.padStart(2, '0')}-31T23:59:59.999Z`;
       
       console.log('📅 Date range for query:', {
         monthToFetch,
-        start: startDate.toISOString(),
-        end: endDate.toISOString()
+        start: startISO,
+        end: endISO,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString()
       });
 
       // Query trips with improved approach - check for both completed and pending trips
@@ -155,8 +162,8 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           user_id
         `)
         .in('user_id', userIds)
-        .gte('pickup_time', startDate.toISOString())
-        .lte('pickup_time', endDate.toISOString())
+        .gte('pickup_time', startISO)
+        .lte('pickup_time', endISO)
         .in('status', ['completed', 'pending', 'upcoming', 'confirmed'])
         .order('pickup_time', { ascending: false });
 
