@@ -116,16 +116,34 @@ export default function TripsPage() {
               }
             }
             
-            // Fetch managed clients
+            // Fetch managed clients from multiple tables (enhanced client resolution)
             let managedClients = [];
             if (managedClientIds.length > 0) {
-              const { data: managed, error: managedError } = await supabase
-                .from('managed_clients')
+              // Strategy 1: Try facility_managed_clients first (for facility-specific clients)
+              const { data: facilityManaged, error: facilityManagedError } = await supabase
+                .from('facility_managed_clients')
                 .select('id, first_name, last_name, phone_number')
                 .in('id', managedClientIds);
               
-              if (!managedError) {
-                managedClients = managed || [];
+              if (!facilityManagedError && facilityManaged) {
+                managedClients = facilityManaged;
+                console.log(`Found ${facilityManaged.length} clients in facility_managed_clients table`);
+              }
+              
+              // Strategy 2: If not found in facility_managed_clients, try managed_clients
+              const foundIds = managedClients.map(c => c.id);
+              const missingIds = managedClientIds.filter(id => !foundIds.includes(id));
+              
+              if (missingIds.length > 0) {
+                const { data: managed, error: managedError } = await supabase
+                  .from('managed_clients')
+                  .select('id, first_name, last_name, phone_number')
+                  .in('id', missingIds);
+                
+                if (!managedError && managed) {
+                  managedClients = [...managedClients, ...managed];
+                  console.log(`Found ${managed.length} additional clients in managed_clients table`);
+                }
               }
             }
             

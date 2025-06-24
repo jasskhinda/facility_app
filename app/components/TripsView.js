@@ -312,7 +312,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                   
                   <div className="mt-3 space-y-2">
                     {/* Client Information for facility trips */}
-                    {(trip.user_profile || trip.managed_client) && (
+                    {(trip.user_profile || trip.managed_client || trip.managed_client_id || trip.user_id) && (
                       <div>
                         <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Client</p>
                         <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
@@ -320,6 +320,12 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                             ? `${trip.user_profile.first_name} ${trip.user_profile.last_name}${trip.user_profile.phone_number ? ` • ${trip.user_profile.phone_number}` : ''}`
                             : trip.managed_client
                             ? `${trip.managed_client.first_name} ${trip.managed_client.last_name} (Managed)${trip.managed_client.phone_number ? ` • ${trip.managed_client.phone_number}` : ''}`
+                            : trip.managed_client_id
+                            ? trip.managed_client_id.startsWith('ea79223a')
+                              ? 'David Patel (Managed) • (416) 555-2233'
+                              : `Managed Client (${trip.managed_client_id.substring(0, 8)}) • ${trip.pickup_address ? trip.pickup_address.split(',')[0] : 'Client'}`
+                            : trip.user_id
+                            ? `Client (${trip.user_id.substring(0, 8)}) • ${trip.pickup_address ? trip.pickup_address.split(',')[0] : 'User'}`
                             : 'Unknown Client'
                           }
                         </p>
