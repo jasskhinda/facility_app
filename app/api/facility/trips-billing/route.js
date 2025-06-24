@@ -102,7 +102,7 @@ export async function GET(request) {
     if (userIds.length > 0) {
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, phone_number')
         .in('id', userIds);
       
       if (!profileError && profileData) {
@@ -119,8 +119,8 @@ export async function GET(request) {
         console.log(`🔍 Attempting to fetch ${managedClientIds.length} managed clients:`, managedClientIds.slice(0, 3));
         
         const { data: managedData, error: managedError } = await supabase
-          .from('managed_clients')
-          .select('id, first_name, last_name, name, client_name')
+          .from('facility_managed_clients')
+          .select('id, first_name, last_name, name, client_name, phone_number')
           .in('id', managedClientIds);
         
         if (managedError) {
@@ -132,8 +132,8 @@ export async function GET(request) {
           console.log('⚠️ No managed client data returned');
         }
       } catch (error) {
-        // managed_clients table might not exist - continue without it
-        console.log('❌ managed_clients table error:', error.message);
+        // facility_managed_clients table might not exist - continue without it
+        console.log('❌ facility_managed_clients table error:', error.message);
       }
     }
     
@@ -173,7 +173,12 @@ export async function GET(request) {
       if (trip.user_id) {
         const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
         if (userProfile && userProfile.first_name) {
-          clientName = `${userProfile.first_name} ${userProfile.last_name || ''}`.trim();
+          let name = `${userProfile.first_name} ${userProfile.last_name || ''}`.trim();
+          // Add phone number in the same format as booking page
+          if (userProfile.phone_number) {
+            name += ` - ${userProfile.phone_number}`;
+          }
+          clientName = name;
           debugInfo.resolution = 'user_profile';
           debugInfo.found_profile = userProfile;
         } else {
@@ -181,8 +186,13 @@ export async function GET(request) {
           debugInfo.user_id = trip.user_id;
         }
       } else if (trip.managed_client_id) {
+        // Log the full managed_client_id for debugging
+        console.log(`🔍 Processing managed_client_id: ${trip.managed_client_id}`);
+        
         const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
         if (managedClient) {
+          console.log(`✅ Found managed client record:`, managedClient);
+          
           // Try different possible column combinations for managed client names
           let name = '';
           if (managedClient.first_name) {
@@ -194,14 +204,22 @@ export async function GET(request) {
           }
           
           if (name) {
-            clientName = `${name} (Managed)`;
+            // Format as: "David Patel (Managed) - (416) 555-2233"
+            let formattedName = `${name} (Managed)`;
+            if (managedClient.phone_number) {
+              formattedName += ` - ${managedClient.phone_number}`;
+            }
+            clientName = formattedName;
             debugInfo.resolution = 'managed_client';
             debugInfo.found_client = managedClient;
           } else {
+            console.log(`⚠️ Managed client found but no name fields:`, Object.keys(managedClient));
             debugInfo.resolution = 'managed_client_no_name';
             debugInfo.found_client = managedClient;
           }
         } else {
+          console.log(`❌ No managed client found for ID: ${trip.managed_client_id}`);
+          console.log(`Available managed client IDs:`, managedClients.map(c => c.id).slice(0, 3));
           debugInfo.resolution = 'managed_id_no_client';
           debugInfo.managed_client_id = trip.managed_client_id;
         }
@@ -214,9 +232,15 @@ export async function GET(request) {
           clientName = `Facility Client (${trip.user_id.slice(-8)})`;
           debugInfo.resolution = 'fallback_user';
         } else if (trip.managed_client_id) {
-          // Create a fallback name for managed clients without records
-          clientName = `Managed Client (${trip.managed_client_id.slice(-8)})`;
-          debugInfo.resolution = 'fallback_managed';
+          // Create a more meaningful fallback name for managed clients without records
+          const shortId = trip.managed_client_id.slice(0, 8);
+          const addressHint = trip.pickup_address ? 
+            trip.pickup_address.split(',')[0].replace(/^\d+\s+/, '').split(' ').slice(0, 2).join(' ') : 
+            'Client';
+          
+          // Try to create a meaningful name from pickup address
+          clientName = `${addressHint} Client (${shortId})`;
+          debugInfo.resolution = 'fallback_managed_with_address';
         } else {
           // Create a general fallback based on trip info
           const addressHint = trip.pickup_address ? 
