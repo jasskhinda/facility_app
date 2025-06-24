@@ -68,6 +68,78 @@ export default function FacilityBillingComponent({ user, facilityId }) {
     }
   }, [selectedMonth, facilityId]);
 
+  // 🔄 REAL-TIME SUBSCRIPTION: Listen for trip status changes to update billing
+  useEffect(() => {
+    if (!facilityId || !selectedMonth) return;
+
+    console.log('🔄 Setting up real-time billing subscription for month:', selectedMonth);
+    
+    // Subscribe to changes on trips table for this facility
+    const subscription = supabase
+      .channel('billing-trips-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'trips',
+          filter: `facility_id=eq.${facilityId}`
+        },
+        (payload) => {
+          console.log('🔄 Real-time billing update received:', payload);
+          
+          if (payload.new && payload.old) {
+            const updatedTrip = payload.new;
+            const oldTrip = payload.old;
+            
+            // Check if this affects billing (status change or price change)
+            if (updatedTrip.status !== oldTrip.status || updatedTrip.price !== oldTrip.price) {
+              console.log(`🔄 Billing-relevant trip update: ${updatedTrip.id}`);
+              console.log(`   Status: ${oldTrip.status} → ${updatedTrip.status}`);
+              console.log(`   Price: ${oldTrip.price} → ${updatedTrip.price}`);
+              
+              // Check if this trip is in the current selected month
+              const tripDate = new Date(updatedTrip.pickup_time);
+              const [year, month] = selectedMonth.split('-');
+              const selectedMonthDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+              
+              if (tripDate.getFullYear() === selectedMonthDate.getFullYear() && 
+                  tripDate.getMonth() === selectedMonthDate.getMonth()) {
+                
+                console.log('🔄 Trip is in current month, refreshing billing data...');
+                
+                // Refresh the billing data
+                fetchMonthlyTrips(selectedMonth);
+                
+                // Show notification based on status change
+                if (updatedTrip.status === 'upcoming' && oldTrip.status === 'pending') {
+                  setSuccessMessage('✅ Trip approved by dispatcher! Billing updated.');
+                } else if (updatedTrip.status === 'cancelled' && oldTrip.status === 'pending') {
+                  setSuccessMessage('❌ Trip rejected by dispatcher. Billing updated.');
+                } else if (updatedTrip.status === 'completed') {
+                  setSuccessMessage('🎉 Trip completed! Now billable.');
+                }
+                
+                // Clear success message after 6 seconds
+                setTimeout(() => {
+                  setSuccessMessage('');
+                }, 6000);
+              }
+            }
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('🔄 Real-time billing subscription status:', status);
+      });
+
+    // Cleanup subscription on unmount or dependency change
+    return () => {
+      console.log('🔄 Cleaning up real-time billing subscription...');
+      subscription.unsubscribe();
+    };
+  }, [facilityId, selectedMonth, supabase]);
+
   const fetchFacilityInfo = async () => {
     if (!facilityId) return;
 

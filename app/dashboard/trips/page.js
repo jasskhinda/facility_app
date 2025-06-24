@@ -222,6 +222,81 @@ export default function TripsPage() {
     fetchUserData();
   }, [router, supabase]);
 
+  // 🔄 REAL-TIME SUBSCRIPTION: Listen for trip status changes from dispatcher
+  useEffect(() => {
+    if (!user) return;
+
+    console.log('🔄 Setting up real-time subscription for trip updates...');
+    
+    // Subscribe to changes on trips table
+    const subscription = supabase
+      .channel('trips-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'trips'
+        },
+        (payload) => {
+          console.log('🔄 Real-time trip update received:', payload);
+          
+          if (payload.new && payload.old) {
+            const updatedTrip = payload.new;
+            const oldTrip = payload.old;
+            
+            // Check if this is a status change from dispatcher
+            if (updatedTrip.status !== oldTrip.status) {
+              console.log(`🔄 Trip ${updatedTrip.id} status changed: ${oldTrip.status} → ${updatedTrip.status}`);
+              
+              // Update the trip in our local state
+              setTrips(prevTrips => {
+                const updatedTrips = prevTrips.map(trip => {
+                  if (trip.id === updatedTrip.id) {
+                    return {
+                      ...trip,
+                      ...updatedTrip,
+                      // Preserve any enriched data we added
+                      user_profile: trip.user_profile,
+                      managed_client: trip.managed_client,
+                      driver: trip.driver
+                    };
+                  }
+                  return trip;
+                });
+                
+                console.log('🔄 Updated trips state with real-time changes');
+                return updatedTrips;
+              });
+              
+              // Show notification to user about the status change
+              if (updatedTrip.status === 'upcoming') {
+                setSuccessMessage(`✅ Trip approved by dispatcher! Status updated to: ${updatedTrip.status}`);
+              } else if (updatedTrip.status === 'cancelled') {
+                setSuccessMessage(`❌ Trip was rejected by dispatcher. Reason: ${updatedTrip.cancellation_reason || 'No reason provided'}`);
+              } else {
+                setSuccessMessage(`🔄 Trip status updated to: ${updatedTrip.status}`);
+              }
+              
+              // Clear success message after 8 seconds
+              setTimeout(() => {
+                setSuccessMessage(null);
+              }, 8000);
+            }
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('🔄 Real-time subscription status:', status);
+      });
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log('🔄 Cleaning up real-time subscription...');
+      subscription.unsubscribe();
+    };
+  }, [user, supabase]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center">
