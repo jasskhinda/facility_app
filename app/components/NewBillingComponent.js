@@ -701,11 +701,14 @@ ${monthlyTrips.map(trip => {
                             trip.status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
                             'bg-gray-100 text-gray-800'
                           }`}>
-                            {trip.status || 'unknown'}
+                            {trip.status === 'completed' ? 'DUE' :
+                             trip.status === 'pending' ? 'PENDING APPROVAL' :
+                             trip.status === 'upcoming' ? 'UPCOMING' :
+                             trip.status || 'unknown'}
                           </span>
-                          {!trip.billable && (
+                          {!trip.billable && trip.status !== 'completed' && (
                             <span className="text-xs text-gray-500">
-                              (Not billable)
+                              (Not billable until completed)
                             </span>
                           )}
                         </div>

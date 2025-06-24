@@ -118,36 +118,113 @@ export async function GET(request) {
       try {
         console.log(`🔍 Attempting to fetch ${managedClientIds.length} managed clients:`, managedClientIds.slice(0, 3));
         
-        // 🔥 TRY PRIMARY TABLE: facility_managed_clients
-        const { data: managedData, error: managedError } = await supabase
-          .from('facility_managed_clients')
-          .select('id, first_name, last_name, name, client_name, phone_number')
-          .in('id', managedClientIds);
+        // 🔥 ENHANCED MULTI-TABLE STRATEGY: Try all possible tables
+        let fetchSuccessful = false;
         
-        if (managedError) {
-          console.log('❌ facility_managed_clients fetch error:', managedError);
-          
-          // 🔥 FALLBACK: Try the old table name
-          console.log('🔄 Trying fallback table: managed_clients');
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from('managed_clients')
-            .select('id, first_name, last_name, name, client_name, phone_number')
+        // Strategy 1: Try facility_managed_clients first
+        try {
+          const { data: fmcData, error: fmcError } = await supabase
+            .from('facility_managed_clients')
+            .select('id, first_name, last_name, name, client_name, phone_number, email')
             .in('id', managedClientIds);
-            
-          if (!fallbackError && fallbackData) {
-            managedClients = fallbackData;
-            console.log(`✅ Found ${fallbackData.length} managed client records in fallback table`);
-          } else {
-            console.log('❌ Fallback table also failed:', fallbackError);
+          
+          if (!fmcError && fmcData && fmcData.length > 0) {
+            managedClients = [...managedClients, ...fmcData];
+            fetchSuccessful = true;
+            console.log(`✅ Found ${fmcData.length} records in facility_managed_clients`);
+          } else if (fmcError) {
+            console.log('⚠️ facility_managed_clients error:', fmcError.message);
           }
-        } else if (managedData) {
-          managedClients = managedData;
-          console.log(`✅ Found ${managedData.length} managed client records`);
-        } else {
-          console.log('⚠️ No managed client data returned');
+        } catch (e) {
+          console.log('⚠️ facility_managed_clients table not accessible:', e.message);
         }
+        
+        // Strategy 2: Try managed_clients
+        try {
+          const { data: mcData, error: mcError } = await supabase
+            .from('managed_clients')
+            .select('id, first_name, last_name, name, client_name, phone_number, email')
+            .in('id', managedClientIds);
+          
+          if (!mcError && mcData && mcData.length > 0) {
+            // Merge with existing data, avoiding duplicates
+            const existingIds = managedClients.map(c => c.id);
+            const newClients = mcData.filter(c => !existingIds.includes(c.id));
+            managedClients = [...managedClients, ...newClients];
+            fetchSuccessful = true;
+            console.log(`✅ Found ${mcData.length} records in managed_clients (${newClients.length} new)`);
+          } else if (mcError) {
+            console.log('⚠️ managed_clients error:', mcError.message);
+          }
+        } catch (e) {
+          console.log('⚠️ managed_clients table not accessible:', e.message);
+        }
+        
+        // Strategy 3: Try profiles table for facility clients
+        try {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, phone_number, email')
+            .in('id', managedClientIds)
+            .eq('facility_id', profile.facility_id);
+          
+          if (!profileError && profileData && profileData.length > 0) {
+            // Merge with existing data, avoiding duplicates
+            const existingIds = managedClients.map(c => c.id);
+            const newClients = profileData.filter(c => !existingIds.includes(c.id));
+            managedClients = [...managedClients, ...newClients];
+            fetchSuccessful = true;
+            console.log(`✅ Found ${profileData.length} records in profiles (${newClients.length} new)`);
+          } else if (profileError) {
+            console.log('⚠️ profiles lookup error:', profileError.message);
+          }
+        } catch (e) {
+          console.log('⚠️ profiles table lookup failed:', e.message);
+        }
+        
+        // If no data found, create placeholder records to improve fallback names
+        if (!fetchSuccessful || managedClients.length === 0) {
+          console.log('⚠️ No managed client records found - creating enhanced fallbacks');
+          
+          // Create enhanced placeholder data based on trip information
+          managedClients = managedClientIds.map(id => {
+            const relatedTrip = trips.find(t => t.managed_client_id === id);
+            let estimatedName = 'Managed Client';
+            
+            if (relatedTrip && relatedTrip.pickup_address) {
+              // Extract location-based identifier from pickup address
+              const addressParts = relatedTrip.pickup_address.split(',');
+              const firstPart = addressParts[0].replace(/^\d+\s+/, '').trim(); // Remove street number
+              const locationWords = firstPart.split(' ').filter(w => w.length > 2).slice(0, 2);
+              
+              if (locationWords.length > 0) {
+                estimatedName = `${locationWords.join(' ')} Client`;
+              }
+            }
+            
+            return {
+              id: id,
+              first_name: estimatedName,
+              last_name: '',
+              phone_number: null,
+              _is_placeholder: true
+            };
+          });
+          
+          console.log(`📝 Created ${managedClients.length} placeholder client records`);
+        }
+        
       } catch (error) {
-        console.log('❌ All managed client table queries failed:', error.message);
+        console.log('❌ All managed client fetch strategies failed:', error.message);
+        
+        // Final fallback: create basic placeholders
+        managedClients = managedClientIds.map(id => ({
+          id: id,
+          first_name: 'Managed',
+          last_name: 'Client',
+          phone_number: null,
+          _is_placeholder: true
+        }));
       }
     }
     
@@ -200,81 +277,125 @@ export async function GET(request) {
           debugInfo.user_id = trip.user_id;
         }
       } else if (trip.managed_client_id) {
-        // 🔥 ENHANCED DEBUG: Log the full managed_client_id for debugging
+        // 🔥 ENHANCED MANAGED CLIENT RESOLUTION
         console.log(`🔍 Processing managed_client_id: ${trip.managed_client_id}`);
         console.log(`🔍 Available managed clients count: ${managedClients.length}`);
-        if (managedClients.length > 0) {
-          console.log(`🔍 Sample managed client IDs:`, managedClients.slice(0, 3).map(c => c.id));
-        }
         
         const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
         if (managedClient) {
           console.log(`✅ Found managed client record:`, managedClient);
           
-          // Try different possible column combinations for managed client names
+          // 🎯 ENHANCED NAME BUILDING: Try multiple name field combinations
           let name = '';
-          if (managedClient.first_name) {
+          
+          // Priority 1: first_name + last_name
+          if (managedClient.first_name && managedClient.first_name !== 'Managed') {
             name = `${managedClient.first_name} ${managedClient.last_name || ''}`.trim();
-          } else if (managedClient.name) {
+          }
+          // Priority 2: name field
+          else if (managedClient.name && managedClient.name !== 'Managed Client') {
             name = managedClient.name;
-          } else if (managedClient.client_name) {
+          }
+          // Priority 3: client_name field
+          else if (managedClient.client_name && managedClient.client_name !== 'Managed Client') {
             name = managedClient.client_name;
           }
+          // Priority 4: Enhanced fallback from address/trip data
+          else if (managedClient._is_placeholder && managedClient.first_name !== 'Managed') {
+            name = managedClient.first_name; // This contains the location-based name
+          }
           
-          if (name) {
-            // Format as: "David Patel (Managed) - (416) 555-2233"
+          if (name && name !== 'Managed Client') {
+            // 🎨 FORMAT AS: "David Patel (Managed) - (416) 555-2233"
             let formattedName = `${name} (Managed)`;
+            
+            // Add phone number if available
             if (managedClient.phone_number) {
               formattedName += ` - ${managedClient.phone_number}`;
             }
+            
             clientName = formattedName;
-            debugInfo.resolution = 'managed_client';
+            debugInfo.resolution = 'managed_client_resolved';
             debugInfo.found_client = managedClient;
             console.log(`🎉 RESOLVED MANAGED CLIENT: "${formattedName}"`);
           } else {
-            console.log(`⚠️ Managed client found but no name fields:`, Object.keys(managedClient));
+            console.log(`⚠️ Managed client found but no usable name fields:`, Object.keys(managedClient));
             debugInfo.resolution = 'managed_client_no_name';
             debugInfo.found_client = managedClient;
+            
+            // Create a better fallback name using the client ID and trip location
+            const shortId = trip.managed_client_id.slice(0, 8);
+            let locationHint = 'Unknown Location';
+            
+            if (trip.pickup_address) {
+              const addressParts = trip.pickup_address.split(',')[0];
+              const cleanAddress = addressParts.replace(/^\d+\s+/, ''); // Remove street number
+              const words = cleanAddress.split(' ').filter(w => w.length > 2);
+              locationHint = words.slice(0, 2).join(' ') || 'Client Location';
+            }
+            
+            clientName = `${locationHint} Client (Managed) - ${shortId}`;
+            console.log(`🔄 Created enhanced fallback: "${clientName}"`);
           }
         } else {
           console.log(`❌ No managed client found for ID: ${trip.managed_client_id}`);
           console.log(`❌ Available managed client IDs:`, managedClients.map(c => c.id).slice(0, 5));
           debugInfo.resolution = 'managed_id_no_client';
           debugInfo.managed_client_id = trip.managed_client_id;
+          
+          // 🚀 SMART FALLBACK: Create meaningful name from trip data
+          const shortId = trip.managed_client_id.slice(0, 8);
+          let smartName = 'Managed Client';
+          
+          if (trip.pickup_address) {
+            // Extract meaningful location identifier
+            const addressParts = trip.pickup_address.split(',');
+            const firstPart = addressParts[0].replace(/^\d+\s+/, '').trim();
+            const locationWords = firstPart.split(' ').filter(w => w.length > 2);
+            
+            if (locationWords.length > 0) {
+              smartName = `${locationWords.slice(0, 2).join(' ')} Client`;
+            }
+          }
+          
+          clientName = `${smartName} (Managed) - ${shortId}`;
+          console.log(`🔧 Created smart fallback: "${clientName}"`);
         }
       }
       
-      // ✅ FALLBACK: If still "Unknown Client", create a meaningful name from the trip data
+      // ✅ ENHANCED FALLBACK SYSTEM: Create meaningful names from available data
       if (clientName === 'Unknown Client') {
         if (trip.user_id) {
           // Create a fallback name for authenticated users without profiles
           clientName = `Facility Client (${trip.user_id.slice(-8)})`;
           debugInfo.resolution = 'fallback_user';
         } else if (trip.managed_client_id) {
-          // 🔥 ENHANCED: Create a much more informative fallback name for managed clients
+          // 🚀 ENHANCED: Create a location-aware fallback name for managed clients
           const shortId = trip.managed_client_id.slice(0, 8);
           
-          // Extract meaningful info from pickup address
-          let addressHint = 'Unknown Location';
+          // Extract meaningful info from pickup address for better identification
+          let locationIdentifier = 'Client';
           if (trip.pickup_address) {
-            // Try to get street name or building name
-            const addressParts = trip.pickup_address.split(',')[0];
-            const cleanAddress = addressParts.replace(/^\d+\s+/, ''); // Remove street number
-            const words = cleanAddress.split(' ').filter(w => w.length > 2); // Get meaningful words
-            addressHint = words.slice(0, 2).join(' ') || 'Client Location';
+            const addressParts = trip.pickup_address.split(',');
+            const firstPart = addressParts[0].replace(/^\d+\s+/, '').trim(); // Remove street number
+            const words = firstPart.split(' ').filter(w => w.length > 2 && !w.match(/^\d+$/)); // Filter meaningful words
+            
+            if (words.length > 0) {
+              // Use the first 1-2 significant words as location identifier
+              locationIdentifier = words.slice(0, 2).join(' ');
+            }
           }
           
-          // Format: "Blazer Pkwy Client (ea79223a)" instead of "Managed Client (ea79223a)"
-          clientName = `${addressHint} Client (${shortId})`;
-          debugInfo.resolution = 'fallback_managed_with_address';
+          // Format: "Main Street Client (Managed) - ea79223a" instead of "Managed Client (ea79223a)"
+          clientName = `${locationIdentifier} Client (Managed) - ${shortId}`;
+          debugInfo.resolution = 'fallback_managed_enhanced';
           
-          // 🚨 TEMP DEBUG: Log this specific case
-          console.log(`🔥 FALLBACK CREATED: "${clientName}" from address: "${trip.pickup_address}"`);
+          console.log(`🔧 ENHANCED FALLBACK: "${clientName}" from address: "${trip.pickup_address}"`);
         } else {
           // Create a general fallback based on trip info
           const addressHint = trip.pickup_address ? 
-            trip.pickup_address.split(',')[0].replace(/^\d+\s+/, '').slice(0, 15) : 
-            'Unknown';
+            trip.pickup_address.split(',')[0].replace(/^\d+\s+/, '').trim().substring(0, 20) : 
+            'Unknown Location';
           clientName = `Client from ${addressHint}`;
           debugInfo.resolution = 'fallback_address';
         }
@@ -303,31 +424,40 @@ export async function GET(request) {
         amount: parseFloat(trip.price || 0),
         total: parseFloat(trip.price || 0),
         // 💼 PROFESSIONAL BILLING STATUS SYSTEM
+        // Maps trip statuses to billing states for clear financial reporting
         status: trip.status === 'completed' ? 'DUE' : 
                 trip.status === 'cancelled' ? 'CANCELLED' : 
-                trip.status === 'approved' ? 'UPCOMING' : 'UPCOMING',
+                trip.status === 'pending' ? 'PENDING_APPROVAL' :
+                trip.status === 'upcoming' ? 'UPCOMING' : 'UPCOMING',
         payment_status: trip.status === 'completed' ? 'DUE' : 
-                       trip.status === 'cancelled' ? 'CANCELLED' : 'UPCOMING',
+                       trip.status === 'cancelled' ? 'CANCELLED' : 
+                       trip.status === 'pending' ? 'PENDING_APPROVAL' :
+                       'UPCOMING',
         billing_status: trip.status === 'completed' ? 'DUE' : 
-                       trip.status === 'cancelled' ? 'CANCELLED' : 'UPCOMING',
+                       trip.status === 'cancelled' ? 'CANCELLED' : 
+                       trip.status === 'pending' ? 'PENDING_APPROVAL' :
+                       'UPCOMING',
         created_at: trip.created_at,
         due_date: trip.status === 'completed' ? trip.pickup_time : null,
         profiles: trip.user_id ? userProfiles.find(p => p.id === trip.user_id) : managedClients.find(c => c.id === trip.managed_client_id)
       });
     });
     
-    // DEBUG: Summary of client name resolution
-    console.log('\n🔍 CLIENT NAME RESOLUTION SUMMARY:');
+    // DEBUG: Enhanced summary of client name resolution
+    console.log('\n🔍 ENHANCED CLIENT NAME RESOLUTION SUMMARY:');
     const nameStats = bills.reduce((acc, bill) => {
       if (bill.client_name === 'Unknown Client') {
         acc.unknown++;
-      } else if (bill.client_name.includes('Managed Client (')) {
-        acc.managedFallback++;
-        acc.managedFallbackSamples.push(bill.client_name);
       } else if (bill.client_name.includes('(Managed)')) {
-        acc.managedResolved++;
-        acc.managedResolvedSamples.push(bill.client_name);
-      } else if (bill.client_name.includes('Facility Client (')) {
+        // Check if it's a proper resolved name or fallback
+        if (bill.client_name.match(/^[A-Z][a-z]+ [A-Z][a-z]+ \(Managed\)/)) {
+          acc.managedResolved++;
+          acc.managedResolvedSamples.push(bill.client_name);
+        } else {
+          acc.managedFallback++;
+          acc.managedFallbackSamples.push(bill.client_name);
+        }
+      } else if (bill.client_name.includes('Client (')) {
         acc.facilityFallback++;
       } else {
         acc.resolved++;
@@ -345,22 +475,37 @@ export async function GET(request) {
       managedFallbackSamples: []
     });
     
-    console.log(`✅ Properly resolved: ${nameStats.resolved}`);
-    console.log(`✅ Managed clients resolved: ${nameStats.managedResolved}`);
-    console.log(`🔄 Managed clients fallback: ${nameStats.managedFallback}`);
-    console.log(`🔄 Facility clients fallback: ${nameStats.facilityFallback}`);
-    console.log(`❌ Unknown clients: ${nameStats.unknown}`);
+    const totalBills = bills.length;
+    const successRate = totalBills > 0 ? ((nameStats.resolved + nameStats.managedResolved) / totalBills * 100).toFixed(1) : 0;
     
-    if (nameStats.managedFallbackSamples.length > 0) {
-      console.log('🔍 Managed client fallbacks (need investigation):', nameStats.managedFallbackSamples.slice(0, 3));
-    }
+    console.log(`📊 RESOLUTION STATISTICS:`);
+    console.log(`✅ Properly resolved: ${nameStats.resolved + nameStats.managedResolved}/${totalBills} (${successRate}%)`);
+    console.log(`   - Regular clients: ${nameStats.resolved}`);
+    console.log(`   - Managed clients: ${nameStats.managedResolved}`);
+    console.log(`🔄 Enhanced fallbacks: ${nameStats.managedFallback + nameStats.facilityFallback}`);
+    console.log(`   - Managed fallbacks: ${nameStats.managedFallback}`);
+    console.log(`   - Facility fallbacks: ${nameStats.facilityFallback}`);
+    console.log(`❌ Unknown clients: ${nameStats.unknown}`);
     
     if (nameStats.managedResolvedSamples.length > 0) {
       console.log('✅ Managed clients properly resolved:', nameStats.managedResolvedSamples.slice(0, 3));
     }
     
+    if (nameStats.managedFallbackSamples.length > 0) {
+      console.log('🔄 Enhanced managed fallbacks:', nameStats.managedFallbackSamples.slice(0, 3));
+    }
+    
     if (nameStats.names.length > 0) {
       console.log(`✅ Sample resolved names: ${nameStats.names.slice(0, 3).join(', ')}`);
+    }
+    
+    // 🎯 SUCCESS INDICATOR
+    if (successRate >= 80) {
+      console.log(`🎉 EXCELLENT: ${successRate}% success rate!`);
+    } else if (successRate >= 60) {
+      console.log(`🟡 GOOD: ${successRate}% success rate - consider adding more managed client data`);
+    } else {
+      console.log(`🔴 NEEDS IMPROVEMENT: ${successRate}% success rate - check managed client data`);
     }
 
     // Calculate summary statistics with professional billing status
