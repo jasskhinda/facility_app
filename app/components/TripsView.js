@@ -7,7 +7,7 @@ import DashboardLayout from './DashboardLayout';
 import RatingForm from './RatingForm';
 import { createBrowserClient } from '@supabase/ssr';
 
-export default function TripsView({ user, trips: initialTrips = [], successMessage = null }) {
+export default function TripsView({ user, trips: initialTrips = [], successMessage = null, onRefresh = null }) {
   const [filter, setFilter] = useState('all'); // all, upcoming, completed, cancelled
   const [cancellingTrip, setCancellingTrip] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
@@ -173,12 +173,25 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
       <div className="bg-[#F8F9FA] dark:bg-[#24393C] rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6 mb-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5]">Your Trips</h2>
-          <Link 
-            href="/dashboard/book" 
-            className="bg-[#7CCFD0] text-white px-4 py-2 rounded-md text-sm hover:bg-[#60BFC0]"
-          >
-            Book New Trip
-          </Link>
+          <div className="flex space-x-3">
+            {onRefresh && (
+              <button
+                onClick={onRefresh}
+                className="bg-gray-500 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-600 flex items-center"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </button>
+            )}
+            <Link 
+              href="/dashboard/book" 
+              className="bg-[#7CCFD0] text-white px-4 py-2 rounded-md text-sm hover:bg-[#60BFC0]"
+            >
+              Book New Trip
+            </Link>
+          </div>
         </div>
         
         {/* Success message */}
