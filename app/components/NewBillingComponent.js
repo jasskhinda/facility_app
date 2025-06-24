@@ -108,9 +108,10 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
       const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59, 999);
       
-      // Use string-based filtering for better compatibility
+      // Use proper date calculation to avoid invalid dates like June 31st
+      const lastDayOfMonth = endDate.getDate();
       const startISO = `${year}-${month.padStart(2, '0')}-01T00:00:00.000Z`;
-      const endISO = `${year}-${month.padStart(2, '0')}-31T23:59:59.999Z`;
+      const endISO = `${year}-${month.padStart(2, '0')}-${lastDayOfMonth.toString().padStart(2, '0')}T23:59:59.999Z`;
       
       console.log('📅 Date range for query:', {
         monthToFetch,
