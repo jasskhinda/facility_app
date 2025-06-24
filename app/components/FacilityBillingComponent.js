@@ -649,8 +649,6 @@ ${monthlyTrips.map(trip => {
                 {monthlyTrips.map((trip) => {
                   const formattedDate = trip.pickup_time ? 
                     new Date(trip.pickup_time).toLocaleDateString() : 'N/A';
-                  const clientName = trip.user ? 
-                    `${trip.user.first_name} ${trip.user.last_name}` : 'Unknown Client';
 
                   return (
                     <tr key={trip.id} className="hover:bg-[#F8F9FA] dark:hover:bg-[#24393C]">
@@ -658,7 +656,7 @@ ${monthlyTrips.map(trip => {
                         {formattedDate}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
-                        <div className="font-medium">{clientName}</div>
+                        <div className="font-medium">{trip.clientName}</div>
                       </td>
                       <td className="px-6 py-4 text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
                         <div className="max-w-xs">
