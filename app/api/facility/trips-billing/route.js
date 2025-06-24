@@ -130,24 +130,88 @@ export async function GET(request) {
       }
     }
     
+    // DEBUG: Log data for troubleshooting
+    console.log('🔍 CLIENT NAME RESOLUTION DEBUG:');
+    console.log(`Found ${trips.length} trips to process`);
+    console.log(`User profiles fetched: ${userProfiles.length}`);
+    console.log(`Managed clients fetched: ${managedClients.length}`);
+    
+    if (trips.length > 0) {
+      const sampleTrip = trips[0];
+      console.log('Sample trip:', {
+        id: sampleTrip.id,
+        user_id: sampleTrip.user_id,
+        managed_client_id: sampleTrip.managed_client_id,
+        pickup_address: sampleTrip.pickup_address?.substring(0, 50)
+      });
+    }
+    
+    if (userProfiles.length > 0) {
+      console.log('Sample user profiles:', userProfiles.slice(0, 2));
+    }
+    
+    if (managedClients.length > 0) {
+      console.log('Sample managed clients:', managedClients.slice(0, 2));
+    }
+
     // Transform trips into bill format with enhanced client name resolution
-    const bills = trips.map(trip => {
+    const bills = [];
+    let debugCount = 0;
+    
+    trips.forEach(trip => {
       // Smart client name detection using fetched profile data
       let clientName = 'Unknown Client';
+      let debugInfo = { trip_id: trip.id.split('-')[0], resolution: 'none' };
       
       if (trip.user_id) {
         const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
         if (userProfile && userProfile.first_name) {
           clientName = `${userProfile.first_name} ${userProfile.last_name || ''}`.trim();
+          debugInfo.resolution = 'user_profile';
+          debugInfo.found_profile = userProfile;
+        } else {
+          debugInfo.resolution = 'user_id_no_profile';
+          debugInfo.user_id = trip.user_id;
         }
       } else if (trip.managed_client_id) {
         const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
         if (managedClient && managedClient.first_name) {
           clientName = `${managedClient.first_name} ${managedClient.last_name || ''} (Managed)`.trim();
+          debugInfo.resolution = 'managed_client';
+          debugInfo.found_client = managedClient;
+        } else {
+          debugInfo.resolution = 'managed_id_no_client';
+          debugInfo.managed_client_id = trip.managed_client_id;
         }
       }
       
-      return {
+      // ✅ FALLBACK: If still "Unknown Client", create a meaningful name from the trip data
+      if (clientName === 'Unknown Client') {
+        if (trip.user_id) {
+          // Create a fallback name for authenticated users without profiles
+          clientName = `Facility Client (${trip.user_id.slice(-8)})`;
+          debugInfo.resolution = 'fallback_user';
+        } else if (trip.managed_client_id) {
+          // Create a fallback name for managed clients without records
+          clientName = `Managed Client (${trip.managed_client_id.slice(-8)})`;
+          debugInfo.resolution = 'fallback_managed';
+        } else {
+          // Create a general fallback based on trip info
+          const addressHint = trip.pickup_address ? 
+            trip.pickup_address.split(',')[0].replace(/^\d+\s+/, '').slice(0, 15) : 
+            'Unknown';
+          clientName = `Client from ${addressHint}`;
+          debugInfo.resolution = 'fallback_address';
+        }
+      }
+      
+      // Log first few resolutions for debugging
+      if (debugCount < 3) {
+        console.log(`Client resolution for trip ${debugInfo.trip_id}:`, debugInfo, `-> "${clientName}"`);
+        debugCount++;
+      }
+      
+      bills.push({
         id: trip.id,
         bill_number: `TRIP-${trip.id.split('-')[0].toUpperCase()}`,
         client_name: clientName,
@@ -168,9 +232,27 @@ export async function GET(request) {
         created_at: trip.created_at,
         due_date: trip.status === 'completed' ? trip.pickup_time : null,
         profiles: trip.user_id ? userProfiles.find(p => p.id === trip.user_id) : managedClients.find(c => c.id === trip.managed_client_id)
-      };
+      });
     });
     
+    // DEBUG: Summary of client name resolution
+    console.log('\n🔍 CLIENT NAME RESOLUTION SUMMARY:');
+    const nameStats = bills.reduce((acc, bill) => {
+      if (bill.client_name === 'Unknown Client') {
+        acc.unknown++;
+      } else {
+        acc.resolved++;
+        acc.names.push(bill.client_name);
+      }
+      return acc;
+    }, { unknown: 0, resolved: 0, names: [] });
+    
+    console.log(`✅ Resolved names: ${nameStats.resolved}`);
+    console.log(`❌ Unknown clients: ${nameStats.unknown}`);
+    if (nameStats.names.length > 0) {
+      console.log(`Sample resolved names: ${nameStats.names.slice(0, 3).join(', ')}`);
+    }
+
     // Calculate summary statistics
     const summary = {
       total_bills: bills.length,

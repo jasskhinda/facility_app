@@ -254,6 +254,23 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           }
         }
         
+        // ✅ FALLBACK: If still "Unknown Client", create a meaningful name from the trip data
+        if (clientName === 'Unknown Client') {
+          if (trip.user_id) {
+            // Create a fallback name for authenticated users without profiles
+            clientName = `Facility Client (${trip.user_id.slice(-8)})`;
+          } else if (trip.managed_client_id) {
+            // Create a fallback name for managed clients without records
+            clientName = `Managed Client (${trip.managed_client_id.slice(-8)})`;
+          } else {
+            // Create a general fallback based on trip info
+            const addressHint = trip.pickup_address ? 
+              trip.pickup_address.split(',')[0].replace(/^\d+\s+/, '').slice(0, 15) : 
+              'Unknown';
+            clientName = `Client from ${addressHint}`;
+          }
+        }
+        
         // BILLING LOGIC:
         // - BILLABLE: Only completed trips with valid prices
         // - NON-BILLABLE: Pending, upcoming, confirmed trips (show but no charge)
