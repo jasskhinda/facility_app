@@ -116,17 +116,24 @@ export async function GET(request) {
     
     if (managedClientIds.length > 0) {
       try {
+        console.log(`🔍 Attempting to fetch ${managedClientIds.length} managed clients:`, managedClientIds.slice(0, 3));
+        
         const { data: managedData, error: managedError } = await supabase
           .from('managed_clients')
-          .select('id, first_name, last_name')
+          .select('id, first_name, last_name, name, client_name')
           .in('id', managedClientIds);
         
-        if (!managedError && managedData) {
+        if (managedError) {
+          console.log('❌ Managed clients fetch error:', managedError);
+        } else if (managedData) {
           managedClients = managedData;
+          console.log(`✅ Found ${managedData.length} managed client records`);
+        } else {
+          console.log('⚠️ No managed client data returned');
         }
       } catch (error) {
         // managed_clients table might not exist - continue without it
-        console.log('managed_clients table not found during fetch, continuing without managed clients');
+        console.log('❌ managed_clients table error:', error.message);
       }
     }
     
@@ -175,10 +182,25 @@ export async function GET(request) {
         }
       } else if (trip.managed_client_id) {
         const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
-        if (managedClient && managedClient.first_name) {
-          clientName = `${managedClient.first_name} ${managedClient.last_name || ''} (Managed)`.trim();
-          debugInfo.resolution = 'managed_client';
-          debugInfo.found_client = managedClient;
+        if (managedClient) {
+          // Try different possible column combinations for managed client names
+          let name = '';
+          if (managedClient.first_name) {
+            name = `${managedClient.first_name} ${managedClient.last_name || ''}`.trim();
+          } else if (managedClient.name) {
+            name = managedClient.name;
+          } else if (managedClient.client_name) {
+            name = managedClient.client_name;
+          }
+          
+          if (name) {
+            clientName = `${name} (Managed)`;
+            debugInfo.resolution = 'managed_client';
+            debugInfo.found_client = managedClient;
+          } else {
+            debugInfo.resolution = 'managed_client_no_name';
+            debugInfo.found_client = managedClient;
+          }
         } else {
           debugInfo.resolution = 'managed_id_no_client';
           debugInfo.managed_client_id = trip.managed_client_id;
@@ -240,17 +262,46 @@ export async function GET(request) {
     const nameStats = bills.reduce((acc, bill) => {
       if (bill.client_name === 'Unknown Client') {
         acc.unknown++;
+      } else if (bill.client_name.includes('Managed Client (')) {
+        acc.managedFallback++;
+        acc.managedFallbackSamples.push(bill.client_name);
+      } else if (bill.client_name.includes('(Managed)')) {
+        acc.managedResolved++;
+        acc.managedResolvedSamples.push(bill.client_name);
+      } else if (bill.client_name.includes('Facility Client (')) {
+        acc.facilityFallback++;
       } else {
         acc.resolved++;
         acc.names.push(bill.client_name);
       }
       return acc;
-    }, { unknown: 0, resolved: 0, names: [] });
+    }, { 
+      unknown: 0, 
+      resolved: 0, 
+      managedResolved: 0,
+      managedFallback: 0,
+      facilityFallback: 0,
+      names: [],
+      managedResolvedSamples: [],
+      managedFallbackSamples: []
+    });
     
-    console.log(`✅ Resolved names: ${nameStats.resolved}`);
+    console.log(`✅ Properly resolved: ${nameStats.resolved}`);
+    console.log(`✅ Managed clients resolved: ${nameStats.managedResolved}`);
+    console.log(`🔄 Managed clients fallback: ${nameStats.managedFallback}`);
+    console.log(`🔄 Facility clients fallback: ${nameStats.facilityFallback}`);
     console.log(`❌ Unknown clients: ${nameStats.unknown}`);
+    
+    if (nameStats.managedFallbackSamples.length > 0) {
+      console.log('🔍 Managed client fallbacks (need investigation):', nameStats.managedFallbackSamples.slice(0, 3));
+    }
+    
+    if (nameStats.managedResolvedSamples.length > 0) {
+      console.log('✅ Managed clients properly resolved:', nameStats.managedResolvedSamples.slice(0, 3));
+    }
+    
     if (nameStats.names.length > 0) {
-      console.log(`Sample resolved names: ${nameStats.names.slice(0, 3).join(', ')}`);
+      console.log(`✅ Sample resolved names: ${nameStats.names.slice(0, 3).join(', ')}`);
     }
 
     // Calculate summary statistics
