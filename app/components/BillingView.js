@@ -221,7 +221,13 @@ export default function BillingView() {
 
   const getStatusColor = (status) => {
     const colors = {
-      pending: 'bg-[#84CED3]/20 dark:bg-[#84CED3]/10 text-[#3B5B63] dark:text-[#84CED3]',
+      // 💼 PROFESSIONAL BILLING STATUS COLORS
+      UPCOMING: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400',
+      DUE: 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400',
+      CANCELLED: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400',
+      PAID: 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400',
+      // Legacy status support
+      pending: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400',
       paid: 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400',
       overdue: 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400',
       cancelled: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400',
@@ -232,6 +238,16 @@ export default function BillingView() {
 
   const getStatusIcon = (status) => {
     switch (status) {
+      // 💼 PROFESSIONAL BILLING STATUS ICONS
+      case 'UPCOMING':
+        return '📅';
+      case 'DUE':
+        return '💰';
+      case 'CANCELLED':
+        return '❌';
+      case 'PAID':
+        return '✅';
+      // Legacy status support
       case 'paid':
         return '✓';
       case 'pending':
@@ -414,11 +430,10 @@ export default function BillingView() {
                       className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
                     >
                       <option value="">All Statuses</option>
-                      <option value="pending">⏳ Pending</option>
-                      <option value="paid">✅ Paid</option>
-                      <option value="overdue">⚠️ Overdue</option>
-                      <option value="cancelled">✕ Cancelled</option>
-                      <option value="refunded">↩️ Refunded</option>
+                      <option value="UPCOMING">📅 Upcoming</option>
+                      <option value="DUE">💰 Due</option>
+                      <option value="CANCELLED">❌ Cancelled</option>
+                      <option value="PAID">✅ Paid</option>
                     </select>
 
                     {/* Client Filter */}

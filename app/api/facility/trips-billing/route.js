@@ -118,13 +118,28 @@ export async function GET(request) {
       try {
         console.log(`🔍 Attempting to fetch ${managedClientIds.length} managed clients:`, managedClientIds.slice(0, 3));
         
+        // 🔥 TRY PRIMARY TABLE: facility_managed_clients
         const { data: managedData, error: managedError } = await supabase
           .from('facility_managed_clients')
           .select('id, first_name, last_name, name, client_name, phone_number')
           .in('id', managedClientIds);
         
         if (managedError) {
-          console.log('❌ Managed clients fetch error:', managedError);
+          console.log('❌ facility_managed_clients fetch error:', managedError);
+          
+          // 🔥 FALLBACK: Try the old table name
+          console.log('🔄 Trying fallback table: managed_clients');
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('managed_clients')
+            .select('id, first_name, last_name, name, client_name, phone_number')
+            .in('id', managedClientIds);
+            
+          if (!fallbackError && fallbackData) {
+            managedClients = fallbackData;
+            console.log(`✅ Found ${fallbackData.length} managed client records in fallback table`);
+          } else {
+            console.log('❌ Fallback table also failed:', fallbackError);
+          }
         } else if (managedData) {
           managedClients = managedData;
           console.log(`✅ Found ${managedData.length} managed client records`);
@@ -132,8 +147,7 @@ export async function GET(request) {
           console.log('⚠️ No managed client data returned');
         }
       } catch (error) {
-        // facility_managed_clients table might not exist - continue without it
-        console.log('❌ facility_managed_clients table error:', error.message);
+        console.log('❌ All managed client table queries failed:', error.message);
       }
     }
     
@@ -186,8 +200,12 @@ export async function GET(request) {
           debugInfo.user_id = trip.user_id;
         }
       } else if (trip.managed_client_id) {
-        // Log the full managed_client_id for debugging
+        // 🔥 ENHANCED DEBUG: Log the full managed_client_id for debugging
         console.log(`🔍 Processing managed_client_id: ${trip.managed_client_id}`);
+        console.log(`🔍 Available managed clients count: ${managedClients.length}`);
+        if (managedClients.length > 0) {
+          console.log(`🔍 Sample managed client IDs:`, managedClients.slice(0, 3).map(c => c.id));
+        }
         
         const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
         if (managedClient) {
@@ -212,6 +230,7 @@ export async function GET(request) {
             clientName = formattedName;
             debugInfo.resolution = 'managed_client';
             debugInfo.found_client = managedClient;
+            console.log(`🎉 RESOLVED MANAGED CLIENT: "${formattedName}"`);
           } else {
             console.log(`⚠️ Managed client found but no name fields:`, Object.keys(managedClient));
             debugInfo.resolution = 'managed_client_no_name';
@@ -219,7 +238,7 @@ export async function GET(request) {
           }
         } else {
           console.log(`❌ No managed client found for ID: ${trip.managed_client_id}`);
-          console.log(`Available managed client IDs:`, managedClients.map(c => c.id).slice(0, 3));
+          console.log(`❌ Available managed client IDs:`, managedClients.map(c => c.id).slice(0, 5));
           debugInfo.resolution = 'managed_id_no_client';
           debugInfo.managed_client_id = trip.managed_client_id;
         }
@@ -232,15 +251,25 @@ export async function GET(request) {
           clientName = `Facility Client (${trip.user_id.slice(-8)})`;
           debugInfo.resolution = 'fallback_user';
         } else if (trip.managed_client_id) {
-          // Create a more meaningful fallback name for managed clients without records
+          // 🔥 ENHANCED: Create a much more informative fallback name for managed clients
           const shortId = trip.managed_client_id.slice(0, 8);
-          const addressHint = trip.pickup_address ? 
-            trip.pickup_address.split(',')[0].replace(/^\d+\s+/, '').split(' ').slice(0, 2).join(' ') : 
-            'Client';
           
-          // Try to create a meaningful name from pickup address
+          // Extract meaningful info from pickup address
+          let addressHint = 'Unknown Location';
+          if (trip.pickup_address) {
+            // Try to get street name or building name
+            const addressParts = trip.pickup_address.split(',')[0];
+            const cleanAddress = addressParts.replace(/^\d+\s+/, ''); // Remove street number
+            const words = cleanAddress.split(' ').filter(w => w.length > 2); // Get meaningful words
+            addressHint = words.slice(0, 2).join(' ') || 'Client Location';
+          }
+          
+          // Format: "Blazer Pkwy Client (ea79223a)" instead of "Managed Client (ea79223a)"
           clientName = `${addressHint} Client (${shortId})`;
           debugInfo.resolution = 'fallback_managed_with_address';
+          
+          // 🚨 TEMP DEBUG: Log this specific case
+          console.log(`🔥 FALLBACK CREATED: "${clientName}" from address: "${trip.pickup_address}"`);
         } else {
           // Create a general fallback based on trip info
           const addressHint = trip.pickup_address ? 
@@ -273,8 +302,14 @@ export async function GET(request) {
         additional_passengers: trip.additional_passengers || 0,
         amount: parseFloat(trip.price || 0),
         total: parseFloat(trip.price || 0),
-        status: trip.status === 'completed' ? 'paid' : trip.status === 'cancelled' ? 'cancelled' : 'pending',
-        payment_status: trip.status === 'completed' ? 'paid' : 'pending',
+        // 💼 PROFESSIONAL BILLING STATUS SYSTEM
+        status: trip.status === 'completed' ? 'DUE' : 
+                trip.status === 'cancelled' ? 'CANCELLED' : 
+                trip.status === 'approved' ? 'UPCOMING' : 'UPCOMING',
+        payment_status: trip.status === 'completed' ? 'DUE' : 
+                       trip.status === 'cancelled' ? 'CANCELLED' : 'UPCOMING',
+        billing_status: trip.status === 'completed' ? 'DUE' : 
+                       trip.status === 'cancelled' ? 'CANCELLED' : 'UPCOMING',
         created_at: trip.created_at,
         due_date: trip.status === 'completed' ? trip.pickup_time : null,
         profiles: trip.user_id ? userProfiles.find(p => p.id === trip.user_id) : managedClients.find(c => c.id === trip.managed_client_id)
@@ -328,20 +363,34 @@ export async function GET(request) {
       console.log(`✅ Sample resolved names: ${nameStats.names.slice(0, 3).join(', ')}`);
     }
 
-    // Calculate summary statistics
+    // Calculate summary statistics with professional billing status
     const summary = {
       total_bills: bills.length,
       total_amount: bills.reduce((sum, bill) => sum + bill.amount, 0),
+      // 💼 PROFESSIONAL BILLING AMOUNTS
+      due_amount: bills
+        .filter(bill => bill.billing_status === 'DUE')
+        .reduce((sum, bill) => sum + bill.amount, 0),
+      upcoming_amount: bills
+        .filter(bill => bill.billing_status === 'UPCOMING')
+        .reduce((sum, bill) => sum + bill.amount, 0),
+      cancelled_amount: bills
+        .filter(bill => bill.billing_status === 'CANCELLED')
+        .reduce((sum, bill) => sum + bill.amount, 0),
+      // 💼 PROFESSIONAL TRIP COUNTS
+      due_trips: bills.filter(bill => bill.billing_status === 'DUE').length,
+      upcoming_trips: bills.filter(bill => bill.billing_status === 'UPCOMING').length,
+      cancelled_trips: bills.filter(bill => bill.billing_status === 'CANCELLED').length,
+      // Keep legacy fields for backward compatibility
       paid_amount: bills
-        .filter(bill => bill.status === 'paid')
+        .filter(bill => bill.billing_status === 'DUE')
         .reduce((sum, bill) => sum + bill.amount, 0),
       outstanding_amount: bills
-        .filter(bill => ['pending', 'overdue'].includes(bill.status))
+        .filter(bill => bill.billing_status === 'UPCOMING')
         .reduce((sum, bill) => sum + bill.amount, 0),
-      overdue_count: bills.filter(bill => bill.status === 'overdue').length,
-      completed_trips: bills.filter(bill => bill.status === 'paid').length,
-      pending_trips: bills.filter(bill => bill.status === 'pending').length,
-      cancelled_trips: bills.filter(bill => bill.status === 'cancelled').length
+      overdue_count: 0, // Will be calculated based on due dates later
+      completed_trips: bills.filter(bill => bill.billing_status === 'DUE').length,
+      pending_trips: bills.filter(bill => bill.billing_status === 'UPCOMING').length
     };
     
     return NextResponse.json({ bills, summary });
