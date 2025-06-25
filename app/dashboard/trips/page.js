@@ -75,10 +75,13 @@ export default function TripsPage() {
             console.log('User role from profile:', profileData?.role, 'Facility ID:', profileData?.facility_id);
           }
           
-          // Build trips query based on user role (without foreign key joins due to schema issues)
+          // Build trips query based on user role - now includes facility information
           let tripsQuery = supabase
             .from('trips')
-            .select('*')
+            .select(`
+              *,
+              facility:facilities(id, name, email, contact_email, phone_number, address, facility_type)
+            `)
             .order('created_at', { ascending: false });
           
           // For facility users, get trips for their facility
@@ -350,10 +353,13 @@ export default function TripsPage() {
           .eq('id', userId)
           .single();
         
-        // Fetch fresh trips data
+        // Fetch fresh trips data with facility information
         let tripsQuery = supabase
           .from('trips')
-          .select('*')
+          .select(`
+            *,
+            facility:facilities(id, name, email, contact_email, phone_number, address, facility_type)
+          `)
           .order('pickup_time', { ascending: false });
 
         if (profileData?.role === 'facility' && profileData?.facility_id) {

@@ -30,6 +30,40 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
   // Use filtered trips for display
   const displayTrips = filteredTrips;
   
+  // Helper function to get facility display information
+  const getFacilityDisplayInfo = (trip) => {
+    if (!trip.facility_id) return null;
+    
+    let facilityName = '';
+    let facilityContact = '';
+    
+    if (trip.facility) {
+      // Professional facility display with multiple fallbacks
+      if (trip.facility.name) {
+        facilityName = trip.facility.name;
+      } else if (trip.facility.contact_email) {
+        facilityName = trip.facility.contact_email;
+      } else if (trip.facility.email) {
+        facilityName = trip.facility.email;
+      } else {
+        facilityName = `Facility ${trip.facility_id.substring(0, 8)}`;
+      }
+      
+      // Add facility contact information
+      if (trip.facility.phone_number) {
+        facilityContact = trip.facility.phone_number;
+      } else if (trip.facility.contact_email) {
+        facilityContact = trip.facility.contact_email;
+      } else if (trip.facility.email) {
+        facilityContact = trip.facility.email;
+      }
+    } else {
+      facilityName = `Facility ${trip.facility_id.substring(0, 8)}`;
+    }
+    
+    return { facilityName, facilityContact };
+  };
+  
   // Function to start trip cancellation
   const startCancellation = (tripId) => {
     setCancellingTrip(tripId);
@@ -363,6 +397,21 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                       <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.destination_address}</p>
                     </div>
                   </div>
+                  
+                  {/* Facility Information - show for facility trips */}
+                  {trip.facility_id && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Facility</p>
+                      <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+                        {getFacilityDisplayInfo(trip)?.facilityName || 'N/A'}
+                      </p>
+                      {getFacilityDisplayInfo(trip)?.facilityContact && (
+                        <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+                          {getFacilityDisplayInfo(trip)?.facilityContact}
+                        </p>
+                      )}
+                    </div>
+                  )}
                   
                   {trip.status === 'pending' && (
                     <div className="mt-4">
