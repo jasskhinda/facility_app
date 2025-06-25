@@ -75,12 +75,12 @@ export default function TripsPage() {
             console.log('User role from profile:', profileData?.role, 'Facility ID:', profileData?.facility_id);
           }
           
-          // Build trips query based on user role - now includes facility information
+          // Build trips query based on user role - simple facility information only
           let tripsQuery = supabase
             .from('trips')
             .select(`
               *,
-              facility:facilities(id, name, email, contact_email, phone_number, address, facility_type)
+              facility:facilities(id, name, contact_email, phone_number)
             `)
             .order('created_at', { ascending: false });
           
@@ -358,7 +358,7 @@ export default function TripsPage() {
           .from('trips')
           .select(`
             *,
-            facility:facilities(id, name, email, contact_email, phone_number, address, facility_type)
+            facility:facilities(id, name, contact_email, phone_number)
           `)
           .order('pickup_time', { ascending: false });
 

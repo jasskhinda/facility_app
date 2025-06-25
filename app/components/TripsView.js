@@ -38,13 +38,11 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
     let facilityContact = '';
     
     if (trip.facility) {
-      // Professional facility display with multiple fallbacks
+      // Professional facility display with fallbacks
       if (trip.facility.name) {
         facilityName = trip.facility.name;
       } else if (trip.facility.contact_email) {
         facilityName = trip.facility.contact_email;
-      } else if (trip.facility.email) {
-        facilityName = trip.facility.email;
       } else {
         facilityName = `Facility ${trip.facility_id.substring(0, 8)}`;
       }
@@ -54,8 +52,6 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
         facilityContact = trip.facility.phone_number;
       } else if (trip.facility.contact_email) {
         facilityContact = trip.facility.contact_email;
-      } else if (trip.facility.email) {
-        facilityContact = trip.facility.email;
       }
     } else {
       facilityName = `Facility ${trip.facility_id.substring(0, 8)}`;
