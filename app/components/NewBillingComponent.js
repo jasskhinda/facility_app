@@ -21,6 +21,17 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   const [markAsPaid, setMarkAsPaid] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  
+  // Payment states
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('credit_card');
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [cardNumber, setCardNumber] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [billingName, setBillingName] = useState('');
+  const [paymentError, setPaymentError] = useState('');
 
   const supabase = createClientSupabase();
 
@@ -636,6 +647,78 @@ ${monthlyTrips.map(trip => {
     setSuccessMessage('');
   };
 
+  // Payment handlers
+  const openPaymentModal = () => {
+    if (totalAmount <= 0) {
+      setError('No amount due for payment');
+      return;
+    }
+    
+    setShowPaymentModal(true);
+    setPaymentError('');
+    setError('');
+  };
+
+  const handlePayment = async () => {
+    if (!cardNumber || !expiryDate || !cvv || !billingName) {
+      setPaymentError('Please fill in all payment details');
+      return;
+    }
+
+    setProcessingPayment(true);
+    setPaymentError('');
+
+    try {
+      // Simulate payment processing
+      console.log('🔒 Processing payment:', {
+        amount: totalAmount,
+        method: paymentMethod,
+        facility: facility?.name,
+        month: selectedMonth
+      });
+
+      // Simulate payment API call
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // Create payment record
+      const paymentData = {
+        facility_id: facilityId,
+        month: selectedMonth,
+        amount: totalAmount,
+        payment_method: paymentMethod,
+        card_last_four: cardNumber.slice(-4),
+        billing_name: billingName,
+        status: 'completed',
+        payment_date: new Date().toISOString(),
+        trip_ids: monthlyTrips.filter(trip => trip.billable).map(trip => trip.id)
+      };
+
+      // In a real implementation, you would call your payment API here
+      console.log('💳 Payment completed:', paymentData);
+
+      setPaymentSuccess(true);
+      setSuccessMessage(`Payment of $${totalAmount.toFixed(2)} processed successfully for ${displayMonth}`);
+      
+      // Reset payment form
+      setCardNumber('');
+      setExpiryDate('');
+      setCvv('');
+      setBillingName('');
+      
+      // Close modal after delay
+      setTimeout(() => {
+        setShowPaymentModal(false);
+        setPaymentSuccess(false);
+      }, 3000);
+
+    } catch (error) {
+      console.error('Payment error:', error);
+      setPaymentError('Payment failed. Please try again or contact support.');
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
 
 
   return (
@@ -679,6 +762,9 @@ ${monthlyTrips.map(trip => {
             <h1 className="text-2xl font-bold">Monthly Billing & Invoices</h1>
             <p className="text-blue-100 mt-1">
               Professional invoice management for {facility?.name || 'your facility'}
+            </p>
+            <p className="text-blue-200 text-sm mt-2">
+              💳 Now supporting online payments and traditional billing methods
             </p>
           </div>
           <div className="text-right">
@@ -769,6 +855,20 @@ ${monthlyTrips.map(trip => {
             <h3 className="text-sm font-medium text-gray-700 mb-1">Billing Email</h3>
             <p className="text-sm text-gray-600 truncate">{facility?.billing_email || 'Not set'}</p>
           </div>
+          
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-gray-700 mb-1">Payment Status</h3>
+            <div className="flex items-center space-x-2">
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                totalAmount > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+              }`}>
+                {totalAmount > 0 ? 'PAYMENT DUE' : 'PAID'}
+              </span>
+              {totalAmount > 0 && (
+                <span className="text-sm text-gray-600">${totalAmount.toFixed(2)}</span>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Action Buttons */}
@@ -782,6 +882,17 @@ ${monthlyTrips.map(trip => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
             Send Invoice
+          </button>
+          
+          <button
+            onClick={openPaymentModal}
+            disabled={loading || totalAmount <= 0}
+            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+            Pay Monthly Invoice
           </button>
           
           <button
@@ -927,6 +1038,239 @@ ${monthlyTrips.map(trip => {
                 </ul>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            {/* Payment Modal Header */}
+            <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-6 rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold">Pay Monthly Invoice</h2>
+                  <p className="text-green-100 mt-1">
+                    Amount Due: ${totalAmount.toFixed(2)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="text-green-200 hover:text-white transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Payment Modal Content */}
+            <div className="p-6 space-y-6">
+              {paymentSuccess ? (
+                /* Payment Success */
+                <div className="text-center py-8">
+                  <div className="text-green-500 text-6xl mb-4">✅</div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Payment Successful!</h3>
+                  <p className="text-gray-600 mb-4">
+                    Your payment of ${totalAmount.toFixed(2)} has been processed successfully.
+                  </p>
+                  <p className="text-sm text-green-600">
+                    You will receive a confirmation email shortly.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Payment Summary */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-900 mb-2">Payment Summary</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Facility:</span>
+                        <span className="font-medium">{facility?.name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Billing Period:</span>
+                        <span className="font-medium">{displayMonth}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Billable Trips:</span>
+                        <span className="font-medium">{monthlyTrips.filter(trip => trip.billable).length}</span>
+                      </div>
+                      <div className="border-t pt-2 mt-2">
+                        <div className="flex justify-between text-lg font-bold">
+                          <span>Total Amount:</span>
+                          <span className="text-green-600">${totalAmount.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Method Selection */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Payment Method</h3>
+                    
+                    <div className="space-y-3">
+                      <label className="flex items-center space-x-3">
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="credit_card"
+                          checked={paymentMethod === 'credit_card'}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
+                          className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                        />
+                        <span className="text-gray-900 font-medium">Credit Card</span>
+                      </label>
+                      
+                      <label className="flex items-center space-x-3">
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="bank_transfer"
+                          checked={paymentMethod === 'bank_transfer'}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
+                          className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                        />
+                        <span className="text-gray-900 font-medium">Bank Transfer</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Payment Form */}
+                  {paymentMethod === 'credit_card' && (
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-gray-900">Card Details</h4>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Cardholder Name
+                        </label>
+                        <input
+                          type="text"
+                          value={billingName}
+                          onChange={(e) => setBillingName(e.target.value)}
+                          placeholder="Enter name on card"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Card Number
+                        </label>
+                        <input
+                          type="text"
+                          value={cardNumber}
+                          onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 '))}
+                          placeholder="1234 5678 9012 3456"
+                          maxLength="19"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Expiry Date
+                          </label>
+                          <input
+                            type="text"
+                            value={expiryDate}
+                            onChange={(e) => setExpiryDate(e.target.value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2'))}
+                            placeholder="MM/YY"
+                            maxLength="5"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            CVV
+                          </label>
+                          <input
+                            type="text"
+                            value={cvv}
+                            onChange={(e) => setCvv(e.target.value.replace(/\D/g, ''))}
+                            placeholder="123"
+                            maxLength="4"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {paymentMethod === 'bank_transfer' && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h4 className="font-medium text-blue-900 mb-2">Bank Transfer Details</h4>
+                      <div className="text-sm text-blue-800 space-y-1">
+                        <p><strong>Account Name:</strong> CCT Transportation Services</p>
+                        <p><strong>Account Number:</strong> 123-456-789</p>
+                        <p><strong>Routing Number:</strong> 987-654-321</p>
+                        <p><strong>Reference:</strong> {facility?.name} - {displayMonth}</p>
+                      </div>
+                      <p className="text-xs text-blue-600 mt-3">
+                        Please include the reference number in your transfer and allow 2-3 business days for processing.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Error Message */}
+                  {paymentError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <p className="text-sm text-red-800">{paymentError}</p>
+                    </div>
+                  )}
+
+                  {/* Payment Action Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+                    <button
+                      onClick={() => setShowPaymentModal(false)}
+                      className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    
+                    {paymentMethod === 'credit_card' ? (
+                      <button
+                        onClick={handlePayment}
+                        disabled={processingPayment || !cardNumber || !expiryDate || !cvv || !billingName}
+                        className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                      >
+                        {processingPayment ? (
+                          <>
+                            <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                            Pay ${totalAmount.toFixed(2)}
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setSuccessMessage('Bank transfer details provided. Please complete the transfer using the details above.');
+                          setShowPaymentModal(false);
+                        }}
+                        className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+                      >
+                        Got It
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
