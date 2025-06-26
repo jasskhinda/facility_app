@@ -77,6 +77,10 @@ body {
   @apply bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300;
 }
 
+.status-in-process {
+  @apply bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300;
+}
+
 .status-completed {
   @apply bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300;
 }

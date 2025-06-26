@@ -1206,7 +1206,7 @@ ${monthlyTrips.map(trip => {
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <h4 className="font-medium text-blue-900 mb-2">Bank Transfer Details</h4>
                       <div className="text-sm text-blue-800 space-y-1">
-                        <p><strong>Account Name:</strong> CCT Transportation Services</p>
+                        <p><strong>Account Name:</strong> Compassionate Care Transportation Services</p>
                         <p><strong>Account Number:</strong> 123-456-789</p>
                         <p><strong>Routing Number:</strong> 987-654-321</p>
                         <p><strong>Reference:</strong> {facility?.name} - {displayMonth}</p>

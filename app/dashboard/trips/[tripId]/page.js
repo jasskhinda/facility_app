@@ -293,6 +293,8 @@ Website: https://compassionatecaretransportation.com
         return 'status-pending';
       case 'upcoming':
         return 'status-upcoming';
+      case 'in_process':
+        return 'status-in-process';
       case 'completed':
         return 'status-completed';
       case 'cancelled':
@@ -391,6 +393,7 @@ Website: https://compassionatecaretransportation.com
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(trip.status)}`}>
             {trip.status === 'pending' ? 'Pending Approval' :
              trip.status === 'upcoming' ? 'Upcoming' : 
+             trip.status === 'in_process' ? 'In Process (Paid)' :
              trip.status === 'completed' ? 'Completed' : 
              trip.status === 'in_progress' ? 'In Progress' : 'Cancelled'}
           </span>
@@ -482,6 +485,7 @@ Website: https://compassionatecaretransportation.com
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(trip.status)} mt-1`}>
                 {trip.status === 'pending' ? 'Pending Approval' :
                  trip.status === 'upcoming' ? 'Upcoming' : 
+                 trip.status === 'in_process' ? 'In Process (Paid)' :
                  trip.status === 'completed' ? 'Completed' : 
                  trip.status === 'in_progress' ? 'In Progress' : 'Cancelled'}
               </span>

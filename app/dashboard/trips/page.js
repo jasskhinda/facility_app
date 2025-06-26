@@ -295,6 +295,8 @@ export default function TripsPage() {
                   // Show notification to user about the status change
                   if (updatedTrip.status === 'upcoming') {
                     setSuccessMessage(`✅ Trip approved by dispatcher! Status updated to: ${updatedTrip.status}`);
+                  } else if (updatedTrip.status === 'in_process') {
+                    setSuccessMessage(`💳 Trip payment processed! Trip is now in process.`);
                   } else if (updatedTrip.status === 'cancelled') {
                     setSuccessMessage(`❌ Trip was rejected by dispatcher. Reason: ${updatedTrip.cancellation_reason || 'No reason provided'}`);
                   } else if (updatedTrip.status === 'completed') {
