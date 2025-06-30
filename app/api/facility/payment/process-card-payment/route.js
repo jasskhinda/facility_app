@@ -84,7 +84,7 @@ export async function POST(request) {
       payment_method: payment_method_id,
       confirmation_method: 'manual',
       confirm: true,
-      return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/billing`,
+      return_url: 'https://facility.compassionatecaretransportation.com/dashboard/billing',
       metadata: {
         facility_id: facility_id,
         invoice_number: invoice_number,
