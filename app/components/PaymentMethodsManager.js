@@ -138,25 +138,58 @@ export default function PaymentMethodsManager({ user, facilityId }) {
     try {
       console.log('Starting card addition process for facility:', facilityId);
       
-      // For now, let's save directly to database without Stripe to test the flow
-      // This simulates a successful card addition for testing
+      // Create Stripe setup intent for the facility
+      const setupResponse = await fetch('/api/stripe/setup-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          facilityId: facilityId,
+          paymentMethodType: 'card'
+        })
+      });
+
+      if (!setupResponse.ok) {
+        throw new Error('Failed to create setup intent');
+      }
+
+      const { clientSecret } = await setupResponse.json();
+      const stripe = await getStripe();
+
+      // Confirm the setup intent with card details
+      const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
+        payment_method: {
+          card: {
+            number: cardForm.cardNumber.replace(/\s/g, ''),
+            exp_month: parseInt(cardForm.expiryDate.split('/')[0]),
+            exp_year: parseInt('20' + cardForm.expiryDate.split('/')[1]),
+            cvc: cardForm.cvv
+          },
+          billing_details: {
+            name: cardForm.cardholderName
+          }
+        }
+      });
+
+      if (stripeError) {
+        throw new Error(stripeError.message);
+      }
+
+      // Save to database with real Stripe payment method ID
       const isFirstMethod = paymentMethods.length === 0;
-      
-      // Generate a mock stripe payment method ID for testing
-      const mockStripeId = `pm_test_${Date.now()}`;
+      const paymentMethod = setupIntent.payment_method;
       
       const { error: dbError } = await supabase
         .from('facility_payment_methods')
         .insert({
           facility_id: facilityId,
-          stripe_payment_method_id: mockStripeId,
+          stripe_payment_method_id: paymentMethod.id,
           payment_method_type: 'card',
-          last_four: cardForm.cardNumber.slice(-4),
-          card_brand: 'visa', // Default for testing
-          expiry_month: parseInt(cardForm.expiryDate.split('/')[0]),
-          expiry_year: parseInt('20' + cardForm.expiryDate.split('/')[1]),
+          last_four: paymentMethod.card.last4,
+          card_brand: paymentMethod.card.brand,
+          expiry_month: paymentMethod.card.exp_month,
+          expiry_year: paymentMethod.card.exp_year,
           cardholder_name: cardForm.cardholderName,
-          nickname: cardForm.nickname || 'Credit Card',
+          nickname: cardForm.nickname || `${paymentMethod.card.brand.toUpperCase()} ****${paymentMethod.card.last4}`,
           is_default: isFirstMethod
         });
 
