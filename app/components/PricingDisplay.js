@@ -31,6 +31,7 @@ export default function PricingDisplay({
     formData.pickupTime,
     formData.isRoundTrip,
     formData.wheelchairType,
+    formData.isEmergency,
     selectedClient?.client_type,
     routeInfo,
     isVisible
@@ -56,6 +57,7 @@ export default function PricingDisplay({
         wheelchairType: formData.wheelchairType,
         clientType,
         additionalPassengers: formData.additionalPassengers || 0,
+        isEmergency: formData.isEmergency || false,
         preCalculatedDistance: routeInfo ? {
           miles: routeInfo.distance?.miles || 0,
           distance: routeInfo.distance?.value / 1609.34, // Convert meters to miles

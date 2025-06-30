@@ -1,508 +1,711 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import DashboardLayout from './DashboardLayout';
+import { useState, useEffect } from 'react';
+import { createClientSupabase } from '@/lib/client-supabase';
 import { getStripe } from '@/lib/stripe';
 
-// Card setup form component
-function CardSetupForm({ clientSecret, onSuccess, onError, onCancel, profile, user }) {
+export default function PaymentMethodsManager({ user, facilityId }) {
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [defaultMethod, setDefaultMethod] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Modal states
+  const [showAddCardModal, setShowAddCardModal] = useState(false);
+  const [showAddBankModal, setShowAddBankModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [methodToDelete, setMethodToDelete] = useState(null);
+
+  // Form states
+  const [cardForm, setCardForm] = useState({
+    cardNumber: '',
+    expiryDate: '',
+    cvv: '',
+    cardholderName: '',
+    nickname: ''
+  });
+  const [bankForm, setBankForm] = useState({
+    accountNumber: '',
+    routingNumber: '',
+    accountHolderName: '',
+    accountType: 'checking',
+    nickname: ''
+  });
   const [processing, setProcessing] = useState(false);
-  const stripe = useRef(null);
-  const elements = useRef(null);
-  const cardElement = useRef(null);
-  const [cardReady, setCardReady] = useState(false);
-  const [stripeReady, setStripeReady] = useState(false);
-  
-  // Initialize Stripe when component loads
+
+  const supabase = createClientSupabase();
+
   useEffect(() => {
-    const initializeStripe = async () => {
-      try {
-        stripe.current = await getStripe();
-        if (!stripe.current) {
-          throw new Error('Failed to load Stripe. Please refresh and try again.');
-        }
-        
-        elements.current = stripe.current.elements({
-          clientSecret: clientSecret,
-        });
-        
-        cardElement.current = elements.current.create('card', {
-          style: {
-            base: {
-              fontSize: '16px',
-              color: '#2E4F54',
-              '::placeholder': {
-                color: '#7a8c91',
-              },
-            },
-          },
-        });
-        
-        // Mount the card element to the DOM
-        const cardElementContainer = document.getElementById('card-element-container');
-        if (cardElementContainer) {
-          cardElement.current.mount(cardElementContainer);
-          cardElement.current.on('ready', () => setCardReady(true));
-          cardElement.current.on('change', (event) => {
-            if (event.error) {
-              onError(new Error(event.error.message));
-            }
-          });
-        } else {
-          throw new Error('Card element container not found');
-        }
-        
-        setStripeReady(true);
-      } catch (error) {
-        console.error('Error initializing Stripe:', error);
-        onError(new Error('Failed to initialize payment form. Please try again later.'));
-      }
-    };
-    
-    initializeStripe();
-    
-    // Cleanup card element on unmount
-    return () => {
-      if (cardElement.current) {
-        cardElement.current.unmount();
-      }
-    };
-  }, [clientSecret, onError]);
-  
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    
-    if (!stripe.current || !elements.current || !cardElement.current) {
-      onError(new Error('Stripe is still loading. Please try again in a moment.'));
+    fetchPaymentMethods();
+  }, [facilityId]);
+
+  const fetchPaymentMethods = async () => {
+    if (!facilityId) return;
+
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('facility_payment_methods')
+        .select('*')
+        .eq('facility_id', facilityId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setPaymentMethods(data || []);
+      
+      // Find default method
+      const defaultPaymentMethod = data?.find(method => method.is_default);
+      setDefaultMethod(defaultPaymentMethod?.id || null);
+
+    } catch (err) {
+      console.error('Error fetching payment methods:', err);
+      setError('Failed to load payment methods');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddCard = async () => {
+    if (!cardForm.cardNumber || !cardForm.expiryDate || !cardForm.cvv || !cardForm.cardholderName) {
+      setError('Please fill in all required card details');
       return;
     }
-    
+
     setProcessing(true);
-    
+    setError('');
+
     try {
-      const { error, setupIntent } = await stripe.current.confirmCardSetup(clientSecret, {
-        payment_method: {
-          card: cardElement.current,
-          billing_details: {
-            name: profile?.full_name || user?.user_metadata?.full_name || user?.email || '',
-            email: user?.email || '',
-          },
-        },
+      // Create setup intent for card verification
+      const response = await fetch('/api/stripe/setup-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          facilityId,
+          paymentMethodType: 'card',
+          metadata: {
+            nickname: cardForm.nickname || 'Credit Card',
+            last_four: cardForm.cardNumber.slice(-4)
+          }
+        })
       });
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      onSuccess(setupIntent);
-    } catch (error) {
-      onError(error);
+
+      const { clientSecret, error: apiError } = await response.json();
+      if (apiError) throw new Error(apiError);
+
+      // Confirm payment method with Stripe
+      const stripe = await getStripe();
+      const { error: confirmError, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
+        payment_method: {
+          card: {
+            number: cardForm.cardNumber.replace(/\s/g, ''),
+            exp_month: cardForm.expiryDate.split('/')[0],
+            exp_year: '20' + cardForm.expiryDate.split('/')[1],
+            cvc: cardForm.cvv
+          },
+          billing_details: {
+            name: cardForm.cardholderName
+          }
+        }
+      });
+
+      if (confirmError) throw confirmError;
+
+      // Save payment method to database
+      const isFirstMethod = paymentMethods.length === 0;
+      const { error: dbError } = await supabase
+        .from('facility_payment_methods')
+        .insert({
+          facility_id: facilityId,
+          stripe_payment_method_id: setupIntent.payment_method,
+          payment_method_type: 'card',
+          last_four: cardForm.cardNumber.slice(-4),
+          card_brand: 'visa', // Would be detected from Stripe
+          expiry_month: parseInt(cardForm.expiryDate.split('/')[0]),
+          expiry_year: parseInt('20' + cardForm.expiryDate.split('/')[1]),
+          cardholder_name: cardForm.cardholderName,
+          nickname: cardForm.nickname || 'Credit Card',
+          is_default: isFirstMethod
+        });
+
+      if (dbError) throw dbError;
+
+      setSuccessMessage('Credit card added successfully!');
+      setShowAddCardModal(false);
+      setCardForm({
+        cardNumber: '',
+        expiryDate: '',
+        cvv: '',
+        cardholderName: '',
+        nickname: ''
+      });
+      fetchPaymentMethods();
+
+    } catch (err) {
+      console.error('Error adding card:', err);
+      setError(err.message || 'Failed to add credit card');
     } finally {
       setProcessing(false);
     }
   };
-  
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-4 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#1C2C2F]">
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
-          Card Information
-        </label>
-        <div className="p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md bg-[#F8F9FA] dark:bg-[#24393C]">
-          <div id="card-element-container" className="min-h-[40px]"></div>
-        </div>
-        {!stripeReady && (
-          <p className="mt-2 text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
-            Loading payment form...
-          </p>
-        )}
-        <p className="mt-2 text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
-          Your card information is securely processed by Stripe.
-        </p>
-      </div>
-      
-      <div className="flex space-x-2">
-        <button
-          type="submit"
-          disabled={processing || !stripeReady || !cardReady}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#7CCFD0] hover:bg-[#60BFC0] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7CCFD0] disabled:opacity-50"
-        >
-          {processing ? (
-            <>
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Processing...
-            </>
-          ) : !stripeReady || !cardReady ? "Loading..." : "Add Card"}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="inline-flex items-center px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] bg-white dark:bg-[#1C2C2F] hover:bg-gray-50 dark:hover:bg-[#24393C] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7CCFD0]"
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
-  );
-}
 
-// Direct setup form without Elements wrapper since we're managing Stripe elements manually
-function StripeCardForm({ clientSecret, ...props }) {
-  return <CardSetupForm clientSecret={clientSecret} {...props} />;
-}
-
-export default function PaymentMethodsManager({ user, profile }) {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
-  const router = useRouter();
-  const [paymentMethods, setPaymentMethods] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAddingMethod, setIsAddingMethod] = useState(false);
-  const [clientSecret, setClientSecret] = useState(null);
-  const [defaultPaymentMethod, setDefaultPaymentMethod] = useState(profile.default_payment_method_id);
-  const [message, setMessage] = useState({ text: '', type: '' });
-
-  // Fetch payment methods when component mounts
-  useEffect(() => {
-    fetchPaymentMethods();
-  }, []);
-
-  const fetchPaymentMethods = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/stripe/payment-methods');
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch payment methods');
-      }
-      
-      setPaymentMethods(data.paymentMethods || []);
-    } catch (error) {
-      console.error('Error fetching payment methods:', error);
-      setMessage({
-        text: error.message || 'Failed to load payment methods',
-        type: 'error'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleAddPaymentMethod = async () => {
-    setMessage({ text: '', type: '' });
-    
-    try {
-      // Get a setup intent client secret
-      const response = await fetch('/api/stripe/setup-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      
-      const { clientSecret, error } = await response.json();
-      
-      if (error) {
-        throw new Error(error);
-      }
-      
-      if (!clientSecret) {
-        throw new Error('Failed to get client secret');
-      }
-      
-      setClientSecret(clientSecret);
-      setIsAddingMethod(true);
-    } catch (error) {
-      console.error('Error getting setup intent:', error);
-      setMessage({
-        text: error.message || 'Failed to initialize payment method setup',
-        type: 'error'
-      });
-    }
-  };
-
-  const handleRemovePaymentMethod = async (paymentMethodId) => {
-    if (!window.confirm('Are you sure you want to remove this payment method?')) {
+  const handleAddBank = async () => {
+    if (!bankForm.accountNumber || !bankForm.routingNumber || !bankForm.accountHolderName) {
+      setError('Please fill in all required bank details');
       return;
     }
-    
+
+    setProcessing(true);
+    setError('');
+
     try {
-      const response = await fetch('/api/stripe/payment-methods', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentMethodId }),
+      // In a real implementation, you would use Stripe ACH or Plaid for bank verification
+      // For now, we'll save the bank details (encrypted in production)
+      const isFirstMethod = paymentMethods.length === 0;
+      
+      const { error: dbError } = await supabase
+        .from('facility_payment_methods')
+        .insert({
+          facility_id: facilityId,
+          payment_method_type: 'bank_transfer',
+          bank_account_last_four: bankForm.accountNumber.slice(-4),
+          bank_routing_number: bankForm.routingNumber,
+          bank_account_holder_name: bankForm.accountHolderName,
+          bank_account_type: bankForm.accountType,
+          nickname: bankForm.nickname || 'Bank Account',
+          is_default: isFirstMethod,
+          verification_status: 'pending' // Would be verified via micro-deposits
+        });
+
+      if (dbError) throw dbError;
+
+      setSuccessMessage('Bank account added successfully! Verification required before use.');
+      setShowAddBankModal(false);
+      setBankForm({
+        accountNumber: '',
+        routingNumber: '',
+        accountHolderName: '',
+        accountType: 'checking',
+        nickname: ''
       });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to remove payment method');
-      }
-      
-      // Refresh the payment methods list
-      await fetchPaymentMethods();
-      
-      // If this was the default payment method, clear it
-      if (defaultPaymentMethod === paymentMethodId) {
-        setDefaultPaymentMethod(null);
-        await updateDefaultPaymentMethod(null);
-      }
-      
-      setMessage({
-        text: 'Payment method removed successfully!',
-        type: 'success'
-      });
-    } catch (error) {
-      console.error('Error removing payment method:', error);
-      setMessage({
-        text: error.message || 'Failed to remove payment method',
-        type: 'error'
-      });
+      fetchPaymentMethods();
+
+    } catch (err) {
+      console.error('Error adding bank account:', err);
+      setError(err.message || 'Failed to add bank account');
+    } finally {
+      setProcessing(false);
     }
   };
 
-  const handleSetDefaultPaymentMethod = async (paymentMethodId) => {
+  const handleSetDefault = async (methodId) => {
     try {
-      setDefaultPaymentMethod(paymentMethodId);
-      await updateDefaultPaymentMethod(paymentMethodId);
-      
-      setMessage({
-        text: 'Default payment method updated successfully!',
-        type: 'success'
-      });
-    } catch (error) {
-      console.error('Error setting default payment method:', error);
-      setMessage({
-        text: error.message || 'Failed to set default payment method',
-        type: 'error'
-      });
+      // Remove default from all methods
+      await supabase
+        .from('facility_payment_methods')
+        .update({ is_default: false })
+        .eq('facility_id', facilityId);
+
+      // Set new default
+      const { error } = await supabase
+        .from('facility_payment_methods')
+        .update({ is_default: true })
+        .eq('id', methodId);
+
+      if (error) throw error;
+
+      setDefaultMethod(methodId);
+      setSuccessMessage('Default payment method updated');
+      fetchPaymentMethods();
+
+    } catch (err) {
+      console.error('Error setting default method:', err);
+      setError('Failed to update default payment method');
     }
   };
 
-  const updateDefaultPaymentMethod = async (paymentMethodId) => {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ 
-        default_payment_method_id: paymentMethodId,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', user.id);
-    
-    if (error) {
-      throw new Error('Failed to update default payment method');
+  const handleDeleteMethod = async () => {
+    if (!methodToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('facility_payment_methods')
+        .delete()
+        .eq('id', methodToDelete.id);
+
+      if (error) throw error;
+
+      setSuccessMessage('Payment method removed successfully');
+      setShowDeleteModal(false);
+      setMethodToDelete(null);
+      fetchPaymentMethods();
+
+    } catch (err) {
+      console.error('Error deleting payment method:', err);
+      setError('Failed to remove payment method');
     }
   };
 
-  // Format card expiration date
-  const formatExpiry = (month, year) => {
-    return `${month.toString().padStart(2, '0')}/${year.toString().slice(-2)}`;
+  const formatCardNumber = (value) => {
+    return value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ').substr(0, 19);
   };
 
-  // Format card number to show last 4 digits only
-  const formatCardNumber = (last4) => {
-    return `•••• •••• •••• ${last4}`;
+  const formatExpiryDate = (value) => {
+    return value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2').substr(0, 5);
   };
 
-  // Get card brand logo (simplified version)
-  const getCardBrandLogo = (brand) => {
-    switch (brand.toLowerCase()) {
-      case 'visa':
-        return '💳'; // In a real app, you'd use proper SVG logos
-      case 'mastercard':
-        return '💳';
-      case 'amex':
-        return '💳';
-      case 'discover':
-        return '💳';
-      default:
-        return '💳';
-    }
-  };
-
-  const handleSetupSuccess = async (setupIntent) => {
-    setClientSecret(null);
-    setIsAddingMethod(false);
-    await fetchPaymentMethods();
-    setMessage({
-      text: 'Payment method added successfully!',
-      type: 'success'
-    });
-  };
-  
-  const handleSetupError = (error) => {
-    console.error('Error in card setup:', error);
-    setMessage({
-      text: error.message || 'Failed to add payment method',
-      type: 'error'
-    });
-    setIsAddingMethod(false);
-    setClientSecret(null);
-  };
-  
-  const handleSetupCancel = () => {
-    setIsAddingMethod(false);
-    setClientSecret(null);
-  };
-  
   return (
-    <DashboardLayout user={user} activeTab="settings">
-      <div className="bg-[#F8F9FA] dark:bg-[#24393C] rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6 mb-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5]">Payment Methods</h2>
-          <Link 
-            href="/dashboard/settings" 
-            className="text-[#7CCFD0] hover:text-[#60BFC0]"
+    <div className="space-y-6">
+      {/* Success Message */}
+      {successMessage && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-green-700 text-sm font-medium">{successMessage}</p>
+            </div>
+            <button
+              onClick={() => setSuccessMessage('')}
+              className="ml-auto text-green-400 hover:text-green-600"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+            <button
+              onClick={() => setError('')}
+              className="ml-auto text-red-400 hover:text-red-600"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
+        <h2 className="text-2xl font-bold mb-2">Payment Methods</h2>
+        <p className="text-blue-100">
+          Add and manage your payment methods for monthly invoice payments
+        </p>
+      </div>
+
+      {/* Add Payment Methods Section */}
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Payment Method</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button
+            onClick={() => setShowAddCardModal(true)}
+            className="flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors group"
           >
-            Back to Settings
-          </Link>
-        </div>
-        
-        {message.text && (
-          <div className={`p-4 mb-6 rounded-md ${
-            message.type === 'success' 
-              ? 'bg-[#7CCFD0]/20 text-[#2E4F54] dark:bg-[#7CCFD0]/30 dark:text-[#E0F4F5]' 
-              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-          }`}>
-            {message.text}
-          </div>
-        )}
-        
-        <div className="mb-6">
-          <p className="text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
-            Add and manage your payment methods for booking rides. Your payment information is securely stored with Stripe.
-          </p>
-        </div>
-        
-        {isLoading ? (
-          <div className="text-center py-8">
-            <svg className="animate-spin h-8 w-8 text-[#7CCFD0] mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <p className="mt-2 text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">Loading payment methods...</p>
-          </div>
-        ) : (
-          <div>
-            {isAddingMethod && clientSecret ? (
-              <div className="mb-6">
-                <h3 className="text-lg font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-4">Add New Payment Method</h3>
-                <StripeCardForm 
-                  clientSecret={clientSecret} 
-                  onSuccess={handleSetupSuccess} 
-                  onError={handleSetupError} 
-                  onCancel={handleSetupCancel}
-                  profile={profile}
-                  user={user}
-                />
-              </div>
-            ) : (
-              <>
-                {paymentMethods.length === 0 ? (
-                  <div className="text-center py-8 border-2 border-dashed border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg">
-                    <svg className="mx-auto h-12 w-12 text-[#7CCFD0]/50 dark:text-[#7CCFD0]/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                    </svg>
-                    <h3 className="mt-2 text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">No payment methods</h3>
-                    <p className="mt-1 text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
-                      You haven&apos;t added any payment methods yet.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">Your Cards</h3>
-                    {paymentMethods.map((method) => (
-                      <div 
-                        key={method.id} 
-                        className={`flex justify-between items-center p-4 border rounded-lg ${
-                          method.id === defaultPaymentMethod 
-                            ? 'border-[#7CCFD0] bg-[#7CCFD0]/10 dark:bg-[#7CCFD0]/20' 
-                            : 'border-[#DDE5E7] dark:border-[#3F5E63]'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="text-2xl">{getCardBrandLogo(method.card.brand)}</div>
-                          <div>
-                            <p className="font-medium text-[#2E4F54] dark:text-[#E0F4F5]">{formatCardNumber(method.card.last4)}</p>
-                            <p className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
-                              Expires {formatExpiry(method.card.exp_month, method.card.exp_year)}
-                              {method.id === defaultPaymentMethod && (
-                                <span className="ml-2 text-[#7CCFD0] dark:text-[#7CCFD0] font-medium">Default</span>
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          {method.id !== defaultPaymentMethod && (
-                            <button
-                              onClick={() => handleSetDefaultPaymentMethod(method.id)}
-                              className="text-sm text-[#7CCFD0] hover:text-[#60BFC0]"
-                            >
-                              Set as Default
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleRemovePaymentMethod(method.id)}
-                            className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                <div className="mt-6">
-                  <button
-                    onClick={handleAddPaymentMethod}
-                    disabled={isAddingMethod}
-                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#7CCFD0] hover:bg-[#60BFC0] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7CCFD0] disabled:opacity-50"
-                  >
-                    {isAddingMethod ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        Add Payment Method
-                      </>
-                    )}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-        
-        <div className="mt-8 pt-6 border-t border-[#DDE5E7] dark:border-[#3F5E63]">
-          <h3 className="text-lg font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">About Payment Processing</h3>
-          <div className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70 space-y-2">
-            <p>
-              We use Stripe to securely process all payments. Your card information is never stored on our servers.
-            </p>
-            <p>
-              When you add a payment method, your card details are sent directly to Stripe&apos;s secure servers, and we only store a reference to that payment method.
-            </p>
-            <p>
-              For more information about how we handle your payment information, please see our <Link href="#" className="text-[#7CCFD0] hover:text-[#60BFC0] hover:underline">Privacy Policy</Link>.
-            </p>
-          </div>
+            <div className="text-center">
+              <svg className="mx-auto h-8 w-8 text-gray-400 group-hover:text-blue-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              <h4 className="text-sm font-medium text-gray-900 group-hover:text-blue-900">Add Credit Card</h4>
+              <p className="text-xs text-gray-500 mt-1">Visa, Mastercard, Amex</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setShowAddBankModal(true)}
+            className="flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors group"
+          >
+            <div className="text-center">
+              <svg className="mx-auto h-8 w-8 text-gray-400 group-hover:text-green-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+              </svg>
+              <h4 className="text-sm font-medium text-gray-900 group-hover:text-green-900">Add Bank Account</h4>
+              <p className="text-xs text-gray-500 mt-1">ACH Direct Transfer</p>
+            </div>
+          </button>
         </div>
       </div>
-    </DashboardLayout>
+
+      {/* Payment Methods List */}
+      <div className="bg-white rounded-lg shadow-sm border">
+        <div className="px-6 py-4 border-b">
+          <h3 className="text-lg font-semibold text-gray-900">Saved Payment Methods</h3>
+        </div>
+
+        {loading ? (
+          <div className="p-8 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="text-gray-600 mt-2">Loading payment methods...</p>
+          </div>
+        ) : paymentMethods.length === 0 ? (
+          <div className="p-8 text-center">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">No Payment Methods</h3>
+            <p className="mt-2 text-sm text-gray-500">
+              Add your first payment method to enable quick invoice payments
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {paymentMethods.map((method) => (
+              <div key={method.id} className="p-6 flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="flex-shrink-0">
+                    {method.payment_method_type === 'card' ? (
+                      <div className="w-12 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                      </div>
+                    ) : (
+                      <div className="w-12 h-8 bg-gradient-to-r from-green-500 to-green-600 rounded flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h4 className="text-sm font-medium text-gray-900">
+                        {method.nickname}
+                      </h4>
+                      {method.is_default && (
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                          Default
+                        </span>
+                      )}
+                      {method.verification_status === 'pending' && (
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                          Pending Verification
+                        </span>
+                      )}
+                    </div>
+                    
+                    <p className="text-sm text-gray-500">
+                      {method.payment_method_type === 'card' ? (
+                        <>
+                          {method.card_brand?.toUpperCase()} ending in {method.last_four}
+                          {method.expiry_month && method.expiry_year && (
+                            <span className="ml-2">&bull; Expires {method.expiry_month.toString().padStart(2, '0')}/{method.expiry_year.toString().slice(-2)}</span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {method.bank_account_type?.charAt(0).toUpperCase() + method.bank_account_type?.slice(1)} account ending in {method.bank_account_last_four}
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  {!method.is_default && (
+                    <button
+                      onClick={() => handleSetDefault(method.id)}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Set as Default
+                    </button>
+                  )}
+                  
+                  <button
+                    onClick={() => {
+                      setMethodToDelete(method);
+                      setShowDeleteModal(true);
+                    }}
+                    className="text-sm text-red-600 hover:text-red-700 font-medium"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Add Credit Card Modal */}
+      {showAddCardModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="bg-blue-600 text-white p-6 rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">Add Credit Card</h2>
+                <button
+                  onClick={() => setShowAddCardModal(false)}
+                  className="text-blue-200 hover:text-white transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Card Nickname (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={cardForm.nickname}
+                  onChange={(e) => setCardForm({...cardForm, nickname: e.target.value})}
+                  placeholder="e.g., Main Business Card"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Cardholder Name *
+                </label>
+                <input
+                  type="text"
+                  value={cardForm.cardholderName}
+                  onChange={(e) => setCardForm({...cardForm, cardholderName: e.target.value})}
+                  placeholder="Name on card"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Card Number *
+                </label>
+                <input
+                  type="text"
+                  value={cardForm.cardNumber}
+                  onChange={(e) => setCardForm({...cardForm, cardNumber: formatCardNumber(e.target.value)})}
+                  placeholder="1234 5678 9012 3456"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Expiry Date *
+                  </label>
+                  <input
+                    type="text"
+                    value={cardForm.expiryDate}
+                    onChange={(e) => setCardForm({...cardForm, expiryDate: formatExpiryDate(e.target.value)})}
+                    placeholder="MM/YY"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    CVV *
+                  </label>
+                  <input
+                    type="text"
+                    value={cardForm.cvv}
+                    onChange={(e) => setCardForm({...cardForm, cvv: e.target.value.replace(/\D/g, '').substr(0, 4)})}
+                    placeholder="123"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setShowAddCardModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddCard}
+                  disabled={processing}
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-semibold rounded-lg transition-colors"
+                >
+                  {processing ? 'Adding...' : 'Add Card'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Bank Account Modal */}
+      {showAddBankModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="bg-green-600 text-white p-6 rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">Add Bank Account</h2>
+                <button
+                  onClick={() => setShowAddBankModal(false)}
+                  className="text-green-200 hover:text-white transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Account Nickname (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={bankForm.nickname}
+                  onChange={(e) => setBankForm({...bankForm, nickname: e.target.value})}
+                  placeholder="e.g., Main Business Account"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Account Holder Name *
+                </label>
+                <input
+                  type="text"
+                  value={bankForm.accountHolderName}
+                  onChange={(e) => setBankForm({...bankForm, accountHolderName: e.target.value})}
+                  placeholder="Name on account"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Account Type *
+                </label>
+                <select
+                  value={bankForm.accountType}
+                  onChange={(e) => setBankForm({...bankForm, accountType: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="checking">Checking</option>
+                  <option value="savings">Savings</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Routing Number *
+                </label>
+                <input
+                  type="text"
+                  value={bankForm.routingNumber}
+                  onChange={(e) => setBankForm({...bankForm, routingNumber: e.target.value.replace(/\D/g, '').substr(0, 9)})}
+                  placeholder="123456789"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Account Number *
+                </label>
+                <input
+                  type="text"
+                  value={bankForm.accountNumber}
+                  onChange={(e) => setBankForm({...bankForm, accountNumber: e.target.value.replace(/\D/g, '')})}
+                  placeholder="Account number"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-sm text-yellow-800">
+                  <strong>Note:</strong> Bank accounts require verification via micro-deposits, which may take 1-2 business days.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setShowAddBankModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddBank}
+                  disabled={processing}
+                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white font-semibold rounded-lg transition-colors"
+                >
+                  {processing ? 'Adding...' : 'Add Account'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && methodToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="flex-shrink-0">
+                  <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <h3 className="ml-3 text-lg font-medium text-gray-900">
+                  Remove Payment Method
+                </h3>
+              </div>
+              
+              <p className="text-sm text-gray-500 mb-6">
+                Are you sure you want to remove &quot;{methodToDelete.nickname}&quot;? This action cannot be undone.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setMethodToDelete(null);
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteMethod}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

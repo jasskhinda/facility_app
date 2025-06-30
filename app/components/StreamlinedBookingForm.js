@@ -47,7 +47,8 @@ export default function StreamlinedBookingForm({ user }) {
     wheelchairType: 'no_wheelchair',
     additionalPassengers: 0,
     tripNotes: '',
-    billTo: 'facility' // facility or client
+    billTo: 'facility', // facility or client
+    isEmergency: false
   });
 
   const [selectedClient, setSelectedClient] = useState(null);
@@ -218,6 +219,7 @@ export default function StreamlinedBookingForm({ user }) {
         status: 'pending',
         booked_by: user.id,
         bill_to: formData.billTo,
+        is_emergency: formData.isEmergency,
         // Add pricing information if available
         price: currentPricing?.pricing?.total || null,
         is_round_trip: formData.isRoundTrip,
@@ -259,7 +261,8 @@ export default function StreamlinedBookingForm({ user }) {
           destination_details: formData.pickupDetails,
           pickup_time: returnDateTime.toISOString(),
           trip_notes: `Return trip. ${formData.tripNotes}`,
-          related_trip_id: trip.id
+          related_trip_id: trip.id,
+          is_emergency: formData.isEmergency
         };
         
         await supabase.from('trips').insert(returnTripData);
@@ -473,6 +476,25 @@ export default function StreamlinedBookingForm({ user }) {
                   </select>
                 </div>
               )}
+            </div>
+
+            {/* Emergency Trip Option */}
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-lg p-4">
+              <label className="flex items-start space-x-3">
+                <input
+                  type="checkbox"
+                  checked={formData.isEmergency}
+                  onChange={(e) => setFormData({ ...formData, isEmergency: e.target.checked })}
+                  className="mt-1 w-4 h-4 text-red-600 border-red-300 rounded focus:ring-red-500"
+                />
+                <div>
+                  <span className="text-red-800 dark:text-red-300 font-medium">🚨 Emergency Trip</span>
+                  <p className="text-sm text-red-700 dark:text-red-400 mt-1">
+                    Check this box if this is an emergency trip requiring immediate attention.
+                    <span className="font-medium"> Additional $40 emergency fee applies.</span>
+                  </p>
+                </div>
+              </label>
             </div>
 
             {/* Wheelchair Selection */}
