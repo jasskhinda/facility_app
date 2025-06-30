@@ -58,7 +58,7 @@ export async function POST(request) {
     // Get facility's Stripe customer ID
     const { data: facility, error: facilityError } = await supabase
       .from('facilities')
-      .select('stripe_customer_id, name, email')
+      .select('stripe_customer_id, name, billing_email')
       .eq('id', facility_id)
       .single()
 
@@ -74,7 +74,7 @@ export async function POST(request) {
     // Create Stripe customer if doesn't exist
     if (!customerId) {
       const customer = await stripe.customers.create({
-        email: facility.email,
+        email: facility.billing_email,
         name: facility.name,
         metadata: {
           facility_id: facility_id

@@ -42,13 +42,15 @@ export async function POST(request) {
     // Get facility's Stripe customer ID
     const { data: facility, error: facilityError } = await supabase
       .from('facilities')
-      .select('stripe_customer_id, name, email')
+      .select('stripe_customer_id, name, billing_email')
       .eq('id', facility_id)
       .single()
 
     if (facilityError) {
+      console.error('Facility query error:', facilityError)
+      console.error('Facility ID:', facility_id)
       return Response.json(
-        { error: 'Facility not found' },
+        { error: `Facility not found: ${facilityError.message || 'Unknown error'}` },
         { status: 404 }
       )
     }
@@ -58,7 +60,7 @@ export async function POST(request) {
     // Create Stripe customer if doesn't exist
     if (!customerId) {
       const customer = await stripe.customers.create({
-        email: facility.email,
+        email: facility.billing_email,
         name: facility.name,
         metadata: {
           facility_id: facility_id
