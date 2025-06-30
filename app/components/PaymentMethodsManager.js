@@ -41,50 +41,84 @@ export default function PaymentMethodsManager({ user, facilityId }) {
   }, [facilityId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchPaymentMethods = async () => {
-    if (!facilityId) return;
+    if (!facilityId) {
+      console.log('No facilityId provided to fetchPaymentMethods');
+      return;
+    }
 
     try {
       setLoading(true);
+      setError(''); // Clear previous errors
       
-      // Fetch from Stripe API for facilities
-      const response = await fetch(`/api/stripe/facility-payment-methods?facilityId=${facilityId}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      });
+      console.log('Fetching payment methods for facility:', facilityId);
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch payment methods from Stripe');
-      }
-      
-      const { paymentMethods: stripeMethods } = await response.json();
-      
-      // Also fetch from database for additional metadata
-      const { data: dbMethods, error } = await supabase
+      // Try to fetch from database first to see if table exists
+      const { data: dbMethods, error: dbError } = await supabase
         .from('facility_payment_methods')
         .select('*')
         .eq('facility_id', facilityId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-
-      // Merge Stripe data with database metadata
-      const mergedMethods = dbMethods?.map(dbMethod => {
-        const stripeMethod = stripeMethods?.find(sm => sm.id === dbMethod.stripe_payment_method_id);
-        return {
-          ...dbMethod,
-          stripe_data: stripeMethod
-        };
-      }) || [];
-
-      setPaymentMethods(mergedMethods);
+      if (dbError) {
+        console.error('Database error:', dbError);
+        // If table doesn't exist, just show empty state
+        if (dbError.code === '42P01') {
+          console.log('facility_payment_methods table does not exist yet');
+          setPaymentMethods([]);
+          return;
+        }
+        throw dbError;
+      }
+      
+      console.log('Database methods received:', dbMethods?.length || 0);
+      
+      // If we have database methods, try to fetch from Stripe
+      if (dbMethods && dbMethods.length > 0) {
+        try {
+          const response = await fetch(`/api/stripe/facility-payment-methods?facilityId=${facilityId}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          
+          console.log('Stripe API response status:', response.status);
+          
+          if (response.ok) {
+            const { paymentMethods: stripeMethods } = await response.json();
+            console.log('Stripe methods received:', stripeMethods?.length || 0);
+            
+            // Merge Stripe data with database metadata
+            const mergedMethods = dbMethods.map(dbMethod => {
+              const stripeMethod = stripeMethods?.find(sm => sm.id === dbMethod.stripe_payment_method_id);
+              return {
+                ...dbMethod,
+                stripe_data: stripeMethod
+              };
+            });
+            
+            setPaymentMethods(mergedMethods);
+          } else {
+            // If Stripe API fails, just use database data
+            console.warn('Stripe API failed, using database data only');
+            setPaymentMethods(dbMethods);
+          }
+        } catch (stripeError) {
+          console.error('Stripe API error:', stripeError);
+          // Fallback to database data
+          setPaymentMethods(dbMethods);
+        }
+      } else {
+        // No methods in database
+        setPaymentMethods([]);
+      }
       
       // Find default method
-      const defaultPaymentMethod = mergedMethods?.find(method => method.is_default);
+      const methods = paymentMethods.length > 0 ? paymentMethods : dbMethods || [];
+      const defaultPaymentMethod = methods.find(method => method.is_default);
       setDefaultMethod(defaultPaymentMethod?.id || null);
 
     } catch (err) {
       console.error('Error fetching payment methods:', err);
-      setError('Failed to load payment methods');
+      setError('Failed to load payment methods: ' + (err.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
