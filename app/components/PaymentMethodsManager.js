@@ -38,14 +38,28 @@ export default function PaymentMethodsManager({ user, facilityId }) {
 
   useEffect(() => {
     fetchPaymentMethods();
-  }, [facilityId]);
+  }, [facilityId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchPaymentMethods = async () => {
     if (!facilityId) return;
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch from Stripe API for facilities
+      const response = await fetch(`/api/stripe/facility-payment-methods?facilityId=${facilityId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch payment methods from Stripe');
+      }
+      
+      const { paymentMethods: stripeMethods } = await response.json();
+      
+      // Also fetch from database for additional metadata
+      const { data: dbMethods, error } = await supabase
         .from('facility_payment_methods')
         .select('*')
         .eq('facility_id', facilityId)
@@ -53,10 +67,19 @@ export default function PaymentMethodsManager({ user, facilityId }) {
 
       if (error) throw error;
 
-      setPaymentMethods(data || []);
+      // Merge Stripe data with database metadata
+      const mergedMethods = dbMethods?.map(dbMethod => {
+        const stripeMethod = stripeMethods?.find(sm => sm.id === dbMethod.stripe_payment_method_id);
+        return {
+          ...dbMethod,
+          stripe_data: stripeMethod
+        };
+      }) || [];
+
+      setPaymentMethods(mergedMethods);
       
       // Find default method
-      const defaultPaymentMethod = data?.find(method => method.is_default);
+      const defaultPaymentMethod = mergedMethods?.find(method => method.is_default);
       setDefaultMethod(defaultPaymentMethod?.id || null);
 
     } catch (err) {
@@ -91,17 +114,27 @@ export default function PaymentMethodsManager({ user, facilityId }) {
         })
       });
 
-      const { clientSecret, error: apiError } = await response.json();
+      const { clientSecret, setupIntentId, error: apiError } = await response.json();
       if (apiError) throw new Error(apiError);
 
-      // Confirm payment method with Stripe
+      // Get Stripe instance
       const stripe = await getStripe();
+      if (!stripe) {
+        throw new Error('Stripe failed to load');
+      }
+
+      // Create Stripe Elements
+      const elements = stripe.elements({
+        clientSecret
+      });
+
+      // Confirm payment method with Stripe using card details
       const { error: confirmError, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
         payment_method: {
           card: {
             number: cardForm.cardNumber.replace(/\s/g, ''),
-            exp_month: cardForm.expiryDate.split('/')[0],
-            exp_year: '20' + cardForm.expiryDate.split('/')[1],
+            exp_month: parseInt(cardForm.expiryDate.split('/')[0]),
+            exp_year: parseInt('20' + cardForm.expiryDate.split('/')[1]),
             cvc: cardForm.cvv
           },
           billing_details: {
@@ -110,7 +143,19 @@ export default function PaymentMethodsManager({ user, facilityId }) {
         }
       });
 
-      if (confirmError) throw confirmError;
+      if (confirmError) {
+        throw new Error(confirmError.message);
+      }
+
+      if (setupIntent?.status !== 'succeeded') {
+        throw new Error('Payment method setup failed');
+      }
+
+      // Get the payment method details from Stripe
+      const paymentMethod = setupIntent.payment_method;
+      if (typeof paymentMethod === 'string') {
+        throw new Error('Payment method details not available');
+      }
 
       // Save payment method to database
       const isFirstMethod = paymentMethods.length === 0;
@@ -118,14 +163,14 @@ export default function PaymentMethodsManager({ user, facilityId }) {
         .from('facility_payment_methods')
         .insert({
           facility_id: facilityId,
-          stripe_payment_method_id: setupIntent.payment_method,
+          stripe_payment_method_id: paymentMethod.id,
           payment_method_type: 'card',
-          last_four: cardForm.cardNumber.slice(-4),
-          card_brand: 'visa', // Would be detected from Stripe
-          expiry_month: parseInt(cardForm.expiryDate.split('/')[0]),
-          expiry_year: parseInt('20' + cardForm.expiryDate.split('/')[1]),
+          last_four: paymentMethod.card.last4,
+          card_brand: paymentMethod.card.brand,
+          expiry_month: paymentMethod.card.exp_month,
+          expiry_year: paymentMethod.card.exp_year,
           cardholder_name: cardForm.cardholderName,
-          nickname: cardForm.nickname || 'Credit Card',
+          nickname: cardForm.nickname || `${paymentMethod.card.brand.toUpperCase()} Card`,
           is_default: isFirstMethod
         });
 
@@ -160,27 +205,78 @@ export default function PaymentMethodsManager({ user, facilityId }) {
     setError('');
 
     try {
-      // In a real implementation, you would use Stripe ACH or Plaid for bank verification
-      // For now, we'll save the bank details (encrypted in production)
-      const isFirstMethod = paymentMethods.length === 0;
+      // Create setup intent for bank account verification
+      const response = await fetch('/api/stripe/setup-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          facilityId,
+          paymentMethodType: 'us_bank_account',
+          metadata: {
+            nickname: bankForm.nickname || 'Bank Account',
+            account_holder_name: bankForm.accountHolderName,
+            account_type: bankForm.accountType
+          }
+        })
+      });
+
+      const { clientSecret, setupIntentId, error: apiError } = await response.json();
+      if (apiError) throw new Error(apiError);
+
+      // Get Stripe instance
+      const stripe = await getStripe();
+      if (!stripe) {
+        throw new Error('Stripe failed to load');
+      }
+
+      // Confirm bank account setup with Stripe
+      const { error: confirmError, setupIntent } = await stripe.confirmUsBankAccountSetup(clientSecret, {
+        payment_method: {
+          us_bank_account: {
+            routing_number: bankForm.routingNumber,
+            account_number: bankForm.accountNumber,
+            account_holder_type: 'company',
+            account_type: bankForm.accountType
+          },
+          billing_details: {
+            name: bankForm.accountHolderName
+          }
+        }
+      });
+
+      if (confirmError) {
+        throw new Error(confirmError.message);
+      }
+
+      // Note: For US bank accounts, the setup intent will be in 'requires_action' status
+      // requiring micro-deposit verification
       
+      // Get the payment method details from Stripe
+      const paymentMethod = setupIntent.payment_method;
+      if (typeof paymentMethod === 'string') {
+        throw new Error('Payment method details not available');
+      }
+
+      // Save bank account to database
+      const isFirstMethod = paymentMethods.length === 0;
       const { error: dbError } = await supabase
         .from('facility_payment_methods')
         .insert({
           facility_id: facilityId,
+          stripe_payment_method_id: paymentMethod.id,
           payment_method_type: 'bank_transfer',
-          bank_account_last_four: bankForm.accountNumber.slice(-4),
-          bank_routing_number: bankForm.routingNumber,
+          bank_account_last_four: paymentMethod.us_bank_account.last4,
+          bank_routing_number: paymentMethod.us_bank_account.routing_number,
           bank_account_holder_name: bankForm.accountHolderName,
           bank_account_type: bankForm.accountType,
           nickname: bankForm.nickname || 'Bank Account',
           is_default: isFirstMethod,
-          verification_status: 'pending' // Would be verified via micro-deposits
+          verification_status: setupIntent.status === 'succeeded' ? 'verified' : 'pending'
         });
 
       if (dbError) throw dbError;
 
-      setSuccessMessage('Bank account added successfully! Verification required before use.');
+      setSuccessMessage('Bank account added successfully! Verification may be required before use.');
       setShowAddBankModal(false);
       setBankForm({
         accountNumber: '',
@@ -229,6 +325,24 @@ export default function PaymentMethodsManager({ user, facilityId }) {
     if (!methodToDelete) return;
 
     try {
+      // Delete from Stripe first if it has a Stripe payment method ID
+      if (methodToDelete.stripe_payment_method_id) {
+        const response = await fetch('/api/stripe/facility-payment-methods', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paymentMethodId: methodToDelete.stripe_payment_method_id,
+            facilityId: facilityId
+          })
+        });
+
+        if (!response.ok) {
+          const { error } = await response.json();
+          throw new Error(error || 'Failed to remove payment method from Stripe');
+        }
+      }
+
+      // Delete from database
       const { error } = await supabase
         .from('facility_payment_methods')
         .delete()
@@ -408,14 +522,14 @@ export default function PaymentMethodsManager({ user, facilityId }) {
                     <p className="text-sm text-gray-500">
                       {method.payment_method_type === 'card' ? (
                         <>
-                          {method.card_brand?.toUpperCase()} ending in {method.last_four}
-                          {method.expiry_month && method.expiry_year && (
-                            <span className="ml-2">&bull; Expires {method.expiry_month.toString().padStart(2, '0')}/{method.expiry_year.toString().slice(-2)}</span>
+                          {(method.stripe_data?.card?.brand || method.card_brand)?.toUpperCase()} ending in {method.stripe_data?.card?.last4 || method.last_four}
+                          {(method.stripe_data?.card?.exp_month || method.expiry_month) && (method.stripe_data?.card?.exp_year || method.expiry_year) && (
+                            <span className="ml-2">&bull; Expires {(method.stripe_data?.card?.exp_month || method.expiry_month).toString().padStart(2, '0')}/{(method.stripe_data?.card?.exp_year || method.expiry_year).toString().slice(-2)}</span>
                           )}
                         </>
                       ) : (
                         <>
-                          {method.bank_account_type?.charAt(0).toUpperCase() + method.bank_account_type?.slice(1)} account ending in {method.bank_account_last_four}
+                          {method.bank_account_type?.charAt(0).toUpperCase() + method.bank_account_type?.slice(1)} account ending in {method.stripe_data?.us_bank_account?.last4 || method.bank_account_last_four}
                         </>
                       )}
                     </p>
