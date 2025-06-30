@@ -76,6 +76,28 @@ export async function POST(request) {
         .eq('id', facility_id)
     }
 
+    // First, try to attach the payment method to the customer if it's not already attached
+    try {
+      const paymentMethod = await stripe.paymentMethods.retrieve(payment_method_id)
+      
+      // If the payment method isn't attached to any customer or attached to a different customer
+      if (!paymentMethod.customer || paymentMethod.customer !== customerId) {
+        // Attach the payment method to the customer
+        await stripe.paymentMethods.attach(payment_method_id, {
+          customer: customerId
+        })
+      }
+    } catch (attachError) {
+      console.error('Error attaching payment method:', attachError)
+      // If the payment method doesn't exist or can't be attached, return an error
+      if (attachError.code === 'resource_missing') {
+        return Response.json(
+          { error: 'Payment method not found. Please use a different card or add a new one.' },
+          { status: 400 }
+        )
+      }
+    }
+
     // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
@@ -107,6 +129,39 @@ export async function POST(request) {
     if (paymentError) {
       console.error('Error recording payment:', paymentError)
       // Continue - payment was processed by Stripe
+    }
+
+    // Update or create invoice record
+    if (paymentIntent.status === 'succeeded') {
+      // Check if invoice exists
+      const { data: existingInvoice } = await supabase
+        .from('facility_invoices')
+        .select('id')
+        .eq('facility_id', facility_id)
+        .eq('month', month)
+        .single()
+
+      if (existingInvoice) {
+        // Update existing invoice
+        await supabase.rpc('update_payment_status_with_audit', {
+          p_invoice_id: existingInvoice.id,
+          p_new_status: 'PAID WITH CARD',
+          p_user_id: userData.user.id,
+          p_user_role: 'facility',
+          p_notes: `Payment processed via Stripe. Payment Intent: ${paymentIntent.id}`
+        })
+      } else {
+        // Create new invoice
+        await supabase
+          .from('facility_invoices')
+          .insert({
+            facility_id: facility_id,
+            invoice_number: invoice_number,
+            month: month,
+            total_amount: amount,
+            payment_status: 'PAID WITH CARD'
+          })
+      }
     }
 
     if (paymentIntent.status === 'requires_action') {

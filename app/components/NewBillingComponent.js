@@ -1178,10 +1178,12 @@ ${monthlyTrips.map(trip => {
         facilityId={facilityId}
         invoiceNumber={invoiceNumber}
         selectedMonth={selectedMonth}
-        onPaymentSuccess={(message) => {
+        onPaymentSuccess={async (message) => {
           setSuccessMessage(message)
-          setInvoiceStatus('PAID')
-          fetchInvoiceStatus() // Refresh invoice status
+          // Immediately refresh the invoice status from the database
+          await fetchInvoiceStatus()
+          // Also refresh the monthly trips to update any billing-related data
+          await fetchMonthlyTrips(selectedMonth)
           setTimeout(() => setSuccessMessage(''), 5000)
         }}
       />

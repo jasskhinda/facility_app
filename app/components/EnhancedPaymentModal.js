@@ -242,16 +242,57 @@ function PaymentForm({
   const updateInvoiceStatus = async (status) => {
     const { data: userData } = await supabase.auth.getUser()
     
-    const { error } = await supabase.rpc('update_payment_status_with_audit', {
-      p_invoice_id: invoiceNumber, // Assuming this is the invoice ID
-      p_new_status: status,
-      p_user_id: userData.user.id,
-      p_user_role: 'facility',
-      p_notes: `Payment processed via ${paymentMethod} payment method`
-    })
+    // First, check if an invoice record exists for this month
+    const { data: existingInvoice, error: fetchError } = await supabase
+      .from('facility_invoices')
+      .select('id')
+      .eq('facility_id', facilityId)
+      .eq('month', selectedMonth)
+      .single()
 
-    if (error) {
-      console.error('Error updating invoice status:', error)
+    let invoiceId = existingInvoice?.id
+
+    // If no invoice exists, create one
+    if (!invoiceId) {
+      const { data: newInvoice, error: createError } = await supabase
+        .from('facility_invoices')
+        .insert({
+          facility_id: facilityId,
+          invoice_number: invoiceNumber,
+          month: selectedMonth,
+          total_amount: totalAmount,
+          payment_status: status
+        })
+        .select('id')
+        .single()
+
+      if (createError) {
+        console.error('Error creating invoice:', createError)
+        return
+      }
+
+      invoiceId = newInvoice.id
+    } else {
+      // Update existing invoice with audit trail
+      const { error } = await supabase.rpc('update_payment_status_with_audit', {
+        p_invoice_id: invoiceId,
+        p_new_status: status,
+        p_user_id: userData.user.id,
+        p_user_role: 'facility',
+        p_notes: `Payment processed via ${paymentMethod} payment method`
+      })
+
+      if (error) {
+        console.error('Error updating invoice status:', error)
+      }
+    }
+
+    // Update the invoice number on the existing invoice if needed
+    if (existingInvoice && !existingInvoice.invoice_number) {
+      await supabase
+        .from('facility_invoices')
+        .update({ invoice_number: invoiceNumber })
+        .eq('id', invoiceId)
     }
   }
 

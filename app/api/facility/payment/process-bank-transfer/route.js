@@ -125,6 +125,39 @@ export async function POST(request) {
       // Continue - payment was processed by Stripe
     }
 
+    // Update or create invoice record
+    if (paymentIntent.status === 'succeeded' || paymentIntent.status === 'processing') {
+      // Check if invoice exists
+      const { data: existingInvoice } = await supabase
+        .from('facility_invoices')
+        .select('id')
+        .eq('facility_id', facility_id)
+        .eq('month', month)
+        .single()
+
+      if (existingInvoice) {
+        // Update existing invoice
+        await supabase.rpc('update_payment_status_with_audit', {
+          p_invoice_id: existingInvoice.id,
+          p_new_status: 'PAID WITH BANK TRANSFER',
+          p_user_id: userData.user.id,
+          p_user_role: 'facility',
+          p_notes: `Bank transfer payment processed via Stripe. Payment Intent: ${paymentIntent.id}`
+        })
+      } else {
+        // Create new invoice
+        await supabase
+          .from('facility_invoices')
+          .insert({
+            facility_id: facility_id,
+            invoice_number: invoice_number,
+            month: month,
+            total_amount: amount,
+            payment_status: 'PAID WITH BANK TRANSFER'
+          })
+      }
+    }
+
     if (paymentIntent.status === 'succeeded') {
       return Response.json({
         success: true,
