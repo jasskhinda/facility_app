@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase'
+import { createRouteHandlerClient } from '@/lib/route-handler-client'
 import Stripe from 'stripe'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
@@ -14,7 +14,7 @@ export async function POST(request) {
       )
     }
 
-    const supabase = createClient()
+    const supabase = await createRouteHandlerClient()
 
     // Verify user authentication and role
     const { data: userData, error: userError } = await supabase.auth.getUser()
