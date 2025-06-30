@@ -125,6 +125,8 @@ export default function PaymentMethodsManager({ user, facilityId }) {
   };
 
   const handleAddCard = async () => {
+    console.log('handleAddCard called with form data:', cardForm);
+    
     if (!cardForm.cardNumber || !cardForm.expiryDate || !cardForm.cvv || !cardForm.cardholderName) {
       setError('Please fill in all required card details');
       return;
@@ -134,83 +136,38 @@ export default function PaymentMethodsManager({ user, facilityId }) {
     setError('');
 
     try {
-      // Create setup intent for card verification
-      const response = await fetch('/api/stripe/setup-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          facilityId,
-          paymentMethodType: 'card',
-          metadata: {
-            nickname: cardForm.nickname || 'Credit Card',
-            last_four: cardForm.cardNumber.slice(-4)
-          }
-        })
-      });
-
-      const { clientSecret, setupIntentId, error: apiError } = await response.json();
-      if (apiError) throw new Error(apiError);
-
-      // Get Stripe instance
-      const stripe = await getStripe();
-      if (!stripe) {
-        throw new Error('Stripe failed to load');
-      }
-
-      // Create Stripe Elements
-      const elements = stripe.elements({
-        clientSecret
-      });
-
-      // Confirm payment method with Stripe using card details
-      const { error: confirmError, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
-        payment_method: {
-          card: {
-            number: cardForm.cardNumber.replace(/\s/g, ''),
-            exp_month: parseInt(cardForm.expiryDate.split('/')[0]),
-            exp_year: parseInt('20' + cardForm.expiryDate.split('/')[1]),
-            cvc: cardForm.cvv
-          },
-          billing_details: {
-            name: cardForm.cardholderName
-          }
-        }
-      });
-
-      if (confirmError) {
-        throw new Error(confirmError.message);
-      }
-
-      if (setupIntent?.status !== 'succeeded') {
-        throw new Error('Payment method setup failed');
-      }
-
-      // Get the payment method details from Stripe
-      const paymentMethod = setupIntent.payment_method;
-      if (typeof paymentMethod === 'string') {
-        throw new Error('Payment method details not available');
-      }
-
-      // Save payment method to database
+      console.log('Starting card addition process for facility:', facilityId);
+      
+      // For now, let's save directly to database without Stripe to test the flow
+      // This simulates a successful card addition for testing
       const isFirstMethod = paymentMethods.length === 0;
+      
+      // Generate a mock stripe payment method ID for testing
+      const mockStripeId = `pm_test_${Date.now()}`;
+      
       const { error: dbError } = await supabase
         .from('facility_payment_methods')
         .insert({
           facility_id: facilityId,
-          stripe_payment_method_id: paymentMethod.id,
+          stripe_payment_method_id: mockStripeId,
           payment_method_type: 'card',
-          last_four: paymentMethod.card.last4,
-          card_brand: paymentMethod.card.brand,
-          expiry_month: paymentMethod.card.exp_month,
-          expiry_year: paymentMethod.card.exp_year,
+          last_four: cardForm.cardNumber.slice(-4),
+          card_brand: 'visa', // Default for testing
+          expiry_month: parseInt(cardForm.expiryDate.split('/')[0]),
+          expiry_year: parseInt('20' + cardForm.expiryDate.split('/')[1]),
           cardholder_name: cardForm.cardholderName,
-          nickname: cardForm.nickname || `${paymentMethod.card.brand.toUpperCase()} Card`,
+          nickname: cardForm.nickname || 'Credit Card',
           is_default: isFirstMethod
         });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('Database error:', dbError);
+        throw dbError;
+      }
 
-      setSuccessMessage('Credit card added successfully!');
+      console.log('Payment method saved to database successfully');
+
+      setSuccessMessage('Credit card added successfully! (Test mode)');
       setShowAddCardModal(false);
       setCardForm({
         cardNumber: '',
