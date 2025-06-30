@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClientSupabase } from '@/lib/client-supabase';
+import EnhancedPaymentModal from './EnhancedPaymentModal';
 
 export default function FacilityBillingComponent({ user, facilityId }) {
   const [monthlyTrips, setMonthlyTrips] = useState([]);
@@ -1023,7 +1024,7 @@ ${monthlyTrips.map(trip => {
           
           {/* Payment Settings Link */}
           <a
-            href="/dashboard/payment-settings"
+            href="/payment-settings"
             className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1170,258 +1171,20 @@ ${monthlyTrips.map(trip => {
       )}
       
       {/* Enhanced Payment Modal */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            {/* Payment Modal Header */}
-            <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-6 rounded-t-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold">Pay Monthly Invoice</h2>
-                  <p className="text-green-100 mt-1">
-                    Amount Due: ${totalAmount.toFixed(2)}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowPaymentModal(false)}
-                  className="text-green-200 hover:text-white transition-colors"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Payment Modal Content */}
-            <div className="p-6 space-y-6">
-              {paymentSuccess ? (
-                /* Payment Success */
-                <div className="text-center py-8">
-                  <div className="text-green-500 text-6xl mb-4">✅</div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Payment Successful!</h3>
-                  <p className="text-gray-600 mb-4">
-                    Your payment of ${totalAmount.toFixed(2)} has been processed successfully.
-                  </p>
-                  <p className="text-sm text-green-600">
-                    You will receive a confirmation email shortly.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {/* Payment Summary */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h3 className="font-semibold text-gray-900 mb-2">Payment Summary</h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Facility:</span>
-                        <span className="font-medium">{facility?.name}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Billing Period:</span>
-                        <span className="font-medium">{displayMonth}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Billable Trips:</span>
-                        <span className="font-medium">{monthlyTrips.filter(trip => trip.billable).length}</span>
-                      </div>
-                      <div className="border-t pt-2 mt-2">
-                        <div className="flex justify-between text-lg font-bold">
-                          <span>Total Amount:</span>
-                          <span className="text-green-600">${totalAmount.toFixed(2)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Enhanced Payment Method Selection */}
-                  <div className="space-y-4">
-                    <h3 className="text-xl font-semibold text-gray-900 text-center mb-4">PAY NOW</h3>
-                    
-                    <div className="space-y-3">
-                      {/* Saved Payment Methods */}
-                      {defaultPaymentMethod && (
-                        <label className="flex items-center space-x-3 p-3 border border-green-300 rounded-lg bg-green-50">
-                          <input
-                            type="radio"
-                            name="paymentMethod"
-                            value="saved_card"
-                            checked={paymentMethod === 'saved_card'}
-                            onChange={(e) => setPaymentMethod(e.target.value)}
-                            className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
-                          />
-                          <div className="flex-1">
-                            <span className="text-gray-900 font-medium">
-                              {defaultPaymentMethod.nickname} (Default)
-                            </span>
-                            <p className="text-sm text-gray-600">
-                              {defaultPaymentMethod.payment_method_type === 'card' ? 
-                                `${defaultPaymentMethod.card_brand?.toUpperCase()} ending in ${defaultPaymentMethod.last_four}` :
-                                `${defaultPaymentMethod.bank_account_type} account ending in ${defaultPaymentMethod.bank_account_last_four}`
-                              }
-                            </p>
-                          </div>
-                        </label>
-                      )}
-                      
-                      {/* Credit Card */}
-                      <label className="flex items-center space-x-3 p-3 border border-gray-300 rounded-lg hover:bg-gray-50">
-                        <input
-                          type="radio"
-                          name="paymentMethod"
-                          value="credit_card"
-                          checked={paymentMethod === 'credit_card'}
-                          onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
-                        />
-                        <span className="text-gray-900 font-medium">Credit Card</span>
-                      </label>
-                      
-                      {/* Bank Transfer */}
-                      <label className="flex items-center space-x-3 p-3 border border-gray-300 rounded-lg hover:bg-gray-50">
-                        <input
-                          type="radio"
-                          name="paymentMethod"
-                          value="bank_transfer"
-                          checked={paymentMethod === 'bank_transfer'}
-                          onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
-                        />
-                        <span className="text-gray-900 font-medium">Bank Transfer</span>
-                      </label>
-                      
-                      {/* Pay with Check */}
-                      <div className="border border-gray-300 rounded-lg">
-                        <label className="flex items-center space-x-3 p-3 hover:bg-gray-50">
-                          <input
-                            type="radio"
-                            name="paymentMethod"
-                            value="check"
-                            checked={paymentMethod === 'check'}
-                            onChange={(e) => {
-                              setPaymentMethod(e.target.value);
-                              setShowCheckOptions(!showCheckOptions);
-                            }}
-                            className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
-                          />
-                          <span className="text-gray-900 font-medium">Pay with Check</span>
-                        </label>
-                        
-                        {paymentMethod === 'check' && (
-                          <div className="px-3 pb-3 space-y-2">
-                            <label className="flex items-center space-x-3 pl-7">
-                              <input
-                                type="radio"
-                                name="checkOption"
-                                value="check_submit"
-                                checked={paymentMethod === 'check_submit'}
-                                onChange={(e) => setPaymentMethod(e.target.value)}
-                                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                              />
-                              <span className="text-gray-700">PAY NOW WITH CHECK - Submit payment request</span>
-                            </label>
-                            <label className="flex items-center space-x-3 pl-7">
-                              <input
-                                type="radio"
-                                name="checkOption"
-                                value="check_sent"
-                                checked={paymentMethod === 'check_sent'}
-                                onChange={(e) => setPaymentMethod(e.target.value)}
-                                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                              />
-                              <span className="text-gray-700">CHECK ALREADY SENT - Mark as sent</span>
-                            </label>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Payment Details based on method */}
-                  {paymentMethod === 'bank_transfer' && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <h4 className="font-medium text-blue-900 mb-2">Bank Transfer Details</h4>
-                      <div className="text-sm text-blue-800 space-y-1">
-                        <p><strong>Account Name:</strong> Compassionate Care Transportation Services</p>
-                        <p><strong>Account Number:</strong> 123-456-789</p>
-                        <p><strong>Routing Number:</strong> 987-654-321</p>
-                        <p><strong>Reference:</strong> {facility?.name} - {displayMonth}</p>
-                      </div>
-                      <p className="text-xs text-blue-600 mt-3">
-                        Please include the reference number in your transfer and allow 2-3 business days for processing.
-                      </p>
-                    </div>
-                  )}
-
-                  {(paymentMethod === 'check_submit' || paymentMethod === 'check_sent') && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                      <h4 className="font-medium text-yellow-900 mb-2">Check Payment Instructions</h4>
-                      <div className="text-sm text-yellow-800 space-y-2">
-                        <p><strong>Mail check to:</strong></p>
-                        <div className="ml-4">
-                          <p>Compassionate Care Transportation</p>
-                          <p>1234 Main Street</p>
-                          <p>Toronto, ON M1A 1A1</p>
-                        </div>
-                        <p><strong>Memo:</strong> {facility?.name} - {displayMonth} - Invoice #{invoiceNumber}</p>
-                        <p className="text-xs text-yellow-600 mt-2">
-                          {paymentMethod === 'check_submit' ? 
-                            'After the check is sent, it takes a few days to receive it. Once received and verified by our dispatchers, the status will change to "PAID WITH CHECK - VERIFIED"' :
-                            'Your check has been marked as sent. Our dispatch team will verify receipt and update the status accordingly.'
-                          }
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Error Message */}
-                  {paymentError && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                      <p className="text-sm text-red-800">{paymentError}</p>
-                    </div>
-                  )}
-
-                  {/* Payment Action Buttons */}
-                  <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
-                    <button
-                      onClick={() => setShowPaymentModal(false)}
-                      className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    
-                    <button
-                      onClick={handlePayment}
-                      disabled={processingPayment || !paymentMethod}
-                      className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
-                    >
-                      {processingPayment ? (
-                        <>
-                          <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                          </svg>
-                          {paymentMethod === 'check_submit' ? 'SUBMIT REQUEST' :
-                           paymentMethod === 'check_sent' ? 'MARK AS SENT' :
-                           paymentMethod === 'bank_transfer' ? 'CONFIRM TRANSFER' :
-                           `PAY $${totalAmount.toFixed(2)}`}
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <EnhancedPaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        totalAmount={totalAmount}
+        facilityId={facilityId}
+        invoiceNumber={invoiceNumber}
+        selectedMonth={selectedMonth}
+        onPaymentSuccess={(message) => {
+          setSuccessMessage(message)
+          setInvoiceStatus('PAID')
+          fetchInvoiceStatus() // Refresh invoice status
+          setTimeout(() => setSuccessMessage(''), 5000)
+        }}
+      />
       
       {/* Professional Invoice Modal */}
       {showInvoiceModal && (
