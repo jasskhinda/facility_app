@@ -219,7 +219,6 @@ export default function StreamlinedBookingForm({ user }) {
         status: 'pending',
         booked_by: user.id,
         bill_to: formData.billTo,
-        is_emergency: formData.isEmergency,
         // Add pricing information if available
         price: currentPricing?.pricing?.total || null,
         is_round_trip: formData.isRoundTrip,
@@ -262,7 +261,6 @@ export default function StreamlinedBookingForm({ user }) {
           pickup_time: returnDateTime.toISOString(),
           trip_notes: `Return trip. ${formData.tripNotes}`,
           related_trip_id: trip.id,
-          is_emergency: formData.isEmergency
         };
         
         await supabase.from('trips').insert(returnTripData);
