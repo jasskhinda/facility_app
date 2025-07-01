@@ -1,13 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { useState, useEffect, useCallback } from 'react';
+import dynamic from 'next/dynamic';
+import { createClientSupabase } from '@/lib/client-supabase';
+import WheelchairSelectionFlow from './WheelchairSelectionFlow';
+
+// Dynamically import Google Maps components to prevent SSR issues
+const SimpleAutocomplete = dynamic(() => import('./SimpleAutocomplete'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-gray-200 h-12 rounded"></div>
+});
 
 export default function EditTripForm({ trip, onSave, onCancel }) {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
+  const supabase = createClientSupabase();
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -15,38 +20,76 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
   
   // Form state
   const [formData, setFormData] = useState({
-    pickup_time: '',
-    pickup_address: trip?.pickup_address || '',
-    destination_address: trip?.destination_address || trip?.dropoff_address || '',
-    wheelchair_type: trip?.wheelchair_type || 'standard',
-    additional_passengers: trip?.additional_passengers || 0,
-    is_round_trip: trip?.is_round_trip || false,
-    notes: trip?.notes || '',
-    special_requirements: trip?.special_requirements || ''
+    pickupDate: '',
+    pickupTime: '',
+    pickupAddress: trip?.pickup_address || '',
+    pickupDetails: trip?.pickup_details || '',
+    destinationAddress: trip?.destination_address || trip?.dropoff_address || '',
+    destinationDetails: trip?.destination_details || '',
+    wheelchairType: trip?.wheelchair_type || 'no_wheelchair',
+    additionalPassengers: trip?.additional_passengers || 0,
+    isRoundTrip: trip?.is_round_trip || false,
+    returnTime: trip?.return_pickup_time ? new Date(trip.return_pickup_time).toTimeString().slice(0,5) : '',
+    tripNotes: trip?.trip_notes || '',
+    billTo: trip?.bill_to || 'facility'
   });
 
-  // Initialize pickup time from trip data
+  // Wheelchair selection data
+  const [wheelchairData, setWheelchairData] = useState({
+    type: trip?.wheelchair_type === 'no_wheelchair' ? 'none' : trip?.wheelchair_type || 'none',
+    needsProvided: trip?.wheelchair_type === 'provided' || false,
+    customType: '',
+    hasWheelchairFee: false,
+    fee: 0
+  });
+
+  // Initialize pickup date and time from trip data
   useEffect(() => {
     if (trip?.pickup_time) {
-      // Convert to local datetime format for input
       const date = new Date(trip.pickup_time);
-      const localDateTime = new Date(date.getTime() - (date.getTimezoneOffset() * 60000))
-        .toISOString()
-        .slice(0, 16);
+      const dateStr = date.toISOString().split('T')[0];
+      const timeStr = date.toTimeString().slice(0, 5);
       setFormData(prev => ({
         ...prev,
-        pickup_time: localDateTime
+        pickupDate: dateStr,
+        pickupTime: timeStr
       }));
     }
   }, [trip]);
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
+  // Handle wheelchair selection changes
+  const handleWheelchairChange = useCallback((newWheelchairData) => {
+    setWheelchairData(newWheelchairData);
+    
+    // Update form data wheelchair type for database compatibility
+    let wheelchairType = 'no_wheelchair';
+    if (newWheelchairData.type !== 'none' || newWheelchairData.needsProvided) {
+      wheelchairType = newWheelchairData.type === 'none' ? 'provided' : newWheelchairData.type;
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      wheelchairType: wheelchairType
     }));
-  };
+  }, []);
+
+  // Generate time options
+  const timeOptions = [];
+  for (let hour = 5; hour <= 23; hour++) {
+    for (let minute = 0; minute < 60; minute += 15) {
+      const h = hour.toString().padStart(2, '0');
+      const m = minute.toString().padStart(2, '0');
+      const time = `${h}:${m}`;
+      const displayTime = new Date(`2000-01-01T${time}`).toLocaleTimeString([], { 
+        hour: 'numeric', 
+        minute: '2-digit' 
+      });
+      timeOptions.push({ value: time, label: displayTime });
+    }
+  }
+
+  // Get today's date in YYYY-MM-DD format for min date
+  const today = new Date().toISOString().split('T')[0];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -56,7 +99,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
 
     try {
       // Validate required fields
-      if (!formData.pickup_time || !formData.pickup_address || !formData.destination_address) {
+      if (!formData.pickupDate || !formData.pickupTime || !formData.pickupAddress || !formData.destinationAddress) {
         throw new Error('Please fill in all required fields');
       }
 
@@ -75,16 +118,24 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
         throw new Error('This trip can no longer be edited. Only pending trips can be modified.');
       }
 
-      // Prepare update data
+      // Combine date and time
+      const pickupDateTime = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
+
+      // Prepare update data with correct column names
       const updateData = {
-        pickup_time: new Date(formData.pickup_time).toISOString(),
-        pickup_address: formData.pickup_address.trim(),
-        destination_address: formData.destination_address.trim(),
-        wheelchair_type: formData.wheelchair_type,
-        additional_passengers: parseInt(formData.additional_passengers) || 0,
-        is_round_trip: formData.is_round_trip,
-        notes: formData.notes.trim() || null,
-        special_requirements: formData.special_requirements.trim() || null,
+        pickup_time: pickupDateTime.toISOString(),
+        pickup_address: formData.pickupAddress.trim(),
+        pickup_details: formData.pickupDetails.trim() || null,
+        destination_address: formData.destinationAddress.trim(),
+        destination_details: formData.destinationDetails.trim() || null,
+        wheelchair_type: wheelchairData.isTransportChair ? 'transport_not_allowed' : 
+                        wheelchairData.needsProvided ? 'provided' : 
+                        wheelchairData.type === 'none' ? 'no_wheelchair' : 
+                        wheelchairData.type,
+        additional_passengers: parseInt(formData.additionalPassengers) || 0,
+        is_round_trip: formData.isRoundTrip,
+        trip_notes: formData.tripNotes.trim() || null,
+        bill_to: formData.billTo,
         updated_at: new Date().toISOString()
       };
 
@@ -164,157 +215,191 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Trip Details Section */}
-            <div>
-              <h3 className="text-lg font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-4">Trip Details</h3>
+            {/* Date and Time */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                  Pickup Date *
+                </label>
+                <input
+                  type="date"
+                  value={formData.pickupDate}
+                  onChange={(e) => setFormData({ ...formData, pickupDate: e.target.value })}
+                  min={today}
+                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  required
+                  disabled={loading}
+                />
+              </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label htmlFor="pickup_time" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-1">
-                    Pickup Date & Time *
-                  </label>
-                  <input
-                    type="datetime-local"
-                    id="pickup_time"
-                    name="pickup_time"
-                    value={formData.pickup_time}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
-                    className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] disabled:opacity-50 bg-white dark:bg-[#1C2C2F] text-[#2E4F54] dark:text-[#E0F4F5]"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label htmlFor="pickup_address" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-1">
-                    Pickup Address *
-                  </label>
-                  <input
-                    type="text"
-                    id="pickup_address"
-                    name="pickup_address"
-                    value={formData.pickup_address}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
-                    className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] disabled:opacity-50 bg-white dark:bg-[#1C2C2F] text-[#2E4F54] dark:text-[#E0F4F5]"
-                    placeholder="Enter pickup address"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label htmlFor="destination_address" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-1">
-                    Destination Address *
-                  </label>
-                  <input
-                    type="text"
-                    id="destination_address"
-                    name="destination_address"
-                    value={formData.destination_address}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
-                    className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] disabled:opacity-50 bg-white dark:bg-[#1C2C2F] text-[#2E4F54] dark:text-[#E0F4F5]"
-                    placeholder="Enter destination address"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                  Pickup Time *
+                </label>
+                <select
+                  value={formData.pickupTime}
+                  onChange={(e) => setFormData({ ...formData, pickupTime: e.target.value })}
+                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  required
+                  disabled={loading}
+                >
+                  <option value="">Select time...</option>
+                  {timeOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
-            {/* Trip Options Section */}
-            <div>
-              <h3 className="text-lg font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-4">Trip Options</h3>
+            {/* Addresses */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                  Pickup Address *
+                </label>
+                <SimpleAutocomplete
+                  value={formData.pickupAddress}
+                  onChange={(value) => setFormData({ ...formData, pickupAddress: value })}
+                  placeholder="Enter pickup address"
+                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  required
+                  disabled={loading}
+                />
+                <input
+                  type="text"
+                  value={formData.pickupDetails}
+                  onChange={(e) => setFormData({ ...formData, pickupDetails: e.target.value })}
+                  placeholder="Apartment, suite, building entrance, etc. (optional)"
+                  className="mt-2 w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  disabled={loading}
+                />
+              </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="wheelchair_type" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-1">
-                    Accessibility Requirements
+              <div>
+                <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                  Destination Address *
+                </label>
+                <SimpleAutocomplete
+                  value={formData.destinationAddress}
+                  onChange={(value) => setFormData({ ...formData, destinationAddress: value })}
+                  placeholder="Enter destination address"
+                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  required
+                  disabled={loading}
+                />
+                <input
+                  type="text"
+                  value={formData.destinationDetails}
+                  onChange={(e) => setFormData({ ...formData, destinationDetails: e.target.value })}
+                  placeholder="Building, entrance, room number, etc. (optional)"
+                  className="mt-2 w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
+            {/* Round Trip */}
+            <div>
+              <label className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  checked={formData.isRoundTrip}
+                  onChange={(e) => setFormData({ ...formData, isRoundTrip: e.target.checked })}
+                  className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] rounded focus:ring-[#7CCFD0]"
+                  disabled={loading}
+                />
+                <span className="text-[#2E4F54] dark:text-[#E0F4F5]">Round trip</span>
+              </label>
+              
+              {formData.isRoundTrip && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                    Return Time
                   </label>
                   <select
-                    id="wheelchair_type"
-                    name="wheelchair_type"
-                    value={formData.wheelchair_type}
-                    onChange={handleInputChange}
+                    value={formData.returnTime}
+                    onChange={(e) => setFormData({ ...formData, returnTime: e.target.value })}
+                    className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                     disabled={loading}
-                    className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] disabled:opacity-50 bg-white dark:bg-[#1C2C2F] text-[#2E4F54] dark:text-[#E0F4F5]"
                   >
-                    <option value="standard">Standard Vehicle</option>
-                    <option value="wheelchair">Wheelchair Accessible</option>
+                    <option value="">Select return time...</option>
+                    {timeOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
                   </select>
                 </div>
-
-                <div>
-                  <label htmlFor="additional_passengers" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-1">
-                    Additional Passengers
-                  </label>
-                  <input
-                    type="number"
-                    id="additional_passengers"
-                    name="additional_passengers"
-                    value={formData.additional_passengers}
-                    onChange={handleInputChange}
-                    min="0"
-                    max="4"
-                    disabled={loading}
-                    className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] disabled:opacity-50 bg-white dark:bg-[#1C2C2F] text-[#2E4F54] dark:text-[#E0F4F5]"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="is_round_trip"
-                      name="is_round_trip"
-                      checked={formData.is_round_trip}
-                      onChange={handleInputChange}
-                      disabled={loading}
-                      className="h-4 w-4 text-[#7CCFD0] focus:ring-[#7CCFD0] border-[#DDE5E7] dark:border-[#3F5E63] rounded disabled:opacity-50"
-                    />
-                    <label htmlFor="is_round_trip" className="ml-2 text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
-                      Round Trip
-                    </label>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
 
-            {/* Notes Section */}
-            <div>
-              <h3 className="text-lg font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-4">Additional Information</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="special_requirements" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-1">
-                    Special Requirements
-                  </label>
-                  <textarea
-                    id="special_requirements"
-                    name="special_requirements"
-                    value={formData.special_requirements}
-                    onChange={handleInputChange}
-                    rows={2}
-                    disabled={loading}
-                    className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] disabled:opacity-50 bg-white dark:bg-[#1C2C2F] text-[#2E4F54] dark:text-[#E0F4F5]"
-                    placeholder="Any special requirements..."
-                  />
-                </div>
+            {/* Wheelchair Selection */}
+            <div className="col-span-1 md:col-span-2">
+              <WheelchairSelectionFlow
+                onWheelchairChange={handleWheelchairChange}
+                initialValue={wheelchairData.type}
+                className="mt-2"
+                disabled={loading}
+              />
+            </div>
 
-                <div>
-                  <label htmlFor="notes" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-1">
-                    Notes
-                  </label>
-                  <textarea
-                    id="notes"
-                    name="notes"
-                    value={formData.notes}
-                    onChange={handleInputChange}
-                    rows={3}
+            {/* Additional Passengers */}
+            <div>
+              <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                Additional Passengers
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="3"
+                value={formData.additionalPassengers}
+                onChange={(e) => setFormData({ ...formData, additionalPassengers: parseInt(e.target.value) || 0 })}
+                className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                disabled={loading}
+              />
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                Trip Notes
+              </label>
+              <textarea
+                value={formData.tripNotes}
+                onChange={(e) => setFormData({ ...formData, tripNotes: e.target.value })}
+                placeholder="Special instructions, medical equipment, etc."
+                rows={3}
+                className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                disabled={loading}
+              />
+            </div>
+
+            {/* Billing */}
+            <div>
+              <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                Bill To
+              </label>
+              <div className="space-y-2">
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="radio"
+                    value="facility"
+                    checked={formData.billTo === 'facility'}
+                    onChange={(e) => setFormData({ ...formData, billTo: e.target.value })}
+                    className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] focus:ring-[#7CCFD0]"
                     disabled={loading}
-                    className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] disabled:opacity-50 bg-white dark:bg-[#1C2C2F] text-[#2E4F54] dark:text-[#E0F4F5]"
-                    placeholder="Additional notes or instructions..."
                   />
-                </div>
+                  <span className="text-[#2E4F54] dark:text-[#E0F4F5]">Facility</span>
+                </label>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="radio"
+                    value="client"
+                    checked={formData.billTo === 'client'}
+                    onChange={(e) => setFormData({ ...formData, billTo: e.target.value })}
+                    className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] focus:ring-[#7CCFD0]"
+                    disabled={loading}
+                  />
+                  <span className="text-[#2E4F54] dark:text-[#E0F4F5]">Client</span>
+                </label>
               </div>
             </div>
 
