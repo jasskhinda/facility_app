@@ -364,10 +364,12 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           const displayMonth = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('en-US', { 
             month: 'long', year: 'numeric' 
           });
-          setError(`No facility-created trips found for ${displayMonth}. Found ${anyFacilityTrips.length} facility trips in other months (see console for details).`);
+          // Clear any error - no trips for this month is normal
+          setError('');
         } else {
           console.log('📊 DIAGNOSTIC: No facility trips found at all');
-          setError('No facility-created trips found. Only trips booked through the facility interface will appear here.');
+          // Clear any error - no trips found is normal
+          setError('');
         }
         
         setMonthlyTrips([]);
