@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 import DashboardLayout from '@/app/components/DashboardLayout';
+import EditTripForm from '@/app/components/EditTripForm';
 
 export default function TripDetailsPage() {
   const params = useParams();
@@ -23,6 +24,7 @@ export default function TripDetailsPage() {
   const [cancelReason, setCancelReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [showEditForm, setShowEditForm] = useState(false);
 
   // Download trip details as PDF-style document
   const downloadTripDetails = () => {
@@ -284,6 +286,19 @@ Website: https://compassionatecaretransportation.com
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Handle trip edit save
+  const handleTripSave = (updatedTrip) => {
+    setTrip(updatedTrip);
+    setShowEditForm(false);
+    setSuccessMessage('Trip updated successfully!');
+    setTimeout(() => setSuccessMessage(null), 3000);
+  };
+
+  // Handle trip edit cancel
+  const handleTripEditCancel = () => {
+    setShowEditForm(false);
   };
   
   // Get status badge class
@@ -668,6 +683,19 @@ Website: https://compassionatecaretransportation.com
         
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-3">
+          {/* Edit Trip Button - Only for pending trips */}
+          {trip.status === 'pending' && (
+            <button
+              onClick={() => setShowEditForm(true)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md inline-flex items-center"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Edit Trip
+            </button>
+          )}
+          
           {/* Download Trip Details Button */}
           <button
             onClick={downloadTripDetails}
@@ -762,6 +790,15 @@ Website: https://compassionatecaretransportation.com
             </div>
           </div>
         </div>
+      )}
+
+      {/* Edit Trip Form Modal */}
+      {showEditForm && (
+        <EditTripForm 
+          trip={trip}
+          onSave={handleTripSave}
+          onCancel={handleTripEditCancel}
+        />
       )}
     </DashboardLayout>
   );
