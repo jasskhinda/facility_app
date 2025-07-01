@@ -153,7 +153,14 @@ Website: https://compassionatecaretransportation.com
         // Build trip query based on user role (same logic as trips list page)
         let tripQuery = supabase
           .from('trips')
-          .select('*')
+          .select(`
+            *,
+            editor:last_edited_by(
+              id,
+              first_name,
+              last_name
+            )
+          `)
           .eq('id', tripId);
         
         // For facility users, allow access to any trip for their facility
@@ -532,6 +539,22 @@ Website: https://compassionatecaretransportation.com
               <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Booking Date</p>
               <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{formatDate(trip.created_at)}</p>
             </div>
+            
+            {/* Edit Tracking Information */}
+            {trip.last_edited_by && trip.editor && (
+              <div>
+                <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Last Edited</p>
+                <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+                  {formatDate(trip.last_edited_at || trip.updated_at)}
+                </p>
+                <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                  ✏️ EDITED BY {trip.edited_by_role?.toUpperCase() || 'UNKNOWN'}
+                  {trip.editor.first_name && (
+                    <span className="ml-1">({trip.editor.first_name} {trip.editor.last_name})</span>
+                  )}
+                </p>
+              </div>
+            )}
             
             {trip.notes && (
               <div className="md:col-span-2">

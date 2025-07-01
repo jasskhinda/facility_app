@@ -31,6 +31,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
   const [currentPricing, setCurrentPricing] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
   const [selectedClient, setSelectedClient] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -70,6 +71,20 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
         pickupTime: timeStr
       }));
     }
+
+    // Get current user for edit tracking
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        setCurrentUser({ ...user, role: profile?.role || 'facility' });
+      }
+    };
+    getCurrentUser();
 
     // Set up a mock client for pricing calculations
     if (trip) {
@@ -166,6 +181,9 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
         route_duration: routeInfo?.duration?.text || trip?.route_duration || null,
         route_distance_text: routeInfo?.distance?.text || trip?.route_distance_text || null,
         route_duration_text: routeInfo?.duration?.text || trip?.route_duration_text || null,
+        // Add edit tracking
+        last_edited_by: currentUser?.id || null,
+        edited_by_role: currentUser?.role || 'facility',
         updated_at: new Date().toISOString()
       };
 
