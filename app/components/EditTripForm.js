@@ -3,9 +3,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { createClientSupabase } from '@/lib/client-supabase';
+import PricingDisplay from './PricingDisplay';
 import WheelchairSelectionFlow from './WheelchairSelectionFlow';
 
 // Dynamically import Google Maps components to prevent SSR issues
+const SuperSimpleMap = dynamic(() => import('./SuperSimpleMap'), {
+  ssr: false,
+  loading: () => <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+    <div className="text-center">
+      <div className="animate-spin h-6 w-6 border-2 border-gray-400 border-t-transparent rounded-full mx-auto mb-2"></div>
+      <p className="text-gray-600 text-sm">Loading map...</p>
+    </div>
+  </div>
+});
+
 const SimpleAutocomplete = dynamic(() => import('./SimpleAutocomplete'), {
   ssr: false,
   loading: () => <div className="animate-pulse bg-gray-200 h-12 rounded"></div>
@@ -17,6 +28,9 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [currentPricing, setCurrentPricing] = useState(null);
+  const [routeInfo, setRouteInfo] = useState(null);
+  const [selectedClient, setSelectedClient] = useState(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -31,7 +45,8 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
     isRoundTrip: trip?.is_round_trip || false,
     returnTime: trip?.return_pickup_time ? new Date(trip.return_pickup_time).toTimeString().slice(0,5) : '',
     tripNotes: trip?.trip_notes || '',
-    billTo: trip?.bill_to || 'facility'
+    billTo: trip?.bill_to || 'facility',
+    isEmergency: false
   });
 
   // Wheelchair selection data
@@ -54,6 +69,14 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
         pickupDate: dateStr,
         pickupTime: timeStr
       }));
+    }
+
+    // Set up a mock client for pricing calculations
+    if (trip) {
+      setSelectedClient({
+        client_type: 'facility', // Since this is from facility app
+        id: trip.user_id || trip.managed_client_id
+      });
     }
   }, [trip]);
 
@@ -136,6 +159,13 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
         is_round_trip: formData.isRoundTrip,
         trip_notes: formData.tripNotes.trim() || null,
         bill_to: formData.billTo,
+        // Add pricing information if available
+        price: currentPricing?.pricing?.total || trip?.price || null,
+        distance: routeInfo?.distance?.miles || currentPricing?.distance?.distance || trip?.distance || null,
+        // Add route information from map if available
+        route_duration: routeInfo?.duration?.text || trip?.route_duration || null,
+        route_distance_text: routeInfo?.distance?.text || trip?.route_distance_text || null,
+        route_duration_text: routeInfo?.duration?.text || trip?.route_duration_text || null,
         updated_at: new Date().toISOString()
       };
 
@@ -172,7 +202,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-[#24393C] rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-[#24393C] rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5]">
@@ -298,6 +328,20 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
               </div>
             </div>
 
+            {/* Route Map Display */}
+            {formData.pickupAddress && formData.destinationAddress && (
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                  Route Overview
+                </label>
+                <SuperSimpleMap
+                  origin={formData.pickupAddress}
+                  destination={formData.destinationAddress}
+                  onRouteCalculated={setRouteInfo}
+                />
+              </div>
+            )}
+
             {/* Round Trip */}
             <div>
               <label className="flex items-center space-x-3">
@@ -357,6 +401,26 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
               />
             </div>
 
+            {/* Emergency Trip Option */}
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-lg p-4">
+              <label className="flex items-start space-x-3">
+                <input
+                  type="checkbox"
+                  checked={formData.isEmergency}
+                  onChange={(e) => setFormData({ ...formData, isEmergency: e.target.checked })}
+                  className="mt-1 w-4 h-4 text-red-600 border-red-300 rounded focus:ring-red-500"
+                  disabled={loading}
+                />
+                <div>
+                  <span className="text-red-800 dark:text-red-300 font-medium">🚨 Emergency Trip</span>
+                  <p className="text-sm text-red-700 dark:text-red-400 mt-1">
+                    Check this box if this is an emergency trip requiring immediate attention.
+                    <span className="font-medium"> Additional $40 emergency fee applies.</span>
+                  </p>
+                </div>
+              </label>
+            </div>
+
             {/* Notes */}
             <div>
               <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
@@ -402,6 +466,14 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                 </label>
               </div>
             </div>
+
+            {/* Pricing Display */}
+            <PricingDisplay 
+              formData={formData}
+              selectedClient={selectedClient}
+              routeInfo={routeInfo}
+              onPricingCalculated={setCurrentPricing}
+            />
 
             {/* Action Buttons */}
             <div className="flex space-x-3 pt-6 border-t border-[#DDE5E7] dark:border-[#3F5E63]">
