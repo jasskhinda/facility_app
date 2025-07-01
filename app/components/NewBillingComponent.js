@@ -177,10 +177,67 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         console.log('🔄 Real-time billing subscription status:', status);
       });
 
-    // Cleanup subscription on unmount or dependency change
+    // Subscribe to facility_invoices changes (for payment status updates)
+    const invoiceSubscription = supabase
+      .channel('billing-invoice-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'facility_invoices',
+          filter: `facility_id=eq.${facilityId}`
+        },
+        (payload) => {
+          console.log('🔄 Real-time invoice status update received:', payload);
+          
+          if (payload.new && payload.old) {
+            const updatedInvoice = payload.new;
+            const oldInvoice = payload.old;
+            
+            // Check if this invoice is for the current month
+            if (updatedInvoice.month === selectedMonth) {
+              console.log(`🔄 Invoice payment status changed: ${oldInvoice.payment_status} → ${updatedInvoice.payment_status}`);
+              
+              // Update the invoice status immediately
+              setInvoiceStatus(updatedInvoice.payment_status);
+              
+              // Show appropriate message based on status change
+              if (updatedInvoice.payment_status === 'UNPAID' && oldInvoice.payment_status && oldInvoice.payment_status.includes('PAID')) {
+                setError('❌ Our dispatchers were unable to verify the payment. Please retry or contact us at billing@compassionatecaretransportation.com');
+                setSuccessMessage('');
+              } else if (updatedInvoice.payment_status === 'PENDING' && oldInvoice.payment_status !== 'PENDING') {
+                setError('⚠️ Payment status requires attention. Please retry payment or contact support.');
+                setSuccessMessage('');
+              } else if (updatedInvoice.payment_status === 'NEEDS ATTENTION - RETRY PAYMENT') {
+                setError('⚠️ Our dispatchers were unable to verify the payment. Please retry or contact us at billing@compassionatecaretransportation.com');
+                setSuccessMessage('');
+              } else if (updatedInvoice.payment_status.includes('PAID') && !oldInvoice.payment_status.includes('PAID')) {
+                setSuccessMessage('✅ Payment verified and processed successfully!');
+                setError('');
+              }
+              
+              // Refresh invoice status and history
+              fetchInvoiceStatus();
+              
+              // Clear messages after 8 seconds
+              setTimeout(() => {
+                setSuccessMessage('');
+                setError('');
+              }, 8000);
+            }
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('🔄 Real-time invoice subscription status:', status);
+      });
+
+    // Cleanup subscriptions on unmount or dependency change
     return () => {
-      console.log('🔄 Cleaning up real-time billing subscription...');
+      console.log('🔄 Cleaning up real-time billing subscriptions...');
       subscription.unsubscribe();
+      invoiceSubscription.unsubscribe();
     };
   }, [facilityId, selectedMonth, supabase]);
 
@@ -1005,6 +1062,7 @@ ${monthlyTrips.map(trip => {
                 invoiceStatus === 'PAID' ? 'bg-green-100 text-green-800' :
                 invoiceStatus === 'PAID WITH CHECK - VERIFIED' ? 'bg-blue-100 text-blue-800' :
                 invoiceStatus === 'PENDING' ? 'bg-orange-100 text-orange-800' :
+                invoiceStatus === 'NEEDS ATTENTION - RETRY PAYMENT' ? 'bg-red-100 text-red-800' :
                 'bg-gray-100 text-gray-800'
               }`}>
                 {invoiceStatus}
@@ -1044,7 +1102,7 @@ ${monthlyTrips.map(trip => {
           {/* Pay Monthly Invoice Button */}
           <button
             onClick={openPaymentModal}
-            disabled={loading || totalAmount <= 0 || (invoiceStatus !== 'UNPAID' && invoiceStatus !== 'PENDING')}
+            disabled={loading || totalAmount <= 0 || (!['UNPAID', 'PENDING', 'NEEDS ATTENTION - RETRY PAYMENT'].includes(invoiceStatus))}
             className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
