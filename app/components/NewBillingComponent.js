@@ -41,6 +41,35 @@ export default function FacilityBillingComponent({ user, facilityId }) {
 
   const supabase = createClientSupabase();
 
+  // Generate professional invoice number for a given month and facility
+  const generateInvoiceNumber = (month, facilityIdShort, facilityName) => {
+    // Format: CCT-YYYYMM-FACILITY-XXXXX
+    // Example: CCT-202507-JOH01-A1B2C (for John's Facility)
+    const [year, monthNum] = month.split('-');
+    
+    // Create facility code from facility name or use facility ID
+    let facilityCode = 'FAC01';
+    if (facilityName && facilityName.length > 0) {
+      // Extract first 3 letters of facility name and add sequence number
+      const nameCode = facilityName.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase();
+      facilityCode = `${nameCode}01`;
+    } else if (facilityIdShort) {
+      facilityCode = facilityIdShort.substring(0, 5).toUpperCase();
+    }
+    
+    // Use a more deterministic suffix based on month and facility for consistency
+    const seedString = `${month}-${facilityId}`;
+    let hash = 0;
+    for (let i = 0; i < seedString.length; i++) {
+      const char = seedString.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    const deterministicSuffix = Math.abs(hash).toString(36).substring(0, 5).toUpperCase().padEnd(5, '0');
+    
+    return `CCT-${year}${monthNum}-${facilityCode}-${deterministicSuffix}`;
+  };
+
   // Initialize selectedMonth
   useEffect(() => {
     // Use actual current date for accurate month initialization
@@ -50,10 +79,6 @@ export default function FacilityBillingComponent({ user, facilityId }) {
     
     setSelectedMonth(currentMonth);
     setDisplayMonth(currentMonthDisplay);
-    
-    // Generate invoice number for this month
-    const invoiceNum = `CCT-${currentMonth}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-    setInvoiceNumber(invoiceNum);
     
     console.log('📅 Initialized billing component to:', currentMonth, `(${currentMonthDisplay})`);
   }, []);
@@ -714,9 +739,27 @@ ${monthlyTrips.map(trip => {
         const latestInvoice = data[0];
         setInvoiceStatus(latestInvoice.payment_status || 'UNPAID');
         setInvoiceHistory(data);
+        
+        // Use existing invoice number or generate one if missing
+        if (latestInvoice.invoice_number) {
+          setInvoiceNumber(latestInvoice.invoice_number);
+        } else {
+          const newInvoiceNumber = generateInvoiceNumber(selectedMonth, facilityId, facility?.name);
+          setInvoiceNumber(newInvoiceNumber);
+          
+          // Update the invoice record with the new number
+          await supabase
+            .from('facility_invoices')
+            .update({ invoice_number: newInvoiceNumber })
+            .eq('id', latestInvoice.id);
+        }
       } else {
         setInvoiceStatus('UNPAID');
         setInvoiceHistory([]);
+        
+        // Generate invoice number for new invoice
+        const newInvoiceNumber = generateInvoiceNumber(selectedMonth, facilityId, facility?.name);
+        setInvoiceNumber(newInvoiceNumber);
       }
 
     } catch (err) {
