@@ -153,14 +153,7 @@ Website: https://compassionatecaretransportation.com
         // Build trip query based on user role (same logic as trips list page)
         let tripQuery = supabase
           .from('trips')
-          .select(`
-            *,
-            editor:last_edited_by(
-              id,
-              first_name,
-              last_name
-            )
-          `)
+          .select('*')
           .eq('id', tripId);
         
         // For facility users, allow access to any trip for their facility
@@ -227,6 +220,19 @@ Website: https://compassionatecaretransportation.com
               id: enhancedTripData.driver_id,
               profile: driverData
             };
+          }
+        }
+        
+        // If trip has a last_edited_by, fetch editor information
+        if (enhancedTripData.last_edited_by) {
+          const { data: editorData } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name')
+            .eq('id', enhancedTripData.last_edited_by)
+            .single();
+            
+          if (editorData) {
+            enhancedTripData.editor = editorData;
           }
         }
         
