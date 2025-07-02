@@ -114,7 +114,7 @@ export async function POST(request) {
       paymentNote += ` This is a mid-month payment - additional trips completed after this payment will be billed separately.`
     }
 
-    // Record check payment in database (with error handling for missing table)
+    // Record professional check payment in database
     try {
       const { error: paymentError } = await supabase
         .from('facility_invoice_payments')
@@ -132,12 +132,18 @@ export async function POST(request) {
         })
 
       if (paymentError) {
-        console.error('Error recording check payment in facility_invoice_payments:', paymentError)
-        // Continue anyway - the main invoice record is more important
+        console.error('Error recording check payment:', paymentError)
+        return Response.json(
+          { error: 'Failed to record payment details' },
+          { status: 500 }
+        )
       }
     } catch (paymentInsertError) {
-      console.error('facility_invoice_payments table may not exist:', paymentInsertError)
-      // Continue anyway - this is just for detailed payment tracking
+      console.error('Error inserting payment record:', paymentInsertError)
+      return Response.json(
+        { error: 'Failed to record payment' },
+        { status: 500 }
+      )
     }
 
     // Update or create invoice record
@@ -157,60 +163,52 @@ export async function POST(request) {
     }
 
     if (existingInvoice) {
-      // Update existing invoice with core fields only
-      const updateData = {
-        payment_status: paymentStatus,
-        last_updated: new Date().toISOString()
-      }
-
-      // Add optional fields only if they exist in schema
-      try {
-        updateData.payment_notes = paymentNote
-        updateData.partial_month_payment = isPartialMonthPayment
-      } catch (e) {
-        console.log('Some optional fields may not exist in schema')
-      }
-
-      const { error: updateError } = await supabase
-        .from('facility_invoices')
-        .update(updateData)
-        .eq('id', existingInvoice.id)
+      // Update existing invoice using professional audit function
+      const { error: updateError } = await supabase.rpc('update_payment_status_with_audit', {
+        p_invoice_id: existingInvoice.id,
+        p_new_status: paymentStatus,
+        p_user_id: userData.user.id,
+        p_user_role: 'facility',
+        p_notes: paymentNote
+      })
 
       if (updateError) {
         console.error('Error updating existing invoice:', updateError)
         return Response.json(
-          { error: `Failed to update invoice status: ${updateError.message}` },
+          { error: 'Failed to update invoice status' },
           { status: 500 }
         )
       }
+
+      // Also update the additional fields directly
+      await supabase
+        .from('facility_invoices')
+        .update({ 
+          partial_month_payment: isPartialMonthPayment,
+          check_submission_type: check_submission_type,
+          check_details: check_details || null
+        })
+        .eq('id', existingInvoice.id)
     } else {
-      // Create new invoice with core fields only
-      const insertData = {
-        facility_id: facility_id,
-        invoice_number: invoice_number,
-        month: month,
-        total_amount: amount,
-        payment_status: paymentStatus,
-        created_at: new Date().toISOString(),
-        last_updated: new Date().toISOString()
-      }
-
-      // Add optional fields only if needed
-      try {
-        insertData.payment_notes = paymentNote
-        insertData.partial_month_payment = isPartialMonthPayment
-      } catch (e) {
-        console.log('Some optional fields may not exist in schema')
-      }
-
+      // Create new invoice with professional tracking
       const { error: createError } = await supabase
         .from('facility_invoices')
-        .insert(insertData)
+        .insert({
+          facility_id: facility_id,
+          invoice_number: invoice_number,
+          month: month,
+          total_amount: amount,
+          payment_status: paymentStatus,
+          payment_notes: paymentNote,
+          partial_month_payment: isPartialMonthPayment,
+          check_submission_type: check_submission_type,
+          check_details: check_details || null
+        })
 
       if (createError) {
         console.error('Error creating new invoice:', createError)
         return Response.json(
-          { error: `Failed to create invoice record: ${createError.message}` },
+          { error: 'Failed to create invoice record' },
           { status: 500 }
         )
       }
