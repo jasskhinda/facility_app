@@ -25,6 +25,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   
   // Enhanced Payment states
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showMidMonthConfirmation, setShowMidMonthConfirmation] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [processingPayment, setProcessingPayment] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -739,17 +740,31 @@ ${monthlyTrips.map(trip => {
     setSuccessMessage('');
   };
 
-  // Payment handlers
+  // Enhanced payment handlers with mid-month confirmation
   const openPaymentModal = () => {
     if (totalAmount <= 0) {
       setError('No amount due for payment');
       return;
     }
     
-    setShowPaymentModal(true);
+    // Check if it's mid-month (before the last day of the current month)
+    const now = new Date();
+    const currentMonth = now.toISOString().slice(0, 7); // YYYY-MM format
+    const isCurrentMonth = selectedMonth === currentMonth;
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const isEndOfMonth = now.getDate() >= lastDayOfMonth - 2; // Last 2 days of month
+
+    // If it's current month and not end of month, show confirmation
+    if (isCurrentMonth && !isEndOfMonth) {
+      setShowMidMonthConfirmation(true);
+    } else {
+      setShowPaymentModal(true);
+    }
+    
     setPaymentError('');
     setError('');
   };
+
 
   // Fetch saved payment methods
   const fetchSavedPaymentMethods = async () => {
@@ -826,7 +841,7 @@ ${monthlyTrips.map(trip => {
     }
   };
 
-  // Enhanced payment handler
+  // Enhanced payment handler with dynamic billing
   const handlePayment = async () => {
     if (!paymentMethod) {
       setPaymentError('Please select a payment method');
@@ -837,13 +852,40 @@ ${monthlyTrips.map(trip => {
     setPaymentError('');
 
     try {
+      // Get current completed trips for payment
+      const billableTrips = monthlyTrips.filter(trip => trip.billable);
+      const now = new Date();
+      const isCurrentMonth = selectedMonth === now.toISOString().slice(0, 7);
+      
+      // Create payment note based on timing
+      let paymentNote = '';
+      if (isCurrentMonth) {
+        const currentDate = now.getDate();
+        const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        
+        if (currentDate < lastDayOfMonth - 2) {
+          paymentNote = `Mid-month payment on ${now.toLocaleDateString('en-US', { 
+            month: 'long', 
+            day: 'numeric', 
+            year: 'numeric' 
+          })} for ${billableTrips.length} completed trips. Additional trips completed after this payment will be billed separately.`;
+        } else {
+          paymentNote = `End-of-month payment for ${billableTrips.length} completed trips in ${displayMonth}.`;
+        }
+      } else {
+        paymentNote = `Payment for ${billableTrips.length} completed trips in ${displayMonth}.`;
+      }
+
       let paymentData = {
         facility_id: facilityId,
         month: selectedMonth,
         amount: totalAmount,
         payment_method: paymentMethod,
         payment_date: new Date().toISOString(),
-        trip_ids: monthlyTrips.filter(trip => trip.billable).map(trip => trip.id)
+        trip_ids: billableTrips.map(trip => trip.id),
+        payment_note: paymentNote,
+        trips_paid_count: billableTrips.length,
+        partial_month_payment: isCurrentMonth && now.getDate() < 25 // Flag for mid-month payments
       };
 
       if (paymentMethod === 'credit_card' || paymentMethod === 'saved_card') {
@@ -858,7 +900,12 @@ ${monthlyTrips.map(trip => {
         
         paymentData.status = 'PAID WITH CARD';
         setInvoiceStatus('PAID WITH CARD');
-        setSuccessMessage(`Payment of $${totalAmount.toFixed(2)} processed successfully with credit card`);
+        
+        if (paymentData.partial_month_payment) {
+          setSuccessMessage(`Mid-month payment of $${totalAmount.toFixed(2)} processed successfully! New completed trips will be added to your next bill.`);
+        } else {
+          setSuccessMessage(`Payment of $${totalAmount.toFixed(2)} processed successfully with credit card`);
+        }
 
       } else if (paymentMethod === 'bank_transfer') {
         // Process ACH transfer
@@ -866,7 +913,12 @@ ${monthlyTrips.map(trip => {
         
         paymentData.status = 'PAID';
         setInvoiceStatus('PAID');
-        setSuccessMessage(`Bank transfer initiated for $${totalAmount.toFixed(2)}. Processing time: 1-3 business days`);
+        
+        if (paymentData.partial_month_payment) {
+          setSuccessMessage(`Mid-month bank transfer of $${totalAmount.toFixed(2)} initiated! New completed trips will be added to your next bill. Processing time: 1-3 business days`);
+        } else {
+          setSuccessMessage(`Bank transfer initiated for $${totalAmount.toFixed(2)}. Processing time: 1-3 business days`);
+        }
 
       } else if (paymentMethod === 'check_submit') {
         // Submit check payment request
@@ -881,14 +933,14 @@ ${monthlyTrips.map(trip => {
         setSuccessMessage('Check payment marked as sent. Awaiting verification by our dispatch team.');
       }
 
-      // Save payment record
+      // Save payment record with enhanced data
       const { error: insertError } = await supabase
         .from('facility_invoice_payments')
         .insert(paymentData);
 
       if (insertError) throw insertError;
 
-      // Update invoice status
+      // Update invoice status with payment notes
       const { error: updateError } = await supabase
         .from('facility_invoices')
         .upsert({
@@ -896,7 +948,10 @@ ${monthlyTrips.map(trip => {
           month: selectedMonth,
           total_amount: totalAmount,
           payment_status: paymentData.status,
-          last_updated: new Date().toISOString()
+          payment_notes: paymentNote,
+          last_updated: new Date().toISOString(),
+          paid_trip_count: billableTrips.length,
+          payment_date: paymentData.status.includes('PAID') ? new Date().toISOString() : null
         });
 
       if (updateError) throw updateError;
@@ -907,6 +962,7 @@ ${monthlyTrips.map(trip => {
       setTimeout(() => {
         setShowPaymentModal(false);
         setPaymentSuccess(false);
+        setShowMidMonthConfirmation(false);
       }, 3000);
 
     } catch (error) {
@@ -1077,6 +1133,12 @@ ${monthlyTrips.map(trip => {
               <p className="text-xs text-yellow-600 mt-1">
                 Check payment being verified by dispatch team
               </p>
+            )}
+            {invoiceHistory.length > 0 && invoiceHistory[0].payment_notes && (
+              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                <p className="text-blue-700 font-medium">Payment Note:</p>
+                <p className="text-blue-600 mt-1">{invoiceHistory[0].payment_notes}</p>
+              </div>
             )}
           </div>
         </div>
@@ -1453,6 +1515,124 @@ ${monthlyTrips.map(trip => {
                       Send Invoice
                     </>
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mid-Month Payment Confirmation Dialog */}
+      {showMidMonthConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-6 rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold">Confirm Mid-Month Payment</h2>
+                  <p className="text-amber-100 mt-1">Payment for Current Completed Trips</p>
+                </div>
+                <button
+                  onClick={() => setShowMidMonthConfirmation(false)}
+                  className="text-amber-200 hover:text-white transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* Payment Confirmation */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-8 w-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-lg font-bold text-amber-900 mb-2">
+                      Are you sure you want to pay now?
+                    </h3>
+                    <div className="space-y-3 text-sm text-amber-800">
+                      <p className="font-medium">
+                        <strong>Facility bills are typically paid at the end of the month, but you can choose to pay now for currently completed trips.</strong>
+                      </p>
+                      <div className="bg-white p-4 rounded border border-amber-300">
+                        <h4 className="font-semibold text-amber-900 mb-2">What this means:</h4>
+                        <ul className="space-y-2">
+                          <li className="flex items-start">
+                            <span className="text-green-600 mr-2 mt-0.5">✓</span>
+                            <span>You'll pay <strong>${totalAmount.toFixed(2)}</strong> for {monthlyTrips.filter(trip => trip.billable).length} completed trips</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="text-blue-600 mr-2 mt-0.5">ℹ</span>
+                            <span>Any trips completed <strong>after this payment</strong> will be added to your next bill</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="text-amber-600 mr-2 mt-0.5">⚠</span>
+                            <span>This is a <strong>partial month payment</strong> - additional charges may apply for future trips this month</span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Summary */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Payment Summary</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Current Month:</span>
+                    <p className="font-medium text-gray-900">{displayMonth}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Payment Date:</span>
+                    <p className="font-medium text-gray-900">{new Date().toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric', 
+                      year: 'numeric'
+                    })}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Completed Trips:</span>
+                    <p className="font-medium text-gray-900">{monthlyTrips.filter(trip => trip.billable).length}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Amount Due:</span>
+                    <p className="font-bold text-green-600 text-lg">${totalAmount.toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setShowMidMonthConfirmation(false)}
+                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Cancel - I'll Pay at End of Month
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMidMonthConfirmation(false);
+                    setShowPaymentModal(true);
+                  }}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                  Yes, Pay Now for Completed Trips
                 </button>
               </div>
             </div>

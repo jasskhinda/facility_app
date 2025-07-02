@@ -219,7 +219,26 @@ export async function POST(request) {
       }
     }
 
-    // Record payment in database
+    // Enhanced payment recording with notes and trip tracking
+    const now = new Date()
+    const isCurrentMonth = month === now.toISOString().slice(0, 7)
+    const currentDate = now.getDate()
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+    const isPartialMonthPayment = isCurrentMonth && currentDate < lastDayOfMonth - 2
+
+    // Create payment note
+    let paymentNote = ''
+    if (isPartialMonthPayment) {
+      paymentNote = `Mid-month credit card payment on ${now.toLocaleDateString('en-US', { 
+        month: 'long', 
+        day: 'numeric', 
+        year: 'numeric' 
+      })} via Stripe. Payment Intent: ${paymentIntent.id}. Additional trips completed after this payment will be billed separately.`
+    } else {
+      paymentNote = `Credit card payment via Stripe. Payment Intent: ${paymentIntent.id}`
+    }
+
+    // Record enhanced payment data
     const { error: paymentError } = await supabase
       .from('facility_invoice_payments')
       .insert({
@@ -228,7 +247,10 @@ export async function POST(request) {
         payment_method: 'credit_card',
         stripe_payment_intent_id: paymentIntent.id,
         month: month,
-        status: paymentIntent.status === 'succeeded' ? 'completed' : 'pending'
+        status: paymentIntent.status === 'succeeded' ? 'completed' : 'pending',
+        payment_note: paymentNote,
+        partial_month_payment: isPartialMonthPayment,
+        payment_date: new Date().toISOString()
       })
 
     if (paymentError) {
@@ -247,16 +269,30 @@ export async function POST(request) {
         .single()
 
       if (existingInvoice) {
-        // Update existing invoice
+        // Update existing invoice with enhanced notes
+        const updateNotes = isPartialMonthPayment 
+          ? `Mid-month payment processed via Stripe. Payment Intent: ${paymentIntent.id}. Additional trips after this payment will be billed separately.`
+          : `Payment processed via Stripe. Payment Intent: ${paymentIntent.id}`
+          
         await supabase.rpc('update_payment_status_with_audit', {
           p_invoice_id: existingInvoice.id,
           p_new_status: 'PAID WITH CARD',
           p_user_id: userData.user.id,
           p_user_role: 'facility',
-          p_notes: `Payment processed via Stripe. Payment Intent: ${paymentIntent.id}`
+          p_notes: updateNotes
         })
+
+        // Also update the payment_notes field directly
+        await supabase
+          .from('facility_invoices')
+          .update({ 
+            payment_notes: paymentNote,
+            payment_date: new Date().toISOString(),
+            partial_month_payment: isPartialMonthPayment
+          })
+          .eq('id', existingInvoice.id)
       } else {
-        // Create new invoice
+        // Create new invoice with enhanced data
         await supabase
           .from('facility_invoices')
           .insert({
@@ -264,7 +300,10 @@ export async function POST(request) {
             invoice_number: invoice_number,
             month: month,
             total_amount: amount,
-            payment_status: 'PAID WITH CARD'
+            payment_status: 'PAID WITH CARD',
+            payment_notes: paymentNote,
+            payment_date: new Date().toISOString(),
+            partial_month_payment: isPartialMonthPayment
           })
       }
     }
