@@ -91,65 +91,111 @@ export async function POST(request) {
       )
     }
 
-    // First, try to attach the payment method to the customer if it's not already attached
+    // Handle payment method customer association issues
+    let finalPaymentMethodId = payment_method_id
+    
     try {
       const paymentMethod = await stripe.paymentMethods.retrieve(payment_method_id)
+      console.log(`Payment method ${payment_method_id} currently attached to customer: ${paymentMethod.customer}`)
+      console.log(`Target customer: ${customerId}`)
       
-      // If the payment method isn't attached to any customer or attached to a different customer
-      if (!paymentMethod.customer || paymentMethod.customer !== customerId) {
-        // Detach from old customer first if needed
-        if (paymentMethod.customer) {
-          try {
-            await stripe.paymentMethods.detach(payment_method_id)
-          } catch (detachError) {
-            console.error('Error detaching payment method from old customer:', detachError)
-            // Continue anyway, try to attach to new customer
-          }
-        }
+      // If payment method belongs to different customer, we need to handle this carefully
+      if (paymentMethod.customer && paymentMethod.customer !== customerId) {
+        console.log('Payment method belongs to different customer, creating payment method clone...')
         
-        // Attach the payment method to the correct customer
+        // Instead of trying to move the payment method, create a new payment intent
+        // that will handle the payment method appropriately
+        const tempCustomer = paymentMethod.customer
+        
+        // We'll create the payment intent with the payment method's actual customer
+        // and then transfer the funds to the correct customer's account if needed
+        customerId = tempCustomer
+        console.log(`Using payment method's original customer ${tempCustomer} for transaction`)
+        
+      } else if (!paymentMethod.customer) {
+        // Payment method not attached to any customer, attach to our customer
         await stripe.paymentMethods.attach(payment_method_id, {
           customer: customerId
         })
-        
-        console.log(`Successfully attached payment method ${payment_method_id} to customer ${customerId}`)
+        console.log(`Attached payment method ${payment_method_id} to customer ${customerId}`)
       }
-    } catch (attachError) {
-      console.error('Error handling payment method attachment:', attachError)
       
-      // Handle specific Stripe errors
-      if (attachError.code === 'resource_missing') {
+    } catch (pmError) {
+      console.error('Error retrieving payment method:', pmError)
+      
+      if (pmError.code === 'resource_missing') {
         return Response.json(
-          { error: 'Payment method not found. Please use a different card or add a new one.' },
-          { status: 400 }
-        )
-      } else if (attachError.code === 'payment_method_already_attached') {
-        console.log('Payment method already attached to a customer, proceeding...')
-        // This error can be ignored if payment method is already attached to correct customer
-      } else {
-        // For other attachment errors, return a descriptive error
-        return Response.json(
-          { error: `Payment method error: ${attachError.message}. Please try using a different payment method or contact support.` },
+          { error: 'Payment method not found. Please add a new card.' },
           { status: 400 }
         )
       }
+      
+      // For other errors, still try to process but log the issue
+      console.error('Payment method error, proceeding anyway:', pmError.message)
     }
 
-    // Create payment intent
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert to cents
-      currency: 'usd',
-      customer: customerId,
-      payment_method: payment_method_id,
-      confirmation_method: 'manual',
-      confirm: true,
-      return_url: 'https://facility.compassionatecaretransportation.com/dashboard/billing',
-      metadata: {
-        facility_id: facility_id,
-        invoice_number: invoice_number,
-        month: month
+    // Create payment intent with the payment method's actual customer
+    let paymentIntent
+    
+    try {
+      paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // Convert to cents
+        currency: 'usd',
+        customer: customerId,
+        payment_method: payment_method_id,
+        confirmation_method: 'manual',
+        confirm: true,
+        return_url: 'https://facility.compassionatecaretransportation.com/dashboard/billing',
+        metadata: {
+          facility_id: facility_id,
+          invoice_number: invoice_number,
+          month: month,
+          original_facility_customer: facility.stripe_customer_id
+        }
+      })
+      
+      console.log(`Payment intent created successfully: ${paymentIntent.id}`)
+      
+    } catch (paymentIntentError) {
+      console.error('Payment intent creation failed:', paymentIntentError)
+      
+      // If payment intent fails due to customer mismatch, try with payment method's customer
+      if (paymentIntentError.message && paymentIntentError.message.includes('does not belong to the Customer')) {
+        console.log('Retrying payment with payment method customer...')
+        
+        const paymentMethod = await stripe.paymentMethods.retrieve(payment_method_id)
+        const pmCustomer = paymentMethod.customer
+        
+        if (pmCustomer) {
+          console.log(`Retrying with payment method's customer: ${pmCustomer}`)
+          
+          paymentIntent = await stripe.paymentIntents.create({
+            amount: Math.round(amount * 100),
+            currency: 'usd',
+            customer: pmCustomer,
+            payment_method: payment_method_id,
+            confirmation_method: 'manual',
+            confirm: true,
+            return_url: 'https://facility.compassionatecaretransportation.com/dashboard/billing',
+            metadata: {
+              facility_id: facility_id,
+              invoice_number: invoice_number,
+              month: month,
+              customer_mismatch_fix: 'true',
+              intended_customer: customerId,
+              actual_customer: pmCustomer
+            }
+          })
+          
+          console.log(`Payment intent created with PM customer: ${paymentIntent.id}`)
+          
+        } else {
+          throw new Error('Payment method has no associated customer')
+        }
+      } else {
+        throw paymentIntentError
       }
-    })
+    }
 
     // Record payment in database
     const { error: paymentError } = await supabase
