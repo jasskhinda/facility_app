@@ -93,31 +93,33 @@ export async function POST(request) {
 
     // Handle payment method customer association issues
     let finalPaymentMethodId = payment_method_id
+    let shouldCreateNewPaymentMethod = false
     
     try {
       const paymentMethod = await stripe.paymentMethods.retrieve(payment_method_id)
       console.log(`Payment method ${payment_method_id} currently attached to customer: ${paymentMethod.customer}`)
       console.log(`Target customer: ${customerId}`)
       
-      // If payment method belongs to different customer, we need to handle this carefully
-      if (paymentMethod.customer && paymentMethod.customer !== customerId) {
-        console.log('Payment method belongs to different customer, creating payment method clone...')
-        
-        // Instead of trying to move the payment method, create a new payment intent
-        // that will handle the payment method appropriately
-        const tempCustomer = paymentMethod.customer
-        
-        // We'll create the payment intent with the payment method's actual customer
-        // and then transfer the funds to the correct customer's account if needed
-        customerId = tempCustomer
-        console.log(`Using payment method's original customer ${tempCustomer} for transaction`)
-        
-      } else if (!paymentMethod.customer) {
-        // Payment method not attached to any customer, attach to our customer
-        await stripe.paymentMethods.attach(payment_method_id, {
-          customer: customerId
-        })
-        console.log(`Attached payment method ${payment_method_id} to customer ${customerId}`)
+      // Check if payment method is detached or unusable
+      if (!paymentMethod.customer) {
+        console.log('Payment method is detached, attempting to reattach...')
+        try {
+          await stripe.paymentMethods.attach(payment_method_id, {
+            customer: customerId
+          })
+          console.log(`Successfully reattached payment method ${payment_method_id} to customer ${customerId}`)
+        } catch (attachError) {
+          console.error('Failed to reattach payment method:', attachError)
+          if (attachError.code === 'payment_method_unattachable') {
+            console.log('Payment method cannot be reused, will create new one')
+            shouldCreateNewPaymentMethod = true
+          } else {
+            throw attachError
+          }
+        }
+      } else if (paymentMethod.customer !== customerId) {
+        console.log('Payment method belongs to different customer, using that customer for payment')
+        customerId = paymentMethod.customer
       }
       
     } catch (pmError) {
@@ -132,6 +134,17 @@ export async function POST(request) {
       
       // For other errors, still try to process but log the issue
       console.error('Payment method error, proceeding anyway:', pmError.message)
+    }
+    
+    // If we need to create a new payment method, return error asking user to add new card
+    if (shouldCreateNewPaymentMethod) {
+      return Response.json(
+        { 
+          error: 'This payment method is no longer usable. Please remove it and add a new card.',
+          code: 'payment_method_unusable'
+        },
+        { status: 400 }
+      )
     }
 
     // Create payment intent with the payment method's actual customer
@@ -159,7 +172,7 @@ export async function POST(request) {
     } catch (paymentIntentError) {
       console.error('Payment intent creation failed:', paymentIntentError)
       
-      // If payment intent fails due to customer mismatch, try with payment method's customer
+      // Handle different types of payment method errors
       if (paymentIntentError.message && paymentIntentError.message.includes('does not belong to the Customer')) {
         console.log('Retrying payment with payment method customer...')
         
@@ -192,6 +205,15 @@ export async function POST(request) {
         } else {
           throw new Error('Payment method has no associated customer')
         }
+      } else if (paymentIntentError.message && paymentIntentError.message.includes('was previously used with a PaymentIntent without Customer attachment')) {
+        // Payment method is detached/unusable
+        return Response.json(
+          { 
+            error: 'This saved payment method is no longer valid. Please remove it and add a new card to continue.',
+            code: 'payment_method_detached'
+          },
+          { status: 400 }
+        )
       } else {
         throw paymentIntentError
       }
