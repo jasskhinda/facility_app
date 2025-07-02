@@ -63,7 +63,8 @@ export async function POST(request) {
         email: facility.billing_email,
         name: facility.name,
         metadata: {
-          facility_id: facility_id
+          facility_id: facility_id,
+          type: 'facility'
         }
       })
 
@@ -74,6 +75,20 @@ export async function POST(request) {
         .from('facilities')
         .update({ stripe_customer_id: customerId })
         .eq('id', facility_id)
+      
+      console.log(`Created new Stripe customer ${customerId} for facility ${facility_id}`)
+    }
+
+    // Verify the customer exists in Stripe and get the latest information
+    try {
+      const stripeCustomer = await stripe.customers.retrieve(customerId)
+      console.log(`Using Stripe customer: ${customerId} for facility: ${facility_id}`)
+    } catch (customerError) {
+      console.error('Stripe customer error:', customerError)
+      return Response.json(
+        { error: 'Invalid customer. Please contact support.' },
+        { status: 400 }
+      )
     }
 
     // First, try to attach the payment method to the customer if it's not already attached
@@ -82,17 +97,39 @@ export async function POST(request) {
       
       // If the payment method isn't attached to any customer or attached to a different customer
       if (!paymentMethod.customer || paymentMethod.customer !== customerId) {
-        // Attach the payment method to the customer
+        // Detach from old customer first if needed
+        if (paymentMethod.customer) {
+          try {
+            await stripe.paymentMethods.detach(payment_method_id)
+          } catch (detachError) {
+            console.error('Error detaching payment method from old customer:', detachError)
+            // Continue anyway, try to attach to new customer
+          }
+        }
+        
+        // Attach the payment method to the correct customer
         await stripe.paymentMethods.attach(payment_method_id, {
           customer: customerId
         })
+        
+        console.log(`Successfully attached payment method ${payment_method_id} to customer ${customerId}`)
       }
     } catch (attachError) {
-      console.error('Error attaching payment method:', attachError)
-      // If the payment method doesn't exist or can't be attached, return an error
+      console.error('Error handling payment method attachment:', attachError)
+      
+      // Handle specific Stripe errors
       if (attachError.code === 'resource_missing') {
         return Response.json(
           { error: 'Payment method not found. Please use a different card or add a new one.' },
+          { status: 400 }
+        )
+      } else if (attachError.code === 'payment_method_already_attached') {
+        console.log('Payment method already attached to a customer, proceeding...')
+        // This error can be ignored if payment method is already attached to correct customer
+      } else {
+        // For other attachment errors, return a descriptive error
+        return Response.json(
+          { error: `Payment method error: ${attachError.message}. Please try using a different payment method or contact support.` },
           { status: 400 }
         )
       }
