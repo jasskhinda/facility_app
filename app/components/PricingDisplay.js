@@ -171,8 +171,8 @@ export default function PricingDisplay({
                 <div 
                   key={index} 
                   className={`flex justify-between items-center py-1 ${
-                    item.type === 'total' ? 'border-t border-[#DDE5E7] dark:border-[#3F5E63] pt-2 font-semibold' :
-                    item.type === 'subtotal' ? 'border-t border-[#DDE5E7] dark:border-[#3F5E63] pt-2' : ''
+                    item.type === 'total' ? 'border-t border-[#DDE5E7] dark:border-[#E0E0E0] pt-2 font-semibold' :
+                    item.type === 'subtotal' ? 'border-t border-[#DDE5E7] dark:border-[#E0E0E0] pt-2' : ''
                   }`}
                 >
                   <span className={`text-sm ${

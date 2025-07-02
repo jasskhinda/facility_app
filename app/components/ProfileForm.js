@@ -154,7 +154,7 @@ export default function ProfileForm({ user, profile = {} }) {
 
   return (
     <DashboardLayout user={user} activeTab="settings">
-      <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6 mb-6">
+      <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#E0E0E0] p-6 mb-6">
         <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900 mb-6">Account Settings</h2>
         
         {message.text && (
@@ -184,7 +184,7 @@ export default function ProfileForm({ user, profile = {} }) {
                     required
                     value={formData.first_name}
                     onChange={handleChange}
-                    className="w-full p-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md  text-[#2E4F54] text-gray-900"
+                    className="w-full p-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md  text-[#2E4F54] text-gray-900"
                   />
                 </div>
                 
@@ -199,7 +199,7 @@ export default function ProfileForm({ user, profile = {} }) {
                     required
                     value={formData.last_name}
                     onChange={handleChange}
-                    className="w-full p-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md  text-[#2E4F54] text-gray-900"
+                    className="w-full p-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md  text-[#2E4F54] text-gray-900"
                   />
                 </div>
                 
@@ -213,7 +213,7 @@ export default function ProfileForm({ user, profile = {} }) {
                     type="tel"
                     value={formData.phone_number}
                     onChange={handleChange}
-                    className="w-full p-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md  text-[#2E4F54] text-gray-900"
+                    className="w-full p-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md  text-[#2E4F54] text-gray-900"
                   />
                 </div>
                 
@@ -227,7 +227,7 @@ export default function ProfileForm({ user, profile = {} }) {
                     type="text"
                     value={formData.address}
                     onChange={handleChange}
-                    className="w-full p-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md  text-[#2E4F54] text-gray-900"
+                    className="w-full p-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md  text-[#2E4F54] text-gray-900"
                   />
                 </div>
                 
@@ -241,7 +241,7 @@ export default function ProfileForm({ user, profile = {} }) {
                     type="text"
                     value={formData.emergency_contact}
                     onChange={handleChange}
-                    className="w-full p-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md  text-[#2E4F54] text-gray-900"
+                    className="w-full p-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md  text-[#2E4F54] text-gray-900"
                   />
                 </div>
               </div>
@@ -261,7 +261,7 @@ export default function ProfileForm({ user, profile = {} }) {
                     rows={3}
                     value={formData.accessibility_needs}
                     onChange={handleChange}
-                    className="w-full p-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md  text-[#2E4F54] text-gray-900"
+                    className="w-full p-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md  text-[#2E4F54] text-gray-900"
                     placeholder="e.g., Wheelchair accessible, Assistance getting in/out of vehicle"
                   ></textarea>
                 </div>
@@ -276,7 +276,7 @@ export default function ProfileForm({ user, profile = {} }) {
                     rows={3}
                     value={formData.medical_requirements}
                     onChange={handleChange}
-                    className="w-full p-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md  text-[#2E4F54] text-gray-900"
+                    className="w-full p-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md  text-[#2E4F54] text-gray-900"
                     placeholder="e.g., Oxygen tank, Medical equipment storage"
                   ></textarea>
                 </div>
@@ -296,7 +296,7 @@ export default function ProfileForm({ user, profile = {} }) {
                     name="preferred_payment_method"
                     value={formData.preferred_payment_method}
                     onChange={handleChange}
-                    className="w-full p-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md  text-[#2E4F54] text-gray-900"
+                    className="w-full p-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md  text-[#2E4F54] text-gray-900"
                   >
                     <option value="">Select a payment method</option>
                     <option value="credit_card">Credit Card</option>
@@ -309,7 +309,7 @@ export default function ProfileForm({ user, profile = {} }) {
                   </p>
                   <Link
                     href="/dashboard/payment-methods"
-                    className="inline-flex items-center px-4 py-2 border border-[#DDE5E7] shadow-sm text-sm font-medium rounded-md text-[#2E4F54] bg-white hover:bg-[#F8F9FA] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7CCFD0]  text-gray-900 dark:border-[#3F5E63] dark:hover:bg-[#24393C]"
+                    className="inline-flex items-center px-4 py-2 border border-[#DDE5E7] shadow-sm text-sm font-medium rounded-md text-[#2E4F54] bg-white hover:bg-[#F8F9FA] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7CCFD0]  text-gray-900 dark:border-[#E0E0E0] dark:hover:bg-[#24393C]"
                   >
                     <svg className="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -334,21 +334,21 @@ export default function ProfileForm({ user, profile = {} }) {
       </div>
       
       {/* Account Section */}
-      <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
+      <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#E0E0E0] p-6">
         <h3 className="text-lg font-medium text-[#2E4F54] text-gray-900 mb-4">Account Information</h3>
         <div className="mb-4">
           <div className="text-sm text-[#2E4F54]/70 text-gray-900/70">Email</div>
           <div className="font-medium text-[#2E4F54] text-gray-900">{user.email}</div>
         </div>
         
-        <div className="border-t border-[#DDE5E7] dark:border-[#3F5E63] pt-4 mt-4">
+        <div className="border-t border-[#DDE5E7] dark:border-[#E0E0E0] pt-4 mt-4">
           <h4 className="text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">Password</h4>
           <p className="text-sm text-[#2E4F54]/70 text-gray-900/70 mb-4">
             You can update your password from the change password page.
           </p>
           <a
             href="/update-password"
-            className="inline-flex items-center px-4 py-2 border border-[#DDE5E7] shadow-sm text-sm font-medium rounded-md text-[#2E4F54] bg-white hover:bg-[#F8F9FA] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7CCFD0]  text-gray-900 dark:border-[#3F5E63] dark:hover:bg-[#24393C]"
+            className="inline-flex items-center px-4 py-2 border border-[#DDE5E7] shadow-sm text-sm font-medium rounded-md text-[#2E4F54] bg-white hover:bg-[#F8F9FA] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7CCFD0]  text-gray-900 dark:border-[#E0E0E0] dark:hover:bg-[#24393C]"
           >
             Change Password
           </a>

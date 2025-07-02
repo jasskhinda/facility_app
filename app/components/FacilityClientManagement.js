@@ -89,7 +89,7 @@ export default function FacilityClientManagement({ user }) {
     <DashboardLayout user={user} activeTab="clients">
       <div className="space-y-6">
         {/* Header */}
-        <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
+        <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0] p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold text-[#2E4F54] text-gray-900">
@@ -109,19 +109,19 @@ export default function FacilityClientManagement({ user }) {
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] p-4">
+        <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0] p-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <input
                 type="text"
                 placeholder="Search by name, phone, or email..."
-                className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 placeholder-[#2E4F54]/50 dark:placeholder-[#E0F4F5]/50 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 placeholder-[#2E4F54]/50 dark:placeholder-[#E0F4F5]/50 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <select
-              className="px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+              className="px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
               value={selectedFilter}
               onChange={(e) => setSelectedFilter(e.target.value)}
             >
@@ -133,7 +133,7 @@ export default function FacilityClientManagement({ user }) {
         </div>
 
         {/* Client List */}
-        <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] overflow-hidden">
+        <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0] overflow-hidden">
           {filteredClients.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-lg text-[#2E4F54]/60 text-gray-900/60">
@@ -149,7 +149,7 @@ export default function FacilityClientManagement({ user }) {
               )}
             </div>
           ) : (
-            <div className="divide-y divide-[#DDE5E7] dark:divide-[#3F5E63]">
+            <div className="divide-y divide-[#DDE5E7] dark:divide-[#E0E0E0]">
               {filteredClients.map((client) => (
                 <div key={client.id} className="p-4 hover:bg-gray-50 dark:hover:bg-[#24393C] transition-colors">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -198,13 +198,13 @@ export default function FacilityClientManagement({ user }) {
                         </Link>
                         <Link
                           href={`/dashboard/clients/${client.id}`}
-                          className="px-3 py-1 border border-[#DDE5E7] dark:border-[#3F5E63] hover:bg-gray-50 dark:hover:bg-[#24393C] text-[#2E4F54] text-gray-900 text-sm rounded-lg transition-colors"
+                          className="px-3 py-1 border border-[#DDE5E7] dark:border-[#E0E0E0] hover:bg-gray-50 dark:hover:bg-[#24393C] text-[#2E4F54] text-gray-900 text-sm rounded-lg transition-colors"
                         >
                           View
                         </Link>
                         <Link
                           href={`/dashboard/clients/${client.id}/edit`}
-                          className="px-3 py-1 border border-[#DDE5E7] dark:border-[#3F5E63] hover:bg-gray-50 dark:hover:bg-[#24393C] text-[#2E4F54] text-gray-900 text-sm rounded-lg transition-colors"
+                          className="px-3 py-1 border border-[#DDE5E7] dark:border-[#E0E0E0] hover:bg-gray-50 dark:hover:bg-[#24393C] text-[#2E4F54] text-gray-900 text-sm rounded-lg transition-colors"
                         >
                           Edit
                         </Link>

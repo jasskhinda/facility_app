@@ -54,7 +54,7 @@ export default function RatingForm({ trip, onRatingSubmitted }) {
   };
 
   return (
-    <div className="bg-white  rounded-lg p-4 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
+    <div className="bg-white  rounded-lg p-4 shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0]">
       <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Rate your trip</h3>
       
       {errorMessage && (
@@ -80,7 +80,7 @@ export default function RatingForm({ trip, onRatingSubmitted }) {
                     className={`h-8 w-8 ${
                       (hoverRating || rating) >= star 
                         ? 'text-yellow-400' 
-                        : 'text-[#DDE5E7] dark:text-[#3F5E63]'
+                        : 'text-[#DDE5E7] dark:text-[#E0E0E0]'
                     }`}
                     fill="currentColor"
                     viewBox="0 0 20 20"
@@ -107,7 +107,7 @@ export default function RatingForm({ trip, onRatingSubmitted }) {
           </label>
           <textarea
             rows={3}
-            className="w-full p-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md  text-[#2E4F54] text-gray-900"
+            className="w-full p-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md  text-[#2E4F54] text-gray-900"
             placeholder="Tell us about your experience..."
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}

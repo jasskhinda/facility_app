@@ -274,7 +274,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                   value={formData.pickupDate}
                   onChange={(e) => setFormData({ ...formData, pickupDate: e.target.value })}
                   min={today}
-                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   required
                   disabled={loading}
                 />
@@ -287,7 +287,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                 <select
                   value={formData.pickupTime}
                   onChange={(e) => setFormData({ ...formData, pickupTime: e.target.value })}
-                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   required
                   disabled={loading}
                 >
@@ -309,7 +309,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                   value={formData.pickupAddress}
                   onChange={(value) => setFormData({ ...formData, pickupAddress: value })}
                   placeholder="Enter pickup address"
-                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   required
                   disabled={loading}
                 />
@@ -318,7 +318,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                   value={formData.pickupDetails}
                   onChange={(e) => setFormData({ ...formData, pickupDetails: e.target.value })}
                   placeholder="Apartment, suite, building entrance, etc. (optional)"
-                  className="mt-2 w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className="mt-2 w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   disabled={loading}
                 />
               </div>
@@ -331,7 +331,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                   value={formData.destinationAddress}
                   onChange={(value) => setFormData({ ...formData, destinationAddress: value })}
                   placeholder="Enter destination address"
-                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   required
                   disabled={loading}
                 />
@@ -340,7 +340,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                   value={formData.destinationDetails}
                   onChange={(e) => setFormData({ ...formData, destinationDetails: e.target.value })}
                   placeholder="Building, entrance, room number, etc. (optional)"
-                  className="mt-2 w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className="mt-2 w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   disabled={loading}
                 />
               </div>
@@ -381,7 +381,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                   <select
                     value={formData.returnTime}
                     onChange={(e) => setFormData({ ...formData, returnTime: e.target.value })}
-                    className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                    className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                     disabled={loading}
                   >
                     <option value="">Select return time...</option>
@@ -414,7 +414,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                 max="3"
                 value={formData.additionalPassengers}
                 onChange={(e) => setFormData({ ...formData, additionalPassengers: parseInt(e.target.value) || 0 })}
-                className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                 disabled={loading}
               />
             </div>
@@ -449,7 +449,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                 onChange={(e) => setFormData({ ...formData, tripNotes: e.target.value })}
                 placeholder="Special instructions, medical equipment, etc."
                 rows={3}
-                className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                 disabled={loading}
               />
             </div>
@@ -494,12 +494,12 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
             />
 
             {/* Action Buttons */}
-            <div className="flex space-x-3 pt-6 border-t border-[#DDE5E7] dark:border-[#3F5E63]">
+            <div className="flex space-x-3 pt-6 border-t border-[#DDE5E7] dark:border-[#E0E0E0]">
               <button
                 type="button"
                 onClick={onCancel}
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-[#F8F9FA]  text-[#2E4F54] text-gray-900 rounded-lg hover:bg-[#DDE5E7] dark:hover:bg-[#3F5E63]/50 transition-colors disabled:opacity-50 border border-[#DDE5E7] dark:border-[#3F5E63]"
+                className="flex-1 px-4 py-2 bg-[#F8F9FA]  text-[#2E4F54] text-gray-900 rounded-lg hover:bg-[#DDE5E7] dark:hover:bg-[#E0E0E0]/50 transition-colors disabled:opacity-50 border border-[#DDE5E7] dark:border-[#E0E0E0]"
               >
                 Cancel
               </button>

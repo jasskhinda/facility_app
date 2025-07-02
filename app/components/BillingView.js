@@ -306,7 +306,7 @@ export default function BillingView() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B5B63] dark:border-[#84CED3]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7CCFD0] dark:border-[#84CED3]"></div>
       </div>
     );
   }
@@ -316,11 +316,11 @@ export default function BillingView() {
       {/* Enhanced Header with summary */}
       {summary && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
+          <div className="bg-white dark:bg-[#FFFFFF] p-6 rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0]">
             <div className="flex items-center">
               <div className="flex-1">
-                <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Total Trip Revenue</h3>
-                <p className="text-2xl font-bold text-[#3B5B63] dark:text-white mt-2">
+                <h3 className="text-sm font-medium text-[#7CCFD0] dark:text-[#84CED3]">Total Trip Revenue</h3>
+                <p className="text-2xl font-bold text-[#7CCFD0] dark:text-white mt-2">
                   {formatCurrency(summary.total_amount)}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -331,10 +331,10 @@ export default function BillingView() {
             </div>
           </div>
           
-          <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
+          <div className="bg-white dark:bg-[#FFFFFF] p-6 rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0]">
             <div className="flex items-center">
               <div className="flex-1">
-                <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Completed Trips</h3>
+                <h3 className="text-sm font-medium text-[#7CCFD0] dark:text-[#84CED3]">Completed Trips</h3>
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-2">
                   {formatCurrency(summary.paid_amount)}
                 </p>
@@ -346,10 +346,10 @@ export default function BillingView() {
             </div>
           </div>
           
-          <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
+          <div className="bg-white dark:bg-[#FFFFFF] p-6 rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0]">
             <div className="flex items-center">
               <div className="flex-1">
-                <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Pending Trips</h3>
+                <h3 className="text-sm font-medium text-[#7CCFD0] dark:text-[#84CED3]">Pending Trips</h3>
                 <p className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-2">
                   {formatCurrency(summary.outstanding_amount)}
                 </p>
@@ -361,10 +361,10 @@ export default function BillingView() {
             </div>
           </div>
           
-          <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
+          <div className="bg-white dark:bg-[#FFFFFF] p-6 rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0]">
             <div className="flex items-center">
               <div className="flex-1">
-                <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Cancelled</h3>
+                <h3 className="text-sm font-medium text-[#7CCFD0] dark:text-[#84CED3]">Cancelled</h3>
                 <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-2">
                   {summary.cancelled_trips}
                 </p>
@@ -379,15 +379,15 @@ export default function BillingView() {
       )}
 
       {/* Enhanced Tabs */}
-      <div className="bg-white dark:bg-[#1E1E1E] rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
+      <div className="bg-white dark:bg-[#FFFFFF] rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0]">
         <div className="border-b border-gray-200 dark:border-gray-700">
           <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
             <button
               onClick={() => setActiveTab('all-bills')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'all-bills'
-                  ? 'border-[#84CED3] text-[#3B5B63] dark:text-[#84CED3]'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-[#3B5B63] dark:hover:text-[#84CED3] hover:border-gray-300 dark:hover:border-gray-600'
+                  ? 'border-[#84CED3] text-[#7CCFD0] dark:text-[#84CED3]'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-[#7CCFD0] dark:hover:text-[#84CED3] hover:border-gray-300 dark:hover:border-gray-600'
               }`}
             >
               📋 All Bills
@@ -396,8 +396,8 @@ export default function BillingView() {
               onClick={() => setActiveTab('invoices')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'invoices'
-                  ? 'border-[#84CED3] text-[#3B5B63] dark:text-[#84CED3]'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-[#3B5B63] dark:hover:text-[#84CED3] hover:border-gray-300 dark:hover:border-gray-600'
+                  ? 'border-[#84CED3] text-[#7CCFD0] dark:text-[#84CED3]'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-[#7CCFD0] dark:hover:text-[#84CED3] hover:border-gray-300 dark:hover:border-gray-600'
               }`}
             >
               📄 Monthly Invoices
@@ -406,8 +406,8 @@ export default function BillingView() {
               onClick={() => setActiveTab('clients')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'clients'
-                  ? 'border-[#84CED3] text-[#3B5B63] dark:text-[#84CED3]'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-[#3B5B63] dark:hover:text-[#84CED3] hover:border-gray-300 dark:hover:border-gray-600'
+                  ? 'border-[#84CED3] text-[#7CCFD0] dark:text-[#84CED3]'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-[#7CCFD0] dark:hover:text-[#84CED3] hover:border-gray-300 dark:hover:border-gray-600'
               }`}
             >
               👥 Client Breakdown
@@ -427,7 +427,7 @@ export default function BillingView() {
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
+                      className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#FFFFFF] text-[#7CCFD0] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
                     >
                       <option value="">All Statuses</option>
                       <option value="UPCOMING">📅 Upcoming</option>
@@ -440,7 +440,7 @@ export default function BillingView() {
                     <select
                       value={clientFilter}
                       onChange={(e) => setClientFilter(e.target.value)}
-                      className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
+                      className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#FFFFFF] text-[#7CCFD0] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
                     >
                       <option value="">All Clients</option>
                       {allClients.map(client => (
@@ -454,7 +454,7 @@ export default function BillingView() {
                     <select
                       value={yearFilter}
                       onChange={(e) => setYearFilter(e.target.value)}
-                      className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
+                      className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#FFFFFF] text-[#7CCFD0] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
                     >
                       {[2024, 2025, 2026].map(year => (
                         <option key={year} value={year}>{year}</option>
@@ -465,7 +465,7 @@ export default function BillingView() {
                     <select
                       value={monthFilter}
                       onChange={(e) => setMonthFilter(e.target.value)}
-                      className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
+                      className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#FFFFFF] text-[#7CCFD0] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
                     >
                       <option value="">All Months</option>
                       {Array.from({ length: 12 }, (_, i) => {
@@ -484,7 +484,7 @@ export default function BillingView() {
                       <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
-                        className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3] text-sm"
+                        className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#FFFFFF] text-[#7CCFD0] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3] text-sm"
                       >
                         <option value="date">Date</option>
                         <option value="amount">Amount</option>
@@ -493,7 +493,7 @@ export default function BillingView() {
                       </select>
                       <button
                         onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-[#3B5B63] dark:hover:text-[#84CED3] transition-colors"
+                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-[#7CCFD0] dark:hover:text-[#84CED3] transition-colors"
                       >
                         {sortOrder === 'asc' ? '↑' : '↓'}
                       </button>
@@ -516,7 +516,7 @@ export default function BillingView() {
                     placeholder="Min ($)"
                     value={amountFilter.min}
                     onChange={(e) => setAmountFilter({ ...amountFilter, min: e.target.value })}
-                    className="w-24 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3] text-sm"
+                    className="w-24 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#FFFFFF] text-[#7CCFD0] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3] text-sm"
                   />
                   <span className="text-gray-400">-</span>
                   <input
@@ -524,7 +524,7 @@ export default function BillingView() {
                     placeholder="Max ($)"
                     value={amountFilter.max}
                     onChange={(e) => setAmountFilter({ ...amountFilter, max: e.target.value })}
-                    className="w-24 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3] text-sm"
+                    className="w-24 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#FFFFFF] text-[#7CCFD0] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3] text-sm"
                   />
                   <button
                     onClick={() => {
@@ -534,7 +534,7 @@ export default function BillingView() {
                       setMonthFilter('');
                       setAmountFilter({ min: '', max: '' });
                     }}
-                    className="text-sm text-gray-500 dark:text-gray-400 hover:text-[#3B5B63] dark:hover:text-[#84CED3] transition-colors"
+                    className="text-sm text-gray-500 dark:text-gray-400 hover:text-[#7CCFD0] dark:hover:text-[#84CED3] transition-colors"
                   >
                     Clear All Filters
                   </button>
@@ -550,7 +550,7 @@ export default function BillingView() {
                     </div>
                     
                     {invoices.map((bill) => (
-                      <div key={bill.id} className="bg-[#F8F9FA] dark:bg-[#2A3A3D] rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63] overflow-hidden">
+                      <div key={bill.id} className="bg-[#F8F9FA] dark:bg-[#F8F9FA] rounded-lg border border-[#DDE5E7] dark:border-[#E0E0E0] overflow-hidden">
                         {/* Bill Header */}
                         <div className="p-6">
                           <div className="flex items-center justify-between">
@@ -563,7 +563,7 @@ export default function BillingView() {
                               
                               {/* Bill Info */}
                               <div>
-                                <h3 className="text-lg font-semibold text-[#3B5B63] dark:text-white">
+                                <h3 className="text-lg font-semibold text-[#7CCFD0] dark:text-white">
                                   Trip #{bill.bill_number}
                                 </h3>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -575,7 +575,7 @@ export default function BillingView() {
                             {/* Amount and Actions */}
                             <div className="flex items-center space-x-4">
                               <div className="text-right">
-                                <p className="text-2xl font-bold text-[#3B5B63] dark:text-white">
+                                <p className="text-2xl font-bold text-[#7CCFD0] dark:text-white">
                                   {formatCurrency(bill.total)}
                                 </p>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -586,7 +586,7 @@ export default function BillingView() {
                               <div className="flex items-center space-x-2">
                                 <button
                                   onClick={() => setExpandedInvoice(expandedInvoice === bill.id ? null : bill.id)}
-                                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-[#3B5B63] dark:hover:text-[#84CED3] transition-colors"
+                                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-[#7CCFD0] dark:hover:text-[#84CED3] transition-colors"
                                 >
                                   {expandedInvoice === bill.id ? '▼' : '▶'}
                                 </button>
@@ -605,11 +605,11 @@ export default function BillingView() {
                           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                             <div>
                               <span className="text-gray-500 dark:text-gray-400">Date:</span>
-                              <span className="ml-2 text-[#3B5B63] dark:text-white">{formatDate(bill.created_at)}</span>
+                              <span className="ml-2 text-[#7CCFD0] dark:text-white">{formatDate(bill.created_at)}</span>
                             </div>
                             <div>
                               <span className="text-gray-500 dark:text-gray-400">Route:</span>
-                              <span className="ml-2 text-[#3B5B63] dark:text-white">
+                              <span className="ml-2 text-[#7CCFD0] dark:text-white">
                                 {bill.pickup_address ? 
                                   `${bill.pickup_address.substring(0, 25)}...` : 
                                   'No pickup address'
@@ -618,7 +618,7 @@ export default function BillingView() {
                             </div>
                             <div>
                               <span className="text-gray-500 dark:text-gray-400">Trip Type:</span>
-                              <span className="ml-2 text-[#3B5B63] dark:text-white">
+                              <span className="ml-2 text-[#7CCFD0] dark:text-white">
                                 {bill.is_round_trip ? 'Round Trip' : 'One Way'}
                                 {bill.wheelchair_accessible && ' • Wheelchair'}
                               </span>
@@ -628,34 +628,34 @@ export default function BillingView() {
                         
                         {/* Expanded Details */}
                         {expandedInvoice === bill.id && (
-                          <div className="border-t border-[#DDE5E7] dark:border-[#3F5E63] bg-white dark:bg-[#1E1E1E] p-6">
+                          <div className="border-t border-[#DDE5E7] dark:border-[#E0E0E0] bg-white dark:bg-[#FFFFFF] p-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               {/* Trip Details */}
                               <div>
-                                <h4 className="font-semibold text-[#3B5B63] dark:text-[#84CED3] mb-3">Trip Information</h4>
+                                <h4 className="font-semibold text-[#7CCFD0] dark:text-[#84CED3] mb-3">Trip Information</h4>
                                 <div className="space-y-2 text-sm">
                                   <div>
                                     <span className="text-gray-500 dark:text-gray-400">Pickup:</span>
-                                    <p className="text-[#3B5B63] dark:text-white">{bill.pickup_address}</p>
+                                    <p className="text-[#7CCFD0] dark:text-white">{bill.pickup_address}</p>
                                   </div>
                                   <div>
                                     <span className="text-gray-500 dark:text-gray-400">Destination:</span>
-                                    <p className="text-[#3B5B63] dark:text-white">{bill.destination_address}</p>
+                                    <p className="text-[#7CCFD0] dark:text-white">{bill.destination_address}</p>
                                   </div>
                                   <div>
                                     <span className="text-gray-500 dark:text-gray-400">Scheduled Time:</span>
-                                    <p className="text-[#3B5B63] dark:text-white">{formatDateTime(bill.pickup_time)}</p>
+                                    <p className="text-[#7CCFD0] dark:text-white">{formatDateTime(bill.pickup_time)}</p>
                                   </div>
                                   {bill.distance && (
                                     <div>
                                       <span className="text-gray-500 dark:text-gray-400">Distance:</span>
-                                      <p className="text-[#3B5B63] dark:text-white">{bill.distance} miles</p>
+                                      <p className="text-[#7CCFD0] dark:text-white">{bill.distance} miles</p>
                                     </div>
                                   )}
                                   {bill.additional_passengers > 0 && (
                                     <div>
                                       <span className="text-gray-500 dark:text-gray-400">Additional Passengers:</span>
-                                      <p className="text-[#3B5B63] dark:text-white">{bill.additional_passengers}</p>
+                                      <p className="text-[#7CCFD0] dark:text-white">{bill.additional_passengers}</p>
                                     </div>
                                   )}
                                 </div>
@@ -663,29 +663,29 @@ export default function BillingView() {
                               
                               {/* Cost Breakdown */}
                               <div>
-                                <h4 className="font-semibold text-[#3B5B63] dark:text-[#84CED3] mb-3">Trip Cost Details</h4>
+                                <h4 className="font-semibold text-[#7CCFD0] dark:text-[#84CED3] mb-3">Trip Cost Details</h4>
                                 <div className="space-y-2 text-sm">
                                   <div className="flex justify-between">
                                     <span className="text-gray-500 dark:text-gray-400">Trip Type:</span>
-                                    <span className="text-[#3B5B63] dark:text-white">
+                                    <span className="text-[#7CCFD0] dark:text-white">
                                       {bill.is_round_trip ? 'Round Trip' : 'One Way'}
                                     </span>
                                   </div>
                                   {bill.wheelchair_accessible && (
                                     <div className="flex justify-between">
                                       <span className="text-gray-500 dark:text-gray-400">Wheelchair Accessible:</span>
-                                      <span className="text-[#3B5B63] dark:text-white">Yes</span>
+                                      <span className="text-[#7CCFD0] dark:text-white">Yes</span>
                                     </div>
                                   )}
                                   {bill.additional_passengers > 0 && (
                                     <div className="flex justify-between">
                                       <span className="text-gray-500 dark:text-gray-400">Extra Passengers:</span>
-                                      <span className="text-[#3B5B63] dark:text-white">{bill.additional_passengers}</span>
+                                      <span className="text-[#7CCFD0] dark:text-white">{bill.additional_passengers}</span>
                                     </div>
                                   )}
                                   <div className="flex justify-between font-semibold border-t border-gray-200 dark:border-gray-600 pt-2">
-                                    <span className="text-[#3B5B63] dark:text-white">Total Cost:</span>
-                                    <span className="text-[#3B5B63] dark:text-white">{formatCurrency(bill.total)}</span>
+                                    <span className="text-[#7CCFD0] dark:text-white">Total Cost:</span>
+                                    <span className="text-[#7CCFD0] dark:text-white">{formatCurrency(bill.total)}</span>
                                   </div>
                                   <div className="flex justify-between mt-3 pt-2 border-t border-gray-200 dark:border-gray-600">
                                     <span className="text-gray-500 dark:text-gray-400">Payment Status:</span>
@@ -709,7 +709,7 @@ export default function BillingView() {
                 ) : (
                   <div className="text-center py-12">
                     <div className="text-6xl opacity-30 mb-4">📄</div>
-                    <h3 className="text-lg font-medium text-[#3B5B63] dark:text-white mb-2">No bills found</h3>
+                    <h3 className="text-lg font-medium text-[#7CCFD0] dark:text-white mb-2">No bills found</h3>
                     <p className="text-gray-500 dark:text-gray-400">Try adjusting your filters to see more results.</p>
                   </div>
                 )}
@@ -722,7 +722,7 @@ export default function BillingView() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
+                  className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#FFFFFF] text-[#7CCFD0] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
                 >
                   <option value="">All Statuses</option>
                   <option value="pending">⏳ Pending</option>
@@ -735,7 +735,7 @@ export default function BillingView() {
                 <select
                   value={yearFilter}
                   onChange={(e) => setYearFilter(e.target.value)}
-                  className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
+                  className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#FFFFFF] text-[#7CCFD0] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
                 >
                   {[2024, 2025, 2026].map(year => (
                     <option key={year} value={year}>{year}</option>
@@ -750,33 +750,33 @@ export default function BillingView() {
                   <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-[#F5F7F8] dark:bg-[#121212]">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-[#7CCFD0] dark:text-[#84CED3] uppercase tracking-wider">
                           Trip #
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-[#7CCFD0] dark:text-[#84CED3] uppercase tracking-wider">
                           Client
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-[#7CCFD0] dark:text-[#84CED3] uppercase tracking-wider">
                           Trip Details
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-[#7CCFD0] dark:text-[#84CED3] uppercase tracking-wider">
                           Amount
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-[#7CCFD0] dark:text-[#84CED3] uppercase tracking-wider">
                           Status
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-[#7CCFD0] dark:text-[#84CED3] uppercase tracking-wider">
                           Trip Date
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-[#3B5B63] dark:text-[#84CED3] uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-[#7CCFD0] dark:text-[#84CED3] uppercase tracking-wider">
                           Actions
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white dark:bg-[#1E1E1E] divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody className="bg-white dark:bg-[#FFFFFF] divide-y divide-gray-200 dark:divide-gray-700">
                       {invoices.map((bill) => (
-                        <tr key={bill.id} className="hover:bg-[#F5F7F8] dark:hover:bg-[#2A3A3D] transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#3B5B63] dark:text-white">
+                        <tr key={bill.id} className="hover:bg-[#F5F7F8] dark:hover:bg-[#F8F9FA] transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#7CCFD0] dark:text-white">
                             {bill.bill_number}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
@@ -785,7 +785,7 @@ export default function BillingView() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                             {bill.pickup_address ? `${bill.pickup_address.substring(0, 30)}...` : 'N/A'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-[#3B5B63] dark:text-white font-medium">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-[#7CCFD0] dark:text-white font-medium">
                             {formatCurrency(bill.total)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -799,7 +799,7 @@ export default function BillingView() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                             <Link
                               href={`/dashboard/trips/${bill.trip_id}`}
-                              className="text-[#3B5B63] dark:text-[#84CED3] hover:text-[#2E4A52] dark:hover:text-[#6CB8BD] transition-colors"
+                              className="text-[#7CCFD0] dark:text-[#84CED3] hover:text-[#2E4A52] dark:hover:text-[#6CB8BD] transition-colors"
                             >
                               View Trip
                             </Link>
@@ -812,7 +812,7 @@ export default function BillingView() {
               ) : (
                 <div className="text-center py-12">
                   <div className="text-6xl opacity-30 mb-4">📄</div>
-                  <h3 className="text-lg font-medium text-[#3B5B63] dark:text-white mb-2">No trips found</h3>
+                  <h3 className="text-lg font-medium text-[#7CCFD0] dark:text-white mb-2">No trips found</h3>
                   <p className="text-gray-500 dark:text-gray-400">Try adjusting your filters to see more trips for the selected period.</p>
                 </div>
               )}
@@ -824,7 +824,7 @@ export default function BillingView() {
                 <select
                   value={clientFilter}
                   onChange={(e) => setClientFilter(e.target.value)}
-                  className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
+                  className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#FFFFFF] text-[#7CCFD0] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
                 >
                   <option value="">All Clients</option>
                   {allClients.map(client => (
@@ -838,41 +838,41 @@ export default function BillingView() {
                   type="date"
                   value={dateRange.start}
                   onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                  className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
+                  className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#FFFFFF] text-[#7CCFD0] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
                 />
 
                 <input
                   type="date"
                   value={dateRange.end}
                   onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                  className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
+                  className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-[#FFFFFF] text-[#7CCFD0] dark:text-white shadow-sm focus:border-[#84CED3] focus:ring-[#84CED3]"
                 />
               </div>
 
               {/* Summary Stats */}
               {clientSummary && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                  <div className="bg-[#F5F7F8] dark:bg-[#2A3A3D] p-4 rounded">
-                    <h4 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Total Revenue</h4>
-                    <p className="text-xl font-bold text-[#3B5B63] dark:text-white mt-1">
+                  <div className="bg-[#F5F7F8] dark:bg-[#F8F9FA] p-4 rounded">
+                    <h4 className="text-sm font-medium text-[#7CCFD0] dark:text-[#84CED3]">Total Revenue</h4>
+                    <p className="text-xl font-bold text-[#7CCFD0] dark:text-white mt-1">
                       {formatCurrency(clientSummary.summary.total_amount)}
                     </p>
                   </div>
-                  <div className="bg-[#F5F7F8] dark:bg-[#2A3A3D] p-4 rounded">
-                    <h4 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Total Invoices</h4>
-                    <p className="text-xl font-bold text-[#3B5B63] dark:text-white mt-1">
+                  <div className="bg-[#F5F7F8] dark:bg-[#F8F9FA] p-4 rounded">
+                    <h4 className="text-sm font-medium text-[#7CCFD0] dark:text-[#84CED3]">Total Invoices</h4>
+                    <p className="text-xl font-bold text-[#7CCFD0] dark:text-white mt-1">
                       {clientSummary.summary.total_invoices}
                     </p>
                   </div>
-                  <div className="bg-[#F5F7F8] dark:bg-[#2A3A3D] p-4 rounded">
-                    <h4 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Active Clients</h4>
-                    <p className="text-xl font-bold text-[#3B5B63] dark:text-white mt-1">
+                  <div className="bg-[#F5F7F8] dark:bg-[#F8F9FA] p-4 rounded">
+                    <h4 className="text-sm font-medium text-[#7CCFD0] dark:text-[#84CED3]">Active Clients</h4>
+                    <p className="text-xl font-bold text-[#7CCFD0] dark:text-white mt-1">
                       {clientSummary.summary.total_clients}
                     </p>
                   </div>
-                  <div className="bg-[#F5F7F8] dark:bg-[#2A3A3D] p-4 rounded">
-                    <h4 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Avg Invoice Amount</h4>
-                    <p className="text-xl font-bold text-[#3B5B63] dark:text-white mt-1">
+                  <div className="bg-[#F5F7F8] dark:bg-[#F8F9FA] p-4 rounded">
+                    <h4 className="text-sm font-medium text-[#7CCFD0] dark:text-[#84CED3]">Avg Invoice Amount</h4>
+                    <p className="text-xl font-bold text-[#7CCFD0] dark:text-white mt-1">
                       {formatCurrency(clientSummary.summary.average_invoice_amount)}
                     </p>
                   </div>
@@ -883,17 +883,17 @@ export default function BillingView() {
               {clientSummary && clientSummary.clients.length > 0 ? (
                 <div className="space-y-4">
                   {clientSummary.clients.map((client) => (
-                    <div key={client.client.id} className="bg-[#F5F7F8] dark:bg-[#2A3A3D] rounded-lg p-4">
+                    <div key={client.client.id} className="bg-[#F5F7F8] dark:bg-[#F8F9FA] rounded-lg p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div>
-                          <h3 className="text-lg font-medium text-[#3B5B63] dark:text-white">
+                          <h3 className="text-lg font-medium text-[#7CCFD0] dark:text-white">
                             {client.client.first_name} {client.client.last_name}
                           </h3>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
                             {client.invoice_count} invoices
                           </p>
                         </div>
-                        <p className="text-xl font-bold text-[#3B5B63] dark:text-white">
+                        <p className="text-xl font-bold text-[#7CCFD0] dark:text-white">
                           {formatCurrency(client.total_amount)}
                         </p>
                       </div>
@@ -905,14 +905,14 @@ export default function BillingView() {
                             const details = e.currentTarget.nextElementSibling;
                             details.classList.toggle('hidden');
                           }}
-                          className="text-sm text-[#3B5B63] dark:text-[#84CED3] hover:text-[#2E4A52] dark:hover:text-[#6CB8BD] transition-colors"
+                          className="text-sm text-[#7CCFD0] dark:text-[#84CED3] hover:text-[#2E4A52] dark:hover:text-[#6CB8BD] transition-colors"
                         >
                           Show invoice details →
                         </button>
                         <div className="hidden mt-2 space-y-1">
                           {client.invoices.map((invoice) => (
                             <div key={invoice.id} className="text-sm text-gray-600 dark:text-gray-400 pl-4 border-l-2 border-gray-300 dark:border-gray-600">
-                              <p className="font-medium text-[#3B5B63] dark:text-white">{formatDate(invoice.created_at)}</p>
+                              <p className="font-medium text-[#7CCFD0] dark:text-white">{formatDate(invoice.created_at)}</p>
                               <p>{invoice.trip ? `${invoice.trip.pickup_address} → ${invoice.trip.destination_address}` : 'No trip details'}</p>
                               <p>{formatCurrency(invoice.total)} • Status: {invoice.status}</p>
                             </div>

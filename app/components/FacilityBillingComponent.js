@@ -530,7 +530,7 @@ ${monthlyTrips.map(trip => {
       </div>
 
       {/* Month Selection and Summary */}
-      <div className="bg-white  rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
+      <div className="bg-white  rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0]">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
             <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900 mb-1">
@@ -580,7 +580,7 @@ ${monthlyTrips.map(trip => {
                   setLoading(false);
                 }
               }}
-              className="px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+              className="px-3 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
             >
               {monthOptions.map(option => (
                 <option key={option.value} value={option.value}>
@@ -644,8 +644,8 @@ ${monthlyTrips.map(trip => {
           <p className="text-[#2E4F54] text-gray-900 mt-2">Loading trips...</p>
         </div>
       ) : monthlyTrips.length > 0 ? (
-        <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] overflow-hidden">
-          <div className="px-6 py-4 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
+        <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0] overflow-hidden">
+          <div className="px-6 py-4 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
             <h3 className="text-lg font-semibold text-[#2E4F54] text-gray-900">
               Trip Details ({monthlyTrips.length} trips)
             </h3>
@@ -662,7 +662,7 @@ ${monthlyTrips.map(trip => {
                   <th className="text-left px-6 py-3 text-xs font-medium text-[#2E4F54] text-gray-900 uppercase tracking-wider">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#DDE5E7] dark:divide-[#3F5E63]">
+              <tbody className="divide-y divide-[#DDE5E7] dark:divide-[#E0E0E0]">
                 {monthlyTrips.map((trip) => {
                   const formattedDate = trip.pickup_time ? 
                     new Date(trip.pickup_time).toLocaleDateString() : 'N/A';

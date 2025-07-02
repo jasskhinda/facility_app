@@ -78,7 +78,7 @@ export default function WheelchairSelectionFlow({
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Main Question */}
-      <div className="bg-white dark:bg-[#1E1E1E] border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg p-6">
+      <div className="bg-white dark:bg-[#FFFFFF] border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg p-6">
         <h3 className="text-lg font-semibold text-[#2E4F54] text-gray-900 mb-4 flex items-center">
           ♿ Wheelchair Transportation
         </h3>
@@ -90,14 +90,14 @@ export default function WheelchairSelectionFlow({
           
           <div className="space-y-3">
             {/* None Option */}
-            <label className="flex items-center p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg hover:bg-[#F8F9FA] dark:hover:bg-[#2A3A3D] cursor-pointer transition-colors">
+            <label className="flex items-center p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg hover:bg-[#F8F9FA] dark:hover:bg-[#F8F9FA] cursor-pointer transition-colors">
               <input
                 type="radio"
                 name="wheelchairType"
                 value="none"
                 checked={wheelchairType === 'none'}
                 onChange={(e) => handleWheelchairTypeChange(e.target.value)}
-                className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#3F5E63] focus:ring-[#7CCFD0] focus:ring-2"
+                className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#E0E0E0] focus:ring-[#7CCFD0] focus:ring-2"
               />
               <div className="ml-3 flex-1">
                 <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
@@ -110,14 +110,14 @@ export default function WheelchairSelectionFlow({
             </label>
 
             {/* Manual Wheelchair */}
-            <label className="flex items-center p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg hover:bg-[#F8F9FA] dark:hover:bg-[#2A3A3D] cursor-pointer transition-colors">
+            <label className="flex items-center p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg hover:bg-[#F8F9FA] dark:hover:bg-[#F8F9FA] cursor-pointer transition-colors">
               <input
                 type="radio"
                 name="wheelchairType"
                 value="manual"
                 checked={wheelchairType === 'manual'}
                 onChange={(e) => handleWheelchairTypeChange(e.target.value)}
-                className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#3F5E63] focus:ring-[#7CCFD0] focus:ring-2"
+                className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#E0E0E0] focus:ring-[#7CCFD0] focus:ring-2"
               />
               <div className="ml-3 flex-1">
                 <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
@@ -135,14 +135,14 @@ export default function WheelchairSelectionFlow({
             </label>
 
             {/* Power Wheelchair */}
-            <label className="flex items-center p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg hover:bg-[#F8F9FA] dark:hover:bg-[#2A3A3D] cursor-pointer transition-colors">
+            <label className="flex items-center p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg hover:bg-[#F8F9FA] dark:hover:bg-[#F8F9FA] cursor-pointer transition-colors">
               <input
                 type="radio"
                 name="wheelchairType"
                 value="power"
                 checked={wheelchairType === 'power'}
                 onChange={(e) => handleWheelchairTypeChange(e.target.value)}
-                className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#3F5E63] focus:ring-[#7CCFD0] focus:ring-2"
+                className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#E0E0E0] focus:ring-[#7CCFD0] focus:ring-2"
               />
               <div className="ml-3 flex-1">
                 <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
@@ -212,19 +212,19 @@ export default function WheelchairSelectionFlow({
 
         {/* Provide Wheelchair Option */}
         {showProvideOption && (
-          <div className="mt-6 p-4 bg-[#F8F9FA] dark:bg-[#2A3A3D] rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
+          <div className="mt-6 p-4 bg-[#F8F9FA] dark:bg-[#F8F9FA] rounded-lg border border-[#DDE5E7] dark:border-[#E0E0E0]">
             <h4 className="text-md font-medium text-[#2E4F54] text-gray-900 mb-3">
               Do you want us to provide a wheelchair?
             </h4>
             
             <div className="space-y-2">
-              <label className="flex items-center p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg hover:bg-white dark:hover:bg-[#1E1E1E] cursor-pointer transition-colors">
+              <label className="flex items-center p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg hover:bg-white dark:hover:bg-[#FFFFFF] cursor-pointer transition-colors">
                 <input
                   type="radio"
                   name="provideWheelchair"
                   checked={needsWheelchair === true}
                   onChange={() => handleProvideWheelchairChange(true)}
-                  className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#3F5E63] focus:ring-[#7CCFD0] focus:ring-2"
+                  className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#E0E0E0] focus:ring-[#7CCFD0] focus:ring-2"
                 />
                 <div className="ml-3 flex-1">
                   <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
@@ -244,13 +244,13 @@ export default function WheelchairSelectionFlow({
                 </div>
               </label>
               
-              <label className="flex items-center p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg hover:bg-white dark:hover:bg-[#1E1E1E] cursor-pointer transition-colors">
+              <label className="flex items-center p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg hover:bg-white dark:hover:bg-[#FFFFFF] cursor-pointer transition-colors">
                 <input
                   type="radio"
                   name="provideWheelchair"
                   checked={needsWheelchair === false}
                   onChange={() => handleProvideWheelchairChange(false)}
-                  className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#3F5E63] focus:ring-[#7CCFD0] focus:ring-2"
+                  className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#E0E0E0] focus:ring-[#7CCFD0] focus:ring-2"
                 />
                 <div className="ml-3 flex-1">
                   <span className="text-sm text-[#2E4F54] text-gray-900">
@@ -276,7 +276,7 @@ export default function WheelchairSelectionFlow({
               value={customWheelchairType}
               onChange={(e) => setCustomWheelchairType(e.target.value)}
               placeholder="e.g., Standard manual wheelchair, Lightweight transport chair..."
-              className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 placeholder-[#2E4F54]/50 dark:placeholder-[#E0F4F5]/50 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0]"
+              className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 placeholder-[#2E4F54]/50 dark:placeholder-[#E0F4F5]/50 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0]"
             />
             <p className="text-xs text-[#2E4F54]/70 text-gray-900/70 mt-1">
               This helps us ensure we provide the most suitable wheelchair for your needs.

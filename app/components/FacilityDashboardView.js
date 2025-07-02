@@ -241,7 +241,7 @@ export default function FacilityDashboardView({ user }) {
             </div>
           </div>
 
-          <div className="bg-white  rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
+          <div className="bg-white  rounded-lg border border-[#DDE5E7] dark:border-[#E0E0E0] p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-[#2E4F54]/60 text-gray-900/60">Monthly Spend</p>
@@ -256,11 +256,11 @@ export default function FacilityDashboardView({ user }) {
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
-          <div className="p-6 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
+        <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0]">
+          <div className="p-6 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
             <h2 className="text-lg font-semibold text-[#2E4F54] text-gray-900">Recent Trips</h2>
           </div>
-          <div className="divide-y divide-[#DDE5E7] dark:divide-[#3F5E63]">
+          <div className="divide-y divide-[#DDE5E7] dark:divide-[#E0E0E0]">
             {recentTrips.length > 0 ? (
               recentTrips.map((trip) => (
                 <div key={trip.id} className="p-4 hover:bg-gray-50 dark:hover:bg-[#24393C] transition-colors">
@@ -314,7 +314,7 @@ export default function FacilityDashboardView({ user }) {
             )}
           </div>
           {recentTrips.length > 0 && (
-            <div className="p-4 bg-gray-50 dark:bg-[#1A2A2D] border-t border-[#DDE5E7] dark:border-[#3F5E63]">
+            <div className="p-4 bg-gray-50 dark:bg-[#1A2A2D] border-t border-[#DDE5E7] dark:border-[#E0E0E0]">
               <Link
                 href="/dashboard/trips"
                 className="text-sm text-[#7CCFD0] hover:text-[#60BFC0] font-medium"

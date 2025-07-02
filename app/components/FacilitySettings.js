@@ -126,7 +126,7 @@ export default function FacilitySettings() {
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-8">
       {/* Facility Settings Section */}
-      <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
+      <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0] p-6">
         <h2 className="text-xl font-semibold mb-6 text-[#2E4F54] text-gray-900">Facility Information</h2>
         
         {error && (
@@ -153,7 +153,7 @@ export default function FacilitySettings() {
                 type="text"
                 value={facility?.name || ''}
                 onChange={handleChange}
-                className="w-full p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
+                className="w-full p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
                 required
               />
             </div>
@@ -167,7 +167,7 @@ export default function FacilitySettings() {
                 name="address"
                 value={facility?.address || ''}
                 onChange={handleChange}
-                className="w-full p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
+                className="w-full p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
                 rows="3"
                 required
               />
@@ -183,7 +183,7 @@ export default function FacilitySettings() {
                 type="tel"
                 value={facility?.phone_number || ''}
                 onChange={handleChange}
-                className="w-full p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
+                className="w-full p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
               />
             </div>
             
@@ -197,7 +197,7 @@ export default function FacilitySettings() {
                 type="email"
                 value={facility?.contact_email || ''}
                 onChange={handleChange}
-                className="w-full p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
+                className="w-full p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
               />
             </div>
             
@@ -211,7 +211,7 @@ export default function FacilitySettings() {
                 type="email"
                 value={facility?.billing_email || ''}
                 onChange={handleChange}
-                className="w-full p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
+                className="w-full p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
               />
             </div>
             
@@ -224,7 +224,7 @@ export default function FacilitySettings() {
                 name="facility_type"
                 value={facility?.facility_type || ''}
                 onChange={handleChange}
-                className="w-full p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
+                className="w-full p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
               >
                 <option value="">Select Facility Type</option>
                 <option value="hospital">Hospital</option>
@@ -251,8 +251,8 @@ export default function FacilitySettings() {
       </div>
 
       {/* Contract Management Section */}
-      <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
-        <div className="p-6 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
+      <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0]">
+        <div className="p-6 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
           <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900">Contract Management</h2>
           <p className="text-sm text-[#2E4F54]/70 text-gray-900/70 mt-1">
             Upload and manage your facility's transportation service contract
@@ -264,8 +264,8 @@ export default function FacilitySettings() {
       </div>
 
       {/* Account Security Section */}
-      <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
-        <div className="p-6 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
+      <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0]">
+        <div className="p-6 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
           <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900">Account Security</h2>
           <p className="text-sm text-[#2E4F54]/70 text-gray-900/70 mt-1">
             Manage your account password and security settings
@@ -280,7 +280,7 @@ export default function FacilitySettings() {
               </p>
               <a
                 href="/update-password"
-                className="inline-flex items-center px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg shadow-sm text-sm font-medium text-[#2E4F54] text-gray-900 bg-white  hover:bg-[#F8F9FA] dark:hover:bg-[#2A3A3D] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7CCFD0] transition-colors"
+                className="inline-flex items-center px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg shadow-sm text-sm font-medium text-[#2E4F54] text-gray-900 bg-white  hover:bg-[#F8F9FA] dark:hover:bg-[#F8F9FA] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7CCFD0] transition-colors"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m0 0a2 2 0 012 2v6a2 2 0 01-2 2H7a2 2 0 01-2-2v-6a2 2 0 012-2m0 0V7a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -289,7 +289,7 @@ export default function FacilitySettings() {
               </a>
             </div>
             
-            <div className="border-t border-[#DDE5E7] dark:border-[#3F5E63] pt-4">
+            <div className="border-t border-[#DDE5E7] dark:border-[#E0E0E0] pt-4">
               <h3 className="text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">Account Information</h3>
               <div className="text-sm text-[#2E4F54]/70 text-gray-900/70">
                 <p><strong>Email:</strong> {session?.user?.email || 'Not available'}</p>

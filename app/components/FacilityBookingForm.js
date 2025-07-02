@@ -400,13 +400,13 @@ export default function FacilityBookingForm({ user }) {
       if (!pickupAutocompleteContainerRef.current.firstChild && !destinationAutocompleteContainerRef.current.firstChild) {
         // Create traditional input fields for autocomplete
         const pickupInput = document.createElement('input');
-        pickupInput.className = 'w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] ';
+        pickupInput.className = 'w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] ';
         pickupInput.placeholder = 'Enter pickup location';
         pickupInput.value = formData.pickupAddress || '';
         pickupInput.id = 'pickup-autocomplete-input';
         
         const destinationInput = document.createElement('input');
-        destinationInput.className = 'w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] ';
+        destinationInput.className = 'w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] ';
         destinationInput.placeholder = 'Enter destination';
         destinationInput.value = formData.destinationAddress || '';
         destinationInput.id = 'destination-autocomplete-input';
@@ -855,13 +855,13 @@ export default function FacilityBookingForm({ user }) {
       />
 
       <DashboardLayout user={user} activeTab="book">
-        <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6 mb-6">
+        <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#E0E0E0] p-6 mb-6">
           <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900 mb-4">Book a Ride for Client</h2>
           
           {success ? (
             <div className="bg-[#7CCFD0]/20 dark:bg-[#7CCFD0]/30 text-[#2E4F54] text-gray-900 p-4 rounded mb-6">
               <div className="flex items-center">
-                <svg className="w-6 h-6 text-[#3B5B63] dark:text-[#7CCFD0] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-6 h-6 text-[#7CCFD0] dark:text-[#7CCFD0] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                 </svg>
                 <span>The trip request has been submitted successfully! It is pending dispatcher approval. Redirecting to trips...</span>
@@ -885,7 +885,7 @@ export default function FacilityBookingForm({ user }) {
                     id="clientId"
                     value={selectedClient}
                     onChange={handleClientChange}
-                    className="w-full appearance-none px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0]  text-[#2E4F54] text-gray-900 pr-10"
+                    className="w-full appearance-none px-3 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0]  text-[#2E4F54] text-gray-900 pr-10"
                     required
                   >
                     <option value="">Select a client</option>
@@ -926,7 +926,7 @@ export default function FacilityBookingForm({ user }) {
                         type="checkbox"
                         checked={useClientAddress}
                         onChange={handleUseClientAddressChange}
-                        className="h-4 w-4 text-[#7CCFD0] focus:ring-[#7CCFD0] border-[#DDE5E7] dark:border-[#3F5E63] rounded"
+                        className="h-4 w-4 text-[#7CCFD0] focus:ring-[#7CCFD0] border-[#DDE5E7] dark:border-[#E0E0E0] rounded"
                       />
                       <label htmlFor="useClientAddress" className="ml-2 text-xs text-[#2E4F54] text-gray-900">
                         Use client&apos;s address as pickup location
@@ -988,14 +988,14 @@ export default function FacilityBookingForm({ user }) {
                         type="button"
                         id="pickupDateTime"
                         onClick={openDatePicker}
-                        className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0]  text-left flex justify-between items-center"
+                        className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0]  text-left flex justify-between items-center"
                       >
                         <span className={formData.pickupTime ? "text-[#2E4F54] text-gray-900" : "text-[#2E4F54]/50 text-gray-900/50"}>
                           {formData.pickupTime 
                             ? `${formatMonthDay(formData.pickupTime)}, ${getDayName(formData.pickupTime)} - ${formatTimeAmPm(formData.pickupTime)}`
                             : "Select pickup date and time"}
                         </span>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#3B5B63] dark:text-[#84CED3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#7CCFD0] dark:text-[#84CED3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </button>
@@ -1004,7 +1004,7 @@ export default function FacilityBookingForm({ user }) {
                       {isDatePickerOpen && (
                         <div 
                           ref={datePickerRef}
-                          className="absolute z-50 mt-2 w-full bg-white  border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-lg p-4"
+                          className="absolute z-50 mt-2 w-full bg-white  border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md shadow-lg p-4"
                         >
                           {/* Header with back button for time view */}
                           <div className="flex justify-between items-center mb-2">
@@ -1015,7 +1015,7 @@ export default function FacilityBookingForm({ user }) {
                               <button 
                                 type="button"
                                 onClick={() => setCurrentView('date')}
-                                className="text-[#3B5B63] dark:text-[#84CED3] hover:text-[#7CCFD0] flex items-center text-sm"
+                                className="text-[#7CCFD0] dark:text-[#84CED3] hover:text-[#7CCFD0] flex items-center text-sm"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -1040,8 +1040,8 @@ export default function FacilityBookingForm({ user }) {
                                     className={`
                                       p-2 rounded-md border text-center flex flex-col items-center
                                       ${isSelected 
-                                        ? 'bg-[#7CCFD0]/20 border-[#7CCFD0] text-[#3B5B63] text-gray-900' 
-                                        : 'border-[#DDE5E7] dark:border-[#3F5E63] hover:bg-[#F8F9FA] dark:hover:bg-[#24393C]'}
+                                        ? 'bg-[#7CCFD0]/20 border-[#7CCFD0] text-[#7CCFD0] text-gray-900' 
+                                        : 'border-[#DDE5E7] dark:border-[#E0E0E0] hover:bg-[#F8F9FA] dark:hover:bg-[#24393C]'}
                                     `}
                                   >
                                     <span className="text-xs font-medium">{getDayName(date)}</span>
@@ -1075,7 +1075,7 @@ export default function FacilityBookingForm({ user }) {
                                       key={index}
                                       type="button"
                                       onClick={() => handleTimeSelect(slot)}
-                                      className="p-2 rounded-md border border-[#DDE5E7] dark:border-[#3F5E63] hover:bg-[#7CCFD0]/10 text-center"
+                                      className="p-2 rounded-md border border-[#DDE5E7] dark:border-[#E0E0E0] hover:bg-[#7CCFD0]/10 text-center"
                                     >
                                       {slot.label}
                                     </button>
@@ -1090,7 +1090,7 @@ export default function FacilityBookingForm({ user }) {
                           )}
                           
                           {/* Optional hint for future availability feature */}
-                          <div className="mt-4 pt-2 border-t border-[#DDE5E7] dark:border-[#3F5E63] text-xs text-[#3B5B63] dark:text-[#84CED3]">
+                          <div className="mt-4 pt-2 border-t border-[#DDE5E7] dark:border-[#E0E0E0] text-xs text-[#7CCFD0] dark:text-[#84CED3]">
                             <p>Select a date and then choose an available time slot</p>
                           </div>
                         </div>
@@ -1119,7 +1119,7 @@ export default function FacilityBookingForm({ user }) {
                     value={formData.clientNotes}
                     onChange={handleChange}
                     rows="3"
-                    className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] "
+                    className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] "
                     placeholder="Enter any special instructions or notes for the driver"
                   ></textarea>
                 </div>
@@ -1130,7 +1130,7 @@ export default function FacilityBookingForm({ user }) {
               <div className="col-span-1 md:col-span-2 mt-4">
                 <div 
                   ref={mapRef} 
-                  className="w-full h-[300px] rounded-md border border-[#DDE5E7] dark:border-[#3F5E63]"
+                  className="w-full h-[300px] rounded-md border border-[#DDE5E7] dark:border-[#E0E0E0]"
                 ></div>
               </div>
               
@@ -1148,7 +1148,7 @@ export default function FacilityBookingForm({ user }) {
                       value="facility"
                       checked={formData.paymentMethod === 'facility'}
                       onChange={handleChange}
-                      className="h-4 w-4 text-[#7CCFD0] focus:ring-[#7CCFD0] border-[#DDE5E7] dark:border-[#3F5E63]"
+                      className="h-4 w-4 text-[#7CCFD0] focus:ring-[#7CCFD0] border-[#DDE5E7] dark:border-[#E0E0E0]"
                     />
                     <label htmlFor="paymentMethodFacility" className="ml-2 text-sm text-[#2E4F54] text-gray-900">
                       Facility Payment
@@ -1162,7 +1162,7 @@ export default function FacilityBookingForm({ user }) {
                       value="client"
                       checked={formData.paymentMethod === 'client'}
                       onChange={handleChange}
-                      className="h-4 w-4 text-[#7CCFD0] focus:ring-[#7CCFD0] border-[#DDE5E7] dark:border-[#3F5E63]"
+                      className="h-4 w-4 text-[#7CCFD0] focus:ring-[#7CCFD0] border-[#DDE5E7] dark:border-[#E0E0E0]"
                     />
                     <label htmlFor="paymentMethodClient" className="ml-2 text-sm text-[#2E4F54] text-gray-900">
                       Client Payment
@@ -1197,7 +1197,7 @@ export default function FacilityBookingForm({ user }) {
                 )}
               </div>
 
-              <div className="col-span-1 md:col-span-2 border-t border-[#DDE5E7] dark:border-[#3F5E63] pt-4">
+              <div className="col-span-1 md:col-span-2 border-t border-[#DDE5E7] dark:border-[#E0E0E0] pt-4">
                 <h3 className="text-md font-medium text-[#2E4F54] text-gray-900 mb-2">Ride Details</h3>
                 
                 <div className="grid grid-cols-2 gap-4 mb-4">

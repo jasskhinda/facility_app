@@ -105,7 +105,7 @@ export default function InvoiceDetail({ invoiceId }) {
 
   const getStatusColor = (status) => {
     const colors = {
-      pending: 'bg-[#84CED3]/20 dark:bg-[#84CED3]/10 text-[#3B5B63] dark:text-[#84CED3]',
+      pending: 'bg-[#84CED3]/20 dark:bg-[#84CED3]/10 text-[#7CCFD0] dark:text-[#84CED3]',
       paid: 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400',
       overdue: 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400',
       cancelled: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400',
@@ -117,7 +117,7 @@ export default function InvoiceDetail({ invoiceId }) {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B5B63] dark:border-[#84CED3]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7CCFD0] dark:border-[#84CED3]"></div>
       </div>
     );
   }
@@ -137,11 +137,11 @@ export default function InvoiceDetail({ invoiceId }) {
         <div>
           <Link
             href="/dashboard/billing"
-            className="text-sm text-gray-500 dark:text-gray-400 hover:text-[#3B5B63] dark:hover:text-[#84CED3] mb-2 inline-block transition-colors"
+            className="text-sm text-gray-500 dark:text-gray-400 hover:text-[#7CCFD0] dark:hover:text-[#84CED3] mb-2 inline-block transition-colors"
           >
             ← Back to Billing
           </Link>
-          <h1 className="text-2xl font-bold text-[#3B5B63] dark:text-white">Invoice {invoice.invoice_number}</h1>
+          <h1 className="text-2xl font-bold text-[#7CCFD0] dark:text-white">Invoice {invoice.invoice_number}</h1>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
             Client: {invoice.profiles?.first_name} {invoice.profiles?.last_name}
           </p>
@@ -155,13 +155,13 @@ export default function InvoiceDetail({ invoiceId }) {
         <div className="flex gap-2">
           <button
             onClick={exportToCSV}
-            className="px-4 py-2 text-sm bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white border border-gray-300 dark:border-gray-600 rounded-md hover:bg-[#F5F7F8] dark:hover:bg-[#2A3A3D] transition-colors"
+            className="px-4 py-2 text-sm bg-white dark:bg-[#FFFFFF] text-[#7CCFD0] dark:text-white border border-gray-300 dark:border-gray-600 rounded-md hover:bg-[#F5F7F8] dark:hover:bg-[#F8F9FA] transition-colors"
           >
             Export CSV
           </button>
           <button
             onClick={exportToPDF}
-            className="px-4 py-2 text-sm bg-white dark:bg-[#1E1E1E] text-[#3B5B63] dark:text-white border border-gray-300 dark:border-gray-600 rounded-md hover:bg-[#F5F7F8] dark:hover:bg-[#2A3A3D] transition-colors"
+            className="px-4 py-2 text-sm bg-white dark:bg-[#FFFFFF] text-[#7CCFD0] dark:text-white border border-gray-300 dark:border-gray-600 rounded-md hover:bg-[#F5F7F8] dark:hover:bg-[#F8F9FA] transition-colors"
           >
             Print/PDF
           </button>
@@ -169,10 +169,10 @@ export default function InvoiceDetail({ invoiceId }) {
       </div>
 
       {/* Invoice Details */}
-      <div className="bg-white dark:bg-[#1E1E1E] shadow-sm rounded-lg p-6 mb-6">
+      <div className="bg-white dark:bg-[#FFFFFF] shadow-sm rounded-lg p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Status</h3>
+            <h3 className="text-sm font-medium text-[#7CCFD0] dark:text-[#84CED3]">Status</h3>
             <div className="mt-2 flex items-center gap-2">
               <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(invoice.status)}`}>
                 {invoice.status.toUpperCase()}
@@ -199,16 +199,16 @@ export default function InvoiceDetail({ invoiceId }) {
           </div>
           
           <div>
-            <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Total Amount</h3>
-            <p className="mt-2 text-2xl font-bold text-[#3B5B63] dark:text-white">{formatCurrency(invoice.total)}</p>
+            <h3 className="text-sm font-medium text-[#7CCFD0] dark:text-[#84CED3]">Total Amount</h3>
+            <p className="mt-2 text-2xl font-bold text-[#7CCFD0] dark:text-white">{formatCurrency(invoice.total)}</p>
             {invoice.tax > 0 && (
               <p className="text-xs text-gray-600 dark:text-gray-400">Amount: {formatCurrency(invoice.amount)} + Tax: {formatCurrency(invoice.tax)}</p>
             )}
           </div>
           
           <div>
-            <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3]">Due Date</h3>
-            <p className="mt-2 text-lg text-[#3B5B63] dark:text-white">{formatDate(invoice.due_date)}</p>
+            <h3 className="text-sm font-medium text-[#7CCFD0] dark:text-[#84CED3]">Due Date</h3>
+            <p className="mt-2 text-lg text-[#7CCFD0] dark:text-white">{formatDate(invoice.due_date)}</p>
             {invoice.paid_date && (
               <p className="text-sm text-gray-600 dark:text-gray-400">Paid on {formatDate(invoice.paid_date)}</p>
             )}
@@ -217,57 +217,57 @@ export default function InvoiceDetail({ invoiceId }) {
         
         {invoice.description && (
           <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3] mb-2">Description</h3>
-            <p className="text-sm text-[#3B5B63] dark:text-gray-300">{invoice.description}</p>
+            <h3 className="text-sm font-medium text-[#7CCFD0] dark:text-[#84CED3] mb-2">Description</h3>
+            <p className="text-sm text-[#7CCFD0] dark:text-gray-300">{invoice.description}</p>
           </div>
         )}
         
         {invoice.notes && (
           <div className="mt-4">
-            <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3] mb-2">Notes</h3>
-            <p className="text-sm text-[#3B5B63] dark:text-gray-300">{invoice.notes}</p>
+            <h3 className="text-sm font-medium text-[#7CCFD0] dark:text-[#84CED3] mb-2">Notes</h3>
+            <p className="text-sm text-[#7CCFD0] dark:text-gray-300">{invoice.notes}</p>
           </div>
         )}
       </div>
 
       {/* Trip Details */}
       {invoice.trips && (
-        <div className="bg-white dark:bg-[#1E1E1E] shadow-sm rounded-lg p-6">
-          <h2 className="text-lg font-medium text-[#3B5B63] dark:text-white mb-4">Trip Details</h2>
+        <div className="bg-white dark:bg-[#FFFFFF] shadow-sm rounded-lg p-6">
+          <h2 className="text-lg font-medium text-[#7CCFD0] dark:text-white mb-4">Trip Details</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3] mb-2">Pickup</h3>
-              <p className="text-sm text-[#3B5B63] dark:text-gray-300">{invoice.trips.pickup_address}</p>
+              <h3 className="text-sm font-medium text-[#7CCFD0] dark:text-[#84CED3] mb-2">Pickup</h3>
+              <p className="text-sm text-[#7CCFD0] dark:text-gray-300">{invoice.trips.pickup_address}</p>
               <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                 {formatDate(invoice.trips.pickup_time)}
               </p>
             </div>
             
             <div>
-              <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3] mb-2">Destination</h3>
-              <p className="text-sm text-[#3B5B63] dark:text-gray-300">{invoice.trips.destination_address}</p>
+              <h3 className="text-sm font-medium text-[#7CCFD0] dark:text-[#84CED3] mb-2">Destination</h3>
+              <p className="text-sm text-[#7CCFD0] dark:text-gray-300">{invoice.trips.destination_address}</p>
             </div>
             
             {invoice.trips.distance && (
               <div>
-                <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3] mb-2">Distance</h3>
-                <p className="text-sm text-[#3B5B63] dark:text-gray-300">{invoice.trips.distance} miles</p>
+                <h3 className="text-sm font-medium text-[#7CCFD0] dark:text-[#84CED3] mb-2">Distance</h3>
+                <p className="text-sm text-[#7CCFD0] dark:text-gray-300">{invoice.trips.distance} miles</p>
               </div>
             )}
             
             {invoice.trips.driver_name && (
               <div>
-                <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3] mb-2">Driver</h3>
-                <p className="text-sm text-[#3B5B63] dark:text-gray-300">{invoice.trips.driver_name}</p>
+                <h3 className="text-sm font-medium text-[#7CCFD0] dark:text-[#84CED3] mb-2">Driver</h3>
+                <p className="text-sm text-[#7CCFD0] dark:text-gray-300">{invoice.trips.driver_name}</p>
               </div>
             )}
           </div>
           
           {invoice.trips.special_requirements && (
             <div className="mt-4">
-              <h3 className="text-sm font-medium text-[#3B5B63] dark:text-[#84CED3] mb-2">Special Requirements</h3>
-              <p className="text-sm text-[#3B5B63] dark:text-gray-300">{invoice.trips.special_requirements}</p>
+              <h3 className="text-sm font-medium text-[#7CCFD0] dark:text-[#84CED3] mb-2">Special Requirements</h3>
+              <p className="text-sm text-[#7CCFD0] dark:text-gray-300">{invoice.trips.special_requirements}</p>
             </div>
           )}
         </div>

@@ -154,7 +154,7 @@ export default function ClientDetailPage() {
         </div>
         
         <div className="bg-white dark:bg-surface rounded-lg shadow overflow-hidden mb-8">
-          <div className="px-4 py-5 sm:px-6 bg-[#F8F9FA]  border-b border-[#DDE5E7] dark:border-[#3F5E63]">
+          <div className="px-4 py-5 sm:px-6 bg-[#F8F9FA]  border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">Client Information</h3>
           </div>
           <div className="px-4 py-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6">
@@ -189,7 +189,7 @@ export default function ClientDetailPage() {
         
         {/* Client Trips */}
         <div className="bg-white dark:bg-surface rounded-lg shadow overflow-hidden">
-          <div className="px-4 py-5 sm:px-6 bg-[#F8F9FA]  border-b border-[#DDE5E7] dark:border-[#3F5E63] flex justify-between items-center">
+          <div className="px-4 py-5 sm:px-6 bg-[#F8F9FA]  border-b border-[#DDE5E7] dark:border-[#E0E0E0] flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">Trip History</h3>
             <Link 
               href={`/dashboard/book?client=${client.id}`}
@@ -211,7 +211,7 @@ export default function ClientDetailPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-[#DDE5E7] dark:divide-[#3F5E63]">
+              <table className="min-w-full divide-y divide-[#DDE5E7] dark:divide-[#E0E0E0]">
                 <thead className="bg-[#F8F9FA] ">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -234,7 +234,7 @@ export default function ClientDetailPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-surface divide-y divide-[#DDE5E7] dark:divide-[#3F5E63]">
+                <tbody className="bg-white dark:bg-surface divide-y divide-[#DDE5E7] dark:divide-[#E0E0E0]">
                   {trips.map((trip) => (
                     <tr key={trip.id} className="hover:bg-[#F8F9FA] dark:hover:bg-[#24393C]/50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">

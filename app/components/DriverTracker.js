@@ -189,7 +189,7 @@ export default function DriverTracker({ trip, driverLocation, user }) {
 
   return (
     <DashboardLayout user={user} activeTab="trips">
-      <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6 mb-6">
+      <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#E0E0E0] p-6 mb-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900">Track Your Ride</h2>
           <Link 
@@ -201,7 +201,7 @@ export default function DriverTracker({ trip, driverLocation, user }) {
         </div>
         
         {/* Trip Details */}
-        <div className="mb-6 p-4 bg-white  rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
+        <div className="mb-6 p-4 bg-white  rounded-lg border border-[#DDE5E7] dark:border-[#E0E0E0]">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="text-sm font-medium text-[#2E4F54] text-gray-900">From</p>
@@ -242,7 +242,7 @@ export default function DriverTracker({ trip, driverLocation, user }) {
           <h3 className="text-lg font-medium mb-3 text-[#2E4F54] text-gray-900">Live Location</h3>
           <div 
             ref={mapRef} 
-            className="w-full h-96 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63] shadow-inner mb-4"
+            className="w-full h-96 rounded-lg border border-[#DDE5E7] dark:border-[#E0E0E0] shadow-inner mb-4"
             style={{ background: '#F8F9FA' }} // Placeholder color until map loads
           >
             {!mapLoaded && (
@@ -294,7 +294,7 @@ export default function DriverTracker({ trip, driverLocation, user }) {
       {/* Cancel Trip Modal */}
       {showCancelModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[#F8F9FA]  rounded-lg p-6 w-full max-w-md mx-4 border border-[#DDE5E7] dark:border-[#3F5E63]">
+          <div className="bg-[#F8F9FA]  rounded-lg p-6 w-full max-w-md mx-4 border border-[#DDE5E7] dark:border-[#E0E0E0]">
             <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Cancel Trip</h3>
             <p className="text-[#2E4F54]/80 text-gray-900/80 mb-4">
               Are you sure you want to cancel this trip? This action cannot be undone.
@@ -308,7 +308,7 @@ export default function DriverTracker({ trip, driverLocation, user }) {
                 id="cancelReason"
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
-                className="w-full p-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md  text-[#2E4F54] text-gray-900"
+                className="w-full p-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md  text-[#2E4F54] text-gray-900"
                 placeholder="Please provide a reason..."
                 rows={3}
               ></textarea>
@@ -317,7 +317,7 @@ export default function DriverTracker({ trip, driverLocation, user }) {
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowCancelModal(false)}
-                className="px-4 py-2 text-sm font-medium text-[#2E4F54] text-gray-900 bg-[#F8F9FA]  rounded-md hover:bg-[#DDE5E7] dark:hover:bg-[#3F5E63]/50 border border-[#DDE5E7] dark:border-[#3F5E63]"
+                className="px-4 py-2 text-sm font-medium text-[#2E4F54] text-gray-900 bg-[#F8F9FA]  rounded-md hover:bg-[#DDE5E7] dark:hover:bg-[#E0E0E0]/50 border border-[#DDE5E7] dark:border-[#E0E0E0]"
                 disabled={isSubmitting}
               >
                 Keep Trip

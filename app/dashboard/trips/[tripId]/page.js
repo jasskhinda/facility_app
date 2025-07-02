@@ -384,7 +384,7 @@ Website: https://compassionatecaretransportation.com
   if (error) {
     return (
       <DashboardLayout user={user} activeTab="trips">
-        <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
+        <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#E0E0E0] p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900">Trip Details</h2>
             <Link 
@@ -412,7 +412,7 @@ Website: https://compassionatecaretransportation.com
   if (!trip) {
     return (
       <DashboardLayout user={user} activeTab="trips">
-        <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
+        <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#E0E0E0] p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900">Trip Details</h2>
             <Link 
@@ -433,7 +433,7 @@ Website: https://compassionatecaretransportation.com
 
   return (
     <DashboardLayout user={user} activeTab="trips">
-      <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
+      <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#E0E0E0] p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900">Trip Details</h2>
           <Link 
@@ -468,12 +468,12 @@ Website: https://compassionatecaretransportation.com
         </div>
         
         {/* Trip Details Card */}
-        <div className="bg-white  rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] mb-6">
+        <div className="bg-white  rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0] mb-6">
           <h3 className="text-lg font-medium mb-6 text-[#2E4F54] text-gray-900">Trip Information</h3>
           
           {/* Client Information Section - For facility users */}
           {(trip.user_profile || trip.managed_client) && (
-            <div className="mb-6 p-4 bg-[#F8F9FA]  rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
+            <div className="mb-6 p-4 bg-[#F8F9FA]  rounded-lg border border-[#DDE5E7] dark:border-[#E0E0E0]">
               <h4 className="text-md font-medium mb-3 text-[#2E4F54] text-gray-900">Client Information</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -609,11 +609,11 @@ Website: https://compassionatecaretransportation.com
         </div>
         
         {/* Cost Breakdown Section */}
-        <div className="bg-white  rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] mb-6">
+        <div className="bg-white  rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0] mb-6">
           <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Cost Breakdown</h3>
           
           <div className="space-y-3">
-            <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
+            <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
               <span className="text-sm text-[#2E4F54] text-gray-900">Base Fare</span>
               <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
                 ${trip.base_price?.toFixed(2) || (trip.price ? (trip.price * 0.8).toFixed(2) : '0.00')}
@@ -621,7 +621,7 @@ Website: https://compassionatecaretransportation.com
             </div>
             
             {trip.wheelchair_type === 'wheelchair' && (
-              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
+              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
                 <span className="text-sm text-[#2E4F54] text-gray-900">Wheelchair Accessible Surcharge</span>
                 <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
                   ${trip.wheelchair_fee?.toFixed(2) || (trip.price ? (trip.price * 0.1).toFixed(2) : '0.00')}
@@ -630,7 +630,7 @@ Website: https://compassionatecaretransportation.com
             )}
             
             {trip.additional_passengers && trip.additional_passengers > 0 && (
-              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
+              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
                 <span className="text-sm text-[#2E4F54] text-gray-900">Additional Passengers ({trip.additional_passengers})</span>
                 <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
                   ${trip.passenger_fee?.toFixed(2) || (trip.additional_passengers * 5).toFixed(2)}
@@ -639,7 +639,7 @@ Website: https://compassionatecaretransportation.com
             )}
             
             {trip.is_round_trip && (
-              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
+              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
                 <span className="text-sm text-[#2E4F54] text-gray-900">Round Trip</span>
                 <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
                   ${trip.round_trip_fee?.toFixed(2) || (trip.price ? (trip.price * 0.1).toFixed(2) : '0.00')}
@@ -670,7 +670,7 @@ Website: https://compassionatecaretransportation.com
         
         {/* Driver Information (if assigned) */}
         {(trip.driver_id || trip.driver) && (
-          <div className="bg-white  rounded-lg p-5 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] mb-6">
+          <div className="bg-white  rounded-lg p-5 shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0] mb-6">
             <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Driver Information</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -701,7 +701,7 @@ Website: https://compassionatecaretransportation.com
         
         {/* Status-specific sections */}
         {trip.status === 'completed' && trip.rating && (
-          <div className="bg-white  rounded-lg p-5 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] mb-6">
+          <div className="bg-white  rounded-lg p-5 shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0] mb-6">
             <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Your Rating</h3>
             
             <div className="flex items-center mb-3">
@@ -730,7 +730,7 @@ Website: https://compassionatecaretransportation.com
         )}
         
         {trip.status === 'cancelled' && (
-          <div className="bg-white  rounded-lg p-5 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] mb-6">
+          <div className="bg-white  rounded-lg p-5 shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0] mb-6">
             <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Cancellation Details</h3>
             
             <div>
@@ -818,7 +818,7 @@ Website: https://compassionatecaretransportation.com
       {/* Cancellation Modal */}
       {cancellingTrip && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white  rounded-lg p-6 w-full max-w-md mx-4 border border-[#DDE5E7] dark:border-[#3F5E63]">
+          <div className="bg-white  rounded-lg p-6 w-full max-w-md mx-4 border border-[#DDE5E7] dark:border-[#E0E0E0]">
             <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Cancel Trip</h3>
             <p className="text-[#2E4F54]/80 text-gray-900/80 mb-4">
               Are you sure you want to cancel this trip? This action cannot be undone.
@@ -832,7 +832,7 @@ Website: https://compassionatecaretransportation.com
                 id="cancelReason"
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
-                className="w-full p-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md  text-[#2E4F54] text-gray-900"
+                className="w-full p-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md  text-[#2E4F54] text-gray-900"
                 placeholder="Please provide a reason..."
                 rows={3}
               ></textarea>
@@ -841,7 +841,7 @@ Website: https://compassionatecaretransportation.com
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setCancellingTrip(false)}
-                className="px-4 py-2 text-sm font-medium text-[#2E4F54] text-gray-900 bg-[#F8F9FA]  rounded-md hover:bg-[#DDE5E7] dark:hover:bg-[#3F5E63]/50 border border-[#DDE5E7] dark:border-[#3F5E63]"
+                className="px-4 py-2 text-sm font-medium text-[#2E4F54] text-gray-900 bg-[#F8F9FA]  rounded-md hover:bg-[#DDE5E7] dark:hover:bg-[#E0E0E0]/50 border border-[#DDE5E7] dark:border-[#E0E0E0]"
                 disabled={isSubmitting}
               >
                 Keep Trip

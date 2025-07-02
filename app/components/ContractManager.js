@@ -183,7 +183,7 @@ export default function ContractManager({ facilityId }) {
 
   if (loading) {
     return (
-      <div className="bg-white  rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
+      <div className="bg-white  rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0]">
         <div className="animate-pulse">
           <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
           <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
@@ -193,7 +193,7 @@ export default function ContractManager({ facilityId }) {
   }
 
   return (
-    <div className="bg-white  rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
+    <div className="bg-white  rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0]">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-lg font-medium text-[#2E4F54] text-gray-900">
           Facility Contract
@@ -221,7 +221,7 @@ export default function ContractManager({ facilityId }) {
       {contract ? (
         <div className="space-y-4">
           {/* Contract Info Card */}
-          <div className="bg-[#F8F9FA]  rounded-lg p-4 border border-[#DDE5E7] dark:border-[#3F5E63]">
+          <div className="bg-[#F8F9FA]  rounded-lg p-4 border border-[#DDE5E7] dark:border-[#E0E0E0]">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center mb-2">
@@ -289,7 +289,7 @@ export default function ContractManager({ facilityId }) {
       ) : (
         /* Upload Area */
         <div className="text-center">
-          <div className="border-2 border-dashed border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg p-8">
+          <div className="border-2 border-dashed border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg p-8">
             <svg className="mx-auto h-12 w-12 text-[#2E4F54]/40 text-gray-900/40" stroke="currentColor" fill="none" viewBox="0 0 48 48">
               <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -342,7 +342,7 @@ export default function ContractManager({ facilityId }) {
 
       {/* Replace Contract Section */}
       {contract && (
-        <div className="mt-6 pt-6 border-t border-[#DDE5E7] dark:border-[#3F5E63]">
+        <div className="mt-6 pt-6 border-t border-[#DDE5E7] dark:border-[#E0E0E0]">
           <h4 className="text-md font-medium text-[#2E4F54] text-gray-900 mb-3">
             Replace Contract
           </h4>

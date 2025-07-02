@@ -27,7 +27,7 @@ function HomeContent() {
   
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="p-4 bg-[#F8F9FA]  shadow border-b border-[#DDE5E7] dark:border-[#3F5E63]">
+      <header className="p-4 bg-[#F8F9FA]  shadow border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <h1 className="text-xl font-bold text-[#2E4F54] text-gray-900">Compassionate Rides for Facilities</h1>
@@ -50,7 +50,7 @@ function HomeContent() {
       </header>
 
       <main className="flex-grow">
-        <section className="py-16 px-4 bg-gradient-to-b from-[#3B5B63]/10 to-white dark:from-[#24393C] dark:to-[#1C2C2F]">
+        <section className="py-16 px-4 bg-gradient-to-b from-[#7CCFD0]/10 to-white dark:from-[#24393C] dark:to-[#1C2C2F]">
           <div className="container mx-auto text-center">
             <h2 className="text-4xl font-bold mb-6 text-[#2E4F54] text-gray-900">
               Streamline Your Facility&apos;s Transportation Management
@@ -63,7 +63,7 @@ function HomeContent() {
               <Link href="/login" className="bg-[#7CCFD0] text-white px-6 py-3 rounded-lg hover:bg-[#60BFC0] font-medium">
                 Access Facility Portal
               </Link>
-              <Link href="#features" className="border border-[#DDE5E7] dark:border-[#3F5E63] px-6 py-3 rounded-lg hover:bg-[#F8F9FA] dark:hover:bg-[#24393C] font-medium text-[#2E4F54] text-gray-900">
+              <Link href="#features" className="border border-[#DDE5E7] dark:border-[#E0E0E0] px-6 py-3 rounded-lg hover:bg-[#F8F9FA] dark:hover:bg-[#24393C] font-medium text-[#2E4F54] text-gray-900">
                 See Features
               </Link>
             </div>
@@ -76,7 +76,7 @@ function HomeContent() {
               Facility Management Features
             </h2>
             <div className="grid md:grid-cols-3 gap-8">
-              <div className="bg-white  p-6 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
+              <div className="bg-white  p-6 rounded-lg border border-[#DDE5E7] dark:border-[#E0E0E0]">
                 <div className="text-3xl mb-4">👥</div>
                 <h3 className="text-xl font-bold mb-2 text-[#2E4F54] text-gray-900">Client Management</h3>
                 <p className="text-[#2E4F54]/70 text-gray-900/70">
@@ -84,7 +84,7 @@ function HomeContent() {
                 </p>
               </div>
               
-              <div className="bg-white  p-6 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
+              <div className="bg-white  p-6 rounded-lg border border-[#DDE5E7] dark:border-[#E0E0E0]">
                 <div className="text-3xl mb-4">📅</div>
                 <h3 className="text-xl font-bold mb-2 text-[#2E4F54] text-gray-900">Bulk Booking</h3>
                 <p className="text-[#2E4F54]/70 text-gray-900/70">
@@ -92,7 +92,7 @@ function HomeContent() {
                 </p>
               </div>
               
-              <div className="bg-white  p-6 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
+              <div className="bg-white  p-6 rounded-lg border border-[#DDE5E7] dark:border-[#E0E0E0]">
                 <div className="text-3xl mb-4">💰</div>
                 <h3 className="text-xl font-bold mb-2 text-[#2E4F54] text-gray-900">Consolidated Billing</h3>
                 <p className="text-[#2E4F54]/70 text-gray-900/70">
@@ -152,7 +152,7 @@ function HomeContent() {
           </div>
         </section>
 
-        <section className="py-16 px-4 bg-[#3B5B63] text-white">
+        <section className="py-16 px-4 bg-[#7CCFD0] text-white">
           <div className="container mx-auto text-center">
             <h2 className="text-3xl font-bold mb-6">Trusted by Healthcare Facilities</h2>
             <p className="text-xl mb-8 max-w-3xl mx-auto opacity-90">
@@ -183,7 +183,7 @@ function HomeContent() {
             <p className="text-xl mb-8 text-[#2E4F54]/80 text-gray-900/80">
               Contact our sales team to learn how we can help streamline your facility&apos;s transportation management.
             </p>
-            <div className="bg-[#F8F9FA]  p-8 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
+            <div className="bg-[#F8F9FA]  p-8 rounded-lg border border-[#DDE5E7] dark:border-[#E0E0E0]">
               <div className="space-y-4 text-left">
                 <div>
                   <strong className="text-[#2E4F54] text-gray-900">Email:</strong>
@@ -210,7 +210,7 @@ function HomeContent() {
         </section>
       </main>
 
-      <footer className="bg-[#F8F9FA]  py-8 border-t border-[#DDE5E7] dark:border-[#3F5E63]">
+      <footer className="bg-[#F8F9FA]  py-8 border-t border-[#DDE5E7] dark:border-[#E0E0E0]">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-[#2E4F54]/70 text-gray-900/70 mb-4 md:mb-0">
