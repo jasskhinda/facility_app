@@ -74,7 +74,8 @@ function PaymentForm({
 
   useEffect(() => {
     if (defaultPaymentMethod) {
-      setPaymentMethod(defaultPaymentMethod.payment_method_type)
+      // Set the selected saved method but don't auto-select payment method type
+      // This allows users to see all payment options including check payment
       setSelectedSavedMethod(defaultPaymentMethod)
     }
   }, [defaultPaymentMethod])
