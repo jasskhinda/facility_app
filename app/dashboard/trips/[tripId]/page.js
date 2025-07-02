@@ -151,29 +151,50 @@ Website: https://compassionatecaretransportation.com
         }
         
         // Build trip query based on user role (same logic as trips list page)
-        let tripQuery = supabase
-          .from('trips')
-          .select('*')
-          .eq('id', tripId);
+        let tripData = null;
+        let tripError = null;
         
         // For facility users, allow access to any trip for their facility
         // For regular clients, only allow access to their own trips
         if (profileData?.role === 'facility' && profileData?.facility_id) {
           console.log('🏥 Facility user accessing trip - checking facility access');
-          tripQuery = tripQuery.eq('facility_id', profileData.facility_id);
+          const { data, error } = await supabase
+            .from('trips')
+            .select('*')
+            .eq('id', tripId)
+            .eq('facility_id', profileData.facility_id)
+            .single();
+          tripData = data;
+          tripError = error;
         } else {
           console.log('👤 Regular client accessing trip - checking user access');
-          tripQuery = tripQuery.eq('user_id', session.user.id);
+          const { data, error } = await supabase
+            .from('trips')
+            .select('*')
+            .eq('id', tripId)
+            .eq('user_id', session.user.id)
+            .single();
+          tripData = data;
+          tripError = error;
         }
         
-        const { data: tripData, error: tripError } = await tripQuery.single();
-        
         if (tripError) {
+          console.error('Trip query error:', tripError);
+          console.error('Trip error code:', tripError.code);
+          console.error('Trip error details:', JSON.stringify(tripError));
+          
           if (tripError.code === 'PGRST116') {
             setError('Trip not found or you do not have permission to view it.');
+          } else if (tripError.code === 'PGRST004') {
+            setError('Database connection error. Please try again.');
           } else {
             setError(tripError.message || 'Failed to load trip data');
           }
+          return;
+        }
+        
+        if (!tripData) {
+          setError('Trip not found or you do not have permission to view it.');
           return;
         }
         
@@ -195,14 +216,30 @@ Website: https://compassionatecaretransportation.com
         
         // Fetch managed client information if managed_client_id exists
         if (tripData.managed_client_id) {
-          const { data: managedClient } = await supabase
-            .from('managed_clients')
-            .select('id, first_name, last_name, phone_number')
-            .eq('id', tripData.managed_client_id)
-            .single();
-          
-          if (managedClient) {
-            enhancedTripData.managed_client = managedClient;
+          try {
+            const { data: managedClient, error: managedClientError } = await supabase
+              .from('facility_managed_clients')
+              .select('id, first_name, last_name, phone_number')
+              .eq('id', tripData.managed_client_id)
+              .single();
+            
+            if (managedClientError) {
+              console.error('Error fetching managed client:', managedClientError);
+              // Try alternative table name if the first one fails
+              const { data: altManagedClient } = await supabase
+                .from('managed_clients')
+                .select('id, first_name, last_name, phone_number')
+                .eq('id', tripData.managed_client_id)
+                .single();
+              
+              if (altManagedClient) {
+                enhancedTripData.managed_client = altManagedClient;
+              }
+            } else if (managedClient) {
+              enhancedTripData.managed_client = managedClient;
+            }
+          } catch (err) {
+            console.error('Error fetching managed client data:', err);
           }
         }
         

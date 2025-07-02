@@ -132,21 +132,43 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
     setIsSubmitting(true);
     
     try {
+      // Get user profile to determine if they're a facility user
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('role, facility_id')
+        .eq('id', user.id)
+        .single();
+      
       // Create a new trip based on the completed one
+      const newTripData = {
+        pickup_address: trip.pickup_address,
+        destination_address: trip.destination_address,
+        pickup_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+        status: 'pending', // Start as pending for dispatcher approval
+        price: trip.price,
+        special_requirements: trip.special_requirements,
+        wheelchair_type: trip.wheelchair_type,
+        is_round_trip: trip.is_round_trip,
+        distance: trip.distance,
+        additional_passengers: trip.additional_passengers,
+        trip_notes: trip.trip_notes,
+        bill_to: trip.bill_to
+      };
+      
+      // Set user fields based on role
+      if (profileData?.role === 'facility' && profileData?.facility_id) {
+        // For facility users, set facility_id and managed_client_id
+        newTripData.facility_id = profileData.facility_id;
+        newTripData.managed_client_id = trip.managed_client_id;
+        // Don't set user_id for facility trips
+      } else {
+        // For regular users, set user_id
+        newTripData.user_id = user.id;
+      }
+      
       const { data, error } = await supabase
         .from('trips')
-        .insert({
-          user_id: user.id,
-          pickup_address: trip.pickup_address,
-          destination_address: trip.destination_address,
-          pickup_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
-          status: 'pending', // Start as pending for dispatcher approval
-          price: trip.price,
-          special_requirements: trip.special_requirements,
-          wheelchair_type: trip.wheelchair_type,
-          is_round_trip: trip.is_round_trip,
-          distance: trip.distance
-        })
+        .insert(newTripData)
         .select();
         
       if (error) {
