@@ -163,7 +163,7 @@ export default function PaymentMethodsManager({ user, facilityId }) {
     }
   };
 
-  const handleCardSuccess = async ({ paymentMethodId, cardholderName, nickname }) => {
+  const handleCardSuccess = async ({ paymentMethodId, cardholderName }) => {
     try {
       // Get payment method details from Stripe
       const response = await fetch(`/api/stripe/payment-methods?paymentMethodId=${paymentMethodId}`, {
@@ -191,7 +191,7 @@ export default function PaymentMethodsManager({ user, facilityId }) {
           expiry_month: paymentMethod.card.exp_month,
           expiry_year: paymentMethod.card.exp_year,
           cardholder_name: cardholderName,
-          nickname: nickname || `${paymentMethod.card.brand.toUpperCase()} ****${paymentMethod.card.last4}`,
+          nickname: `${paymentMethod.card.brand.toUpperCase()} ****${paymentMethod.card.last4}`,
           is_default: isFirstMethod
         });
 
@@ -458,9 +458,9 @@ export default function PaymentMethodsManager({ user, facilityId }) {
       )}
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
+      <div className="bg-gradient-to-r from-[#7CCFD0] to-[#60BFC0] rounded-lg p-6 text-white">
         <h2 className="text-2xl font-bold mb-2">Payment Methods</h2>
-        <p className="text-blue-100">
+        <p className="text-white/90">
           Add and manage your payment methods for monthly invoice payments
         </p>
       </div>
@@ -472,14 +472,14 @@ export default function PaymentMethodsManager({ user, facilityId }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button
             onClick={handleOpenCardModal}
-            className="flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors group"
+            className="flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#7CCFD0] hover:bg-[#7CCFD0]/10 transition-colors group"
           >
             <div className="text-center">
-              <svg className="mx-auto h-8 w-8 text-gray-400 group-hover:text-blue-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="mx-auto h-8 w-8 text-gray-400 group-hover:text-[#7CCFD0] mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
               </svg>
-              <h4 className="text-sm font-medium text-gray-900 group-hover:text-blue-900">Add Credit Card</h4>
-              <p className="text-xs text-gray-500 mt-1">Visa, Mastercard, Amex</p>
+              <h4 className="text-sm font-medium text-gray-900 group-hover:text-[#60BFC0]">Add Payment Card</h4>
+              <p className="text-xs text-gray-500 mt-1">Credit or Debit Card</p>
             </div>
           </button>
 
@@ -506,7 +506,7 @@ export default function PaymentMethodsManager({ user, facilityId }) {
 
         {loading ? (
           <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7CCFD0] mx-auto"></div>
             <p className="text-gray-600 mt-2">Loading payment methods...</p>
           </div>
         ) : paymentMethods.length === 0 ? (
@@ -526,7 +526,7 @@ export default function PaymentMethodsManager({ user, facilityId }) {
                 <div className="flex items-center space-x-4">
                   <div className="flex-shrink-0">
                     {method.payment_method_type === 'card' ? (
-                      <div className="w-12 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded flex items-center justify-center">
+                      <div className="w-12 h-8 bg-gradient-to-r from-[#7CCFD0] to-[#60BFC0] rounded flex items-center justify-center">
                         <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                         </svg>
@@ -546,7 +546,7 @@ export default function PaymentMethodsManager({ user, facilityId }) {
                         {method.nickname}
                       </h4>
                       {method.is_default && (
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-[#7CCFD0]/20 text-[#60BFC0]">
                           Default
                         </span>
                       )}
@@ -578,7 +578,7 @@ export default function PaymentMethodsManager({ user, facilityId }) {
                   {!method.is_default && (
                     <button
                       onClick={() => handleSetDefault(method.id)}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      className="text-sm text-[#7CCFD0] hover:text-[#60BFC0] font-medium"
                     >
                       Set as Default
                     </button>
@@ -604,12 +604,12 @@ export default function PaymentMethodsManager({ user, facilityId }) {
       {showAddCardModal && setupClientSecret && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="bg-blue-600 text-white p-6 rounded-t-lg">
+            <div className="bg-[#7CCFD0] text-white p-6 rounded-t-lg">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold">Add Credit Card</h2>
+                <h2 className="text-xl font-bold">Add Payment Card</h2>
                 <button
                   onClick={() => handleCardError('Cancelled')}
-                  className="text-blue-200 hover:text-white transition-colors"
+                  className="text-white/70 hover:text-white transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -622,7 +622,6 @@ export default function PaymentMethodsManager({ user, facilityId }) {
               <StripeCardElement
                 clientSecret={setupClientSecret}
                 facilityId={facilityId}
-                nickname={cardForm.nickname}
                 onSuccess={handleCardSuccess}
                 onError={handleCardError}
                 processing={processing}

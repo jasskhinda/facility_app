@@ -381,8 +381,8 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                   <div className="mt-3 space-y-2">
                     {/* Client Information for facility trips - always show */}
                     <div>
-                      <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Client</p>
-                      <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">
+                      <p className="text-base font-bold text-[#2E4F54] text-gray-900">Client</p>
+                      <p className="text-lg text-[#2E4F54]/90 text-gray-900/90">
                         {trip.user_profile 
                           ? `${trip.user_profile.first_name} ${trip.user_profile.last_name}${trip.user_profile.phone_number ? ` • ${trip.user_profile.phone_number}` : ''}`
                           : trip.managed_client
@@ -410,24 +410,24 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[#2E4F54] text-gray-900">From</p>
-                      <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">{trip.pickup_address}</p>
+                      <p className="text-base font-bold text-[#2E4F54] text-gray-900">From</p>
+                      <p className="text-lg text-[#2E4F54]/90 text-gray-900/90">{trip.pickup_address}</p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[#2E4F54] text-gray-900">To</p>
-                      <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">{trip.destination_address}</p>
+                      <p className="text-base font-bold text-[#2E4F54] text-gray-900">To</p>
+                      <p className="text-lg text-[#2E4F54]/90 text-gray-900/90">{trip.destination_address}</p>
                     </div>
                   </div>
                   
                   {/* Facility Information - show for facility trips */}
                   {trip.facility_id && (
                     <div className="mt-4">
-                      <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Facility</p>
-                      <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">
+                      <p className="text-base font-bold text-[#2E4F54] text-gray-900">Facility</p>
+                      <p className="text-lg text-[#2E4F54]/90 text-gray-900/90">
                         {getFacilityDisplayInfo(trip)?.facilityName || 'N/A'}
                       </p>
                       {getFacilityDisplayInfo(trip)?.facilityContact && (
-                        <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">
+                        <p className="text-lg text-[#2E4F54]/90 text-gray-900/90">
                           {getFacilityDisplayInfo(trip)?.facilityContact}
                         </p>
                       )}
@@ -463,13 +463,13 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                           </Link>
                           <button
                             onClick={() => startCancellation(trip.id)}
-                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-md text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-md text-white bg-red-500 hover:bg-red-600"
                           >
                             Cancel
                           </button>
                         </div>
                       </div>
-                      <div className="mt-2 text-xs text-purple-600 dark:text-purple-400">
+                      <div className="mt-2 text-sm font-medium text-purple-600 dark:text-purple-400">
                         Your request is pending approval from a dispatcher
                       </div>
                     </div>
@@ -478,8 +478,8 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                   {trip.status === 'upcoming' && (
                     <div className="mt-4 flex justify-between">
                       <div>
-                        <p className="text-sm font-medium">Driver</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                        <p className="text-base font-bold text-[#2E4F54] text-gray-900">Driver</p>
+                        <p className="text-lg text-[#2E4F54]/90 text-gray-900/90">
                           {trip.driver 
                             ? (trip.driver.profile?.full_name || `${trip.driver.profile?.first_name || ''} ${trip.driver.profile?.last_name || ''}`.trim() || trip.driver_name || trip.driver.email) 
                             : (trip.driver_name || 'Not assigned yet')}
@@ -494,7 +494,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                         </Link>
                         <button
                           onClick={() => startCancellation(trip.id)}
-                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-md text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-md text-white bg-red-500 hover:bg-red-600"
                         >
                           Cancel
                         </button>
@@ -506,14 +506,14 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                     <div className="mt-4">
                       <div className="flex justify-between items-center mb-3">
                         <div>
-                          <p className="text-sm font-medium">Price</p>
-                          <p className="text-sm text-gray-600 dark:text-gray-300">${trip.price?.toFixed(2) || 'N/A'}</p>
+                          <p className="text-base font-bold text-[#2E4F54] text-gray-900">Price</p>
+                          <p className="text-lg text-black font-bold">${trip.price?.toFixed(2) || 'N/A'}</p>
                         </div>
                         <div className="flex space-x-2">
                           {!trip.rating && (
                             <button
                               onClick={() => setRatingTrip(trip)}
-                              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-md text-yellow-700 bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:hover:bg-yellow-900/50"
+                              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-md text-white bg-yellow-500 hover:bg-yellow-600"
                             >
                               <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -563,12 +563,12 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                   
                   {trip.status === 'cancelled' && (
                     <div className="mt-4">
-                      <p className="text-sm font-medium">Cancellation reason</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">{trip.cancellation_reason || 'Not specified'}</p>
+                      <p className="text-base font-bold text-[#2E4F54] text-gray-900">Cancellation reason</p>
+                      <p className="text-lg text-[#2E4F54]/90 text-gray-900/90">{trip.cancellation_reason || 'Not specified'}</p>
                       {trip.refund_status && (
                         <div className="mt-2">
-                          <p className="text-sm font-medium">Refund status</p>
-                          <p className="text-sm text-gray-600 dark:text-gray-300">{trip.refund_status}</p>
+                          <p className="text-base font-bold text-[#2E4F54] text-gray-900">Refund status</p>
+                          <p className="text-lg text-[#2E4F54]/90 text-gray-900/90">{trip.refund_status}</p>
                         </div>
                       )}
                     </div>
@@ -577,8 +577,8 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                   {trip.status === 'in_progress' && (
                     <div className="mt-4 flex justify-between items-center">
                       <div>
-                        <p className="text-sm font-medium">Driver</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                        <p className="text-base font-bold text-[#2E4F54] text-gray-900">Driver</p>
+                        <p className="text-lg text-[#2E4F54]/90 text-gray-900/90">
                           {trip.driver 
                             ? (trip.driver.profile?.full_name || `${trip.driver.profile?.first_name || ''} ${trip.driver.profile?.last_name || ''}`.trim() || trip.driver_name || trip.driver.email) 
                             : (trip.driver_name || 'Not assigned')}

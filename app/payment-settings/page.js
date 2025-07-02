@@ -162,7 +162,7 @@ export default function PaymentSettingsPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex items-center space-x-2">
-          <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+          <Loader2 className="h-6 w-6 animate-spin text-[#7CCFD0]" />
           <span className="text-gray-600">Loading payment settings...</span>
         </div>
       </div>
@@ -244,9 +244,9 @@ export default function PaymentSettingsPage() {
               
               <div className="p-6">
                 {defaultPaymentMethod ? (
-                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-between p-4 bg-[#7CCFD0]/10 rounded-lg border border-[#7CCFD0]/30">
                     <div className="flex items-center space-x-3">
-                      <div className="text-blue-600">
+                      <div className="text-[#60BFC0]">
                         {getPaymentMethodIcon(defaultPaymentMethod.payment_method_type)}
                       </div>
                       <div>
@@ -260,7 +260,7 @@ export default function PaymentSettingsPage() {
                         </p>
                       </div>
                     </div>
-                    <CheckCircle className="h-6 w-6 text-blue-600" />
+                    <CheckCircle className="h-6 w-6 text-[#60BFC0]" />
                   </div>
                 ) : (
                   <div className="text-center py-6">
@@ -288,12 +288,12 @@ export default function PaymentSettingsPage() {
                         key={method.id}
                         className={`flex items-center justify-between p-3 rounded-lg border ${
                           method.is_default
-                            ? 'bg-blue-50 border-blue-200'
+                            ? 'bg-[#7CCFD0]/10 border-[#7CCFD0]/30'
                             : 'bg-gray-50 border-gray-200'
                         }`}
                       >
                         <div className="flex items-center space-x-3">
-                          <div className={method.is_default ? 'text-blue-600' : 'text-gray-400'}>
+                          <div className={method.is_default ? 'text-[#60BFC0]' : 'text-gray-400'}>
                             {getPaymentMethodIcon(method.payment_method_type)}
                           </div>
                           <div>
@@ -309,14 +309,14 @@ export default function PaymentSettingsPage() {
                         {!method.is_default && (
                           <button
                             onClick={() => handleSetDefaultPaymentMethod(method.id)}
-                            className="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
+                            className="px-3 py-1 text-xs font-medium text-[#7CCFD0] hover:text-[#60BFC0] hover:bg-[#7CCFD0]/10 rounded-md transition-colors"
                           >
                             Set Default
                           </button>
                         )}
                         
                         {method.is_default && (
-                          <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                          <span className="px-2 py-1 text-xs font-medium bg-[#7CCFD0]/20 text-[#60BFC0] rounded-full">
                             Default
                           </span>
                         )}
@@ -344,7 +344,7 @@ export default function PaymentSettingsPage() {
                   </div>
                   
                   <div className="flex items-start space-x-3">
-                    <Building2 className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <Building2 className="h-5 w-5 text-[#7CCFD0] mt-0.5" />
                     <div>
                       <p className="font-medium text-gray-900">Bank Transfer</p>
                       <p className="text-sm text-gray-600">ACH transfer using saved bank details</p>

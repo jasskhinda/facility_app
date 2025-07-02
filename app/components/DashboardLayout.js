@@ -116,16 +116,16 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
       {/* Top Navigation Bar */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
+          <div className="flex justify-between h-20">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
                 <Link href="/" className="flex items-center">
                   <Image 
                     src="/LOGO2.png" 
                     alt="Compassionate Care Transportation" 
-                    width={220}
-                    height={50}
-                    className="h-12 w-auto"
+                    width={280}
+                    height={64}
+                    className="h-16 w-auto"
                   />
                 </Link>
                 {userRole === 'facility' && (

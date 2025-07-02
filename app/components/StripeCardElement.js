@@ -32,7 +32,7 @@ const CARD_ELEMENT_OPTIONS = {
   hidePostalCode: false
 };
 
-function CardForm({ onSuccess, onError, clientSecret, facilityId, nickname, processing, setProcessing }) {
+function CardForm({ onSuccess, onError, clientSecret, facilityId, processing, setProcessing }) {
   const stripe = useStripe();
   const elements = useElements();
   const [cardholderName, setCardholderName] = useState('');
@@ -73,8 +73,7 @@ function CardForm({ onSuccess, onError, clientSecret, facilityId, nickname, proc
       // Call the success callback with the payment method details
       onSuccess({
         paymentMethodId: setupIntent.payment_method,
-        cardholderName,
-        nickname
+        cardholderName
       });
 
     } catch (err) {
@@ -88,17 +87,6 @@ function CardForm({ onSuccess, onError, clientSecret, facilityId, nickname, proc
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Card Nickname (Optional)
-        </label>
-        <input
-          type="text"
-          value={nickname}
-          readOnly
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none"
-        />
-      </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -109,7 +97,7 @@ function CardForm({ onSuccess, onError, clientSecret, facilityId, nickname, proc
           value={cardholderName}
           onChange={(e) => setCardholderName(e.target.value)}
           placeholder="Name on card"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
           required
         />
       </div>
@@ -118,7 +106,7 @@ function CardForm({ onSuccess, onError, clientSecret, facilityId, nickname, proc
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Card Details *
         </label>
-        <div className="p-3 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+        <div className="p-3 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-[#7CCFD0] focus-within:border-[#7CCFD0]">
           <CardElement options={CARD_ELEMENT_OPTIONS} />
         </div>
         <p className="text-xs text-gray-500 mt-1">
@@ -144,7 +132,7 @@ function CardForm({ onSuccess, onError, clientSecret, facilityId, nickname, proc
         <button
           type="submit"
           disabled={!stripe || processing}
-          className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-semibold rounded-lg transition-colors"
+          className="flex-1 px-4 py-2 bg-[#7CCFD0] hover:bg-[#60BFC0] disabled:bg-gray-300 text-white font-semibold rounded-lg transition-colors"
         >
           {processing ? 'Adding...' : 'Add Card'}
         </button>
@@ -153,13 +141,12 @@ function CardForm({ onSuccess, onError, clientSecret, facilityId, nickname, proc
   );
 }
 
-export default function StripeCardElement({ clientSecret, facilityId, nickname, onSuccess, onError, processing, setProcessing }) {
+export default function StripeCardElement({ clientSecret, facilityId, onSuccess, onError, processing, setProcessing }) {
   return (
     <Elements stripe={stripePromise}>
       <CardForm 
         clientSecret={clientSecret}
         facilityId={facilityId}
-        nickname={nickname}
         onSuccess={onSuccess}
         onError={onError}
         processing={processing}
