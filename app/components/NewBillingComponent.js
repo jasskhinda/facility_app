@@ -754,7 +754,11 @@ ${monthlyTrips.map(trip => {
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const isEndOfMonth = now.getDate() >= lastDayOfMonth - 2; // Last 2 days of month
 
+    // Check if there's already been a payment this month
+    const hasExistingPayment = invoiceStatus && invoiceStatus.includes('PAID');
+
     // If it's current month and not end of month, show confirmation
+    // But if there's already been a payment, show different messaging
     if (isCurrentMonth && !isEndOfMonth) {
       setShowMidMonthConfirmation(true);
     } else {
@@ -856,6 +860,7 @@ ${monthlyTrips.map(trip => {
       const billableTrips = monthlyTrips.filter(trip => trip.billable);
       const now = new Date();
       const isCurrentMonth = selectedMonth === now.toISOString().slice(0, 7);
+      const hasExistingPayment = invoiceStatus && invoiceStatus.includes('PAID');
       
       // Create payment note based on timing
       let paymentNote = '';
@@ -902,7 +907,11 @@ ${monthlyTrips.map(trip => {
         setInvoiceStatus('PAID WITH CARD');
         
         if (paymentData.partial_month_payment) {
-          setSuccessMessage(`Mid-month payment of $${totalAmount.toFixed(2)} processed successfully! New completed trips will be added to your next bill.`);
+          if (hasExistingPayment) {
+            setSuccessMessage(`Additional payment of $${totalAmount.toFixed(2)} processed successfully! This is in addition to your previous payment this month.`);
+          } else {
+            setSuccessMessage(`Mid-month payment of $${totalAmount.toFixed(2)} processed successfully! New completed trips will be added to your next bill.`);
+          }
         } else {
           setSuccessMessage(`Payment of $${totalAmount.toFixed(2)} processed successfully with credit card`);
         }
@@ -915,7 +924,11 @@ ${monthlyTrips.map(trip => {
         setInvoiceStatus('PAID');
         
         if (paymentData.partial_month_payment) {
-          setSuccessMessage(`Mid-month bank transfer of $${totalAmount.toFixed(2)} initiated! New completed trips will be added to your next bill. Processing time: 1-3 business days`);
+          if (hasExistingPayment) {
+            setSuccessMessage(`Additional bank transfer of $${totalAmount.toFixed(2)} initiated! This is in addition to your previous payment this month. Processing time: 1-3 business days`);
+          } else {
+            setSuccessMessage(`Mid-month bank transfer of $${totalAmount.toFixed(2)} initiated! New completed trips will be added to your next bill. Processing time: 1-3 business days`);
+          }
         } else {
           setSuccessMessage(`Bank transfer initiated for $${totalAmount.toFixed(2)}. Processing time: 1-3 business days`);
         }
@@ -1145,34 +1158,51 @@ ${monthlyTrips.map(trip => {
 
         {/* Action Buttons */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Already Paid Button */}
+          {/* Already Paid Button - Enhanced for Multiple Payments */}
           <button
             onClick={() => {
               setMarkAsPaid(true);
               openInvoiceModal();
             }}
-            disabled={loading || monthlyTrips.length === 0 || invoiceStatus !== 'UNPAID'}
+            disabled={loading || totalAmount <= 0}
             className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span className="text-center">
-              <div className="text-sm">ALREADY PAID</div>
-              <div className="text-xs opacity-90">(Send Verification)</div>
+              <div className="text-sm">
+                {invoiceStatus && invoiceStatus.includes('PAID') && totalAmount > 0 
+                  ? 'ADDITIONAL PAID' 
+                  : 'ALREADY PAID'}
+              </div>
+              <div className="text-xs opacity-90">
+                {invoiceStatus && invoiceStatus.includes('PAID') && totalAmount > 0 
+                  ? '(New trips verification)' 
+                  : '(Send Verification)'}
+              </div>
             </span>
           </button>
           
-          {/* Pay Monthly Invoice Button */}
+          {/* Pay Monthly Invoice Button - Enhanced for Multiple Payments */}
           <button
             onClick={openPaymentModal}
-            disabled={loading || totalAmount <= 0 || (!['UNPAID', 'PENDING', 'NEEDS ATTENTION - RETRY PAYMENT'].includes(invoiceStatus))}
+            disabled={loading || totalAmount <= 0}
             className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
-            Pay Monthly Invoice
+            <span className="text-center">
+              <div className="text-sm">
+                {invoiceStatus && invoiceStatus.includes('PAID') && totalAmount > 0 
+                  ? 'Pay Additional Trips' 
+                  : 'Pay Monthly Invoice'}
+              </div>
+              {invoiceStatus && invoiceStatus.includes('PAID') && totalAmount > 0 && (
+                <div className="text-xs opacity-90">New completed trips</div>
+              )}
+            </span>
           </button>
           
           {/* Download Summary Button */}
@@ -1556,29 +1586,58 @@ ${monthlyTrips.map(trip => {
                   </div>
                   <div className="ml-4">
                     <h3 className="text-lg font-bold text-amber-900 mb-2">
-                      Are you sure you want to pay now?
+                      {invoiceStatus && invoiceStatus.includes('PAID') 
+                        ? 'Pay for Additional Completed Trips?' 
+                        : 'Are you sure you want to pay now?'}
                     </h3>
                     <div className="space-y-3 text-sm text-amber-800">
-                      <p className="font-medium">
-                        <strong>Facility bills are typically paid at the end of the month, but you can choose to pay now for currently completed trips.</strong>
-                      </p>
-                      <div className="bg-white p-4 rounded border border-amber-300">
-                        <h4 className="font-semibold text-amber-900 mb-2">What this means:</h4>
-                        <ul className="space-y-2">
-                          <li className="flex items-start">
-                            <span className="text-green-600 mr-2 mt-0.5">✓</span>
-                            <span>You'll pay <strong>${totalAmount.toFixed(2)}</strong> for {monthlyTrips.filter(trip => trip.billable).length} completed trips</span>
-                          </li>
-                          <li className="flex items-start">
-                            <span className="text-blue-600 mr-2 mt-0.5">ℹ</span>
-                            <span>Any trips completed <strong>after this payment</strong> will be added to your next bill</span>
-                          </li>
-                          <li className="flex items-start">
-                            <span className="text-amber-600 mr-2 mt-0.5">⚠</span>
-                            <span>This is a <strong>partial month payment</strong> - additional charges may apply for future trips this month</span>
-                          </li>
-                        </ul>
-                      </div>
+                      {invoiceStatus && invoiceStatus.includes('PAID') ? (
+                        <div>
+                          <p className="font-medium">
+                            <strong>You've already made a payment this month, but there are new completed trips to pay for.</strong>
+                          </p>
+                          <div className="bg-white p-4 rounded border border-amber-300">
+                            <h4 className="font-semibold text-amber-900 mb-2">Additional Payment Details:</h4>
+                            <ul className="space-y-2">
+                              <li className="flex items-start">
+                                <span className="text-green-600 mr-2 mt-0.5">✓</span>
+                                <span>You'll pay <strong>${totalAmount.toFixed(2)}</strong> for {monthlyTrips.filter(trip => trip.billable).length} newly completed trips</span>
+                              </li>
+                              <li className="flex items-start">
+                                <span className="text-blue-600 mr-2 mt-0.5">ℹ</span>
+                                <span>This is in addition to your previous payment this month</span>
+                              </li>
+                              <li className="flex items-start">
+                                <span className="text-purple-600 mr-2 mt-0.5">🔄</span>
+                                <span>Any trips completed <strong>after this payment</strong> will require another payment</span>
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="font-medium">
+                            <strong>Facility bills are typically paid at the end of the month, but you can choose to pay now for currently completed trips.</strong>
+                          </p>
+                          <div className="bg-white p-4 rounded border border-amber-300">
+                            <h4 className="font-semibold text-amber-900 mb-2">What this means:</h4>
+                            <ul className="space-y-2">
+                              <li className="flex items-start">
+                                <span className="text-green-600 mr-2 mt-0.5">✓</span>
+                                <span>You'll pay <strong>${totalAmount.toFixed(2)}</strong> for {monthlyTrips.filter(trip => trip.billable).length} completed trips</span>
+                              </li>
+                              <li className="flex items-start">
+                                <span className="text-blue-600 mr-2 mt-0.5">ℹ</span>
+                                <span>Any trips completed <strong>after this payment</strong> will be added to your next bill</span>
+                              </li>
+                              <li className="flex items-start">
+                                <span className="text-amber-600 mr-2 mt-0.5">⚠</span>
+                                <span>This is a <strong>partial month payment</strong> - additional charges may apply for future trips this month</span>
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1620,7 +1679,9 @@ ${monthlyTrips.map(trip => {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  Cancel - I'll Pay at End of Month
+                  {invoiceStatus && invoiceStatus.includes('PAID') 
+                    ? 'Cancel - Pay Later' 
+                    : 'Cancel - I\'ll Pay at End of Month'}
                 </button>
                 <button
                   onClick={() => {
@@ -1632,7 +1693,9 @@ ${monthlyTrips.map(trip => {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
-                  Yes, Pay Now for Completed Trips
+                  {invoiceStatus && invoiceStatus.includes('PAID') 
+                    ? 'Yes, Pay for Additional Trips' 
+                    : 'Yes, Pay Now for Completed Trips'}
                 </button>
               </div>
             </div>
