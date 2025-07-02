@@ -954,7 +954,7 @@ ${monthlyTrips.map(trip => {
       )}
 
       {/* Professional Billing Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
+      <div className="bg-gradient-to-r from-[#7CCFD0] to-[#60BFC0] rounded-lg p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Monthly Billing & Invoices</h1>
@@ -1033,8 +1033,8 @@ ${monthlyTrips.map(trip => {
         {/* Enhanced Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-blue-50 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-blue-700 mb-1">Total Trips</h3>
-            <p className="text-2xl font-bold text-blue-900">{monthlyTrips.length}</p>
+            <h3 className="text-sm font-medium text-[#60BFC0] mb-1">Total Trips</h3>
+            <p className="text-2xl font-bold text-[#60BFC0]">{monthlyTrips.length}</p>
           </div>
           
           <div className="bg-green-50 rounded-lg p-4">
@@ -1128,7 +1128,7 @@ ${monthlyTrips.map(trip => {
           {/* Payment Settings Link */}
           <a
             href="/payment-settings"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
+            className="bg-[#7CCFD0] hover:bg-[#60BFC0] text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -1142,7 +1142,7 @@ ${monthlyTrips.map(trip => {
       {/* Trips List */}
       {loading ? (
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7CCFD0] mx-auto"></div>
           <p className="text-gray-600 mt-2">Loading trips...</p>
         </div>
       ) : monthlyTrips.length > 0 ? (
@@ -1239,11 +1239,11 @@ ${monthlyTrips.map(trip => {
                 <div className="text-xs text-yellow-600">Awaiting pricing</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
+                <div className="text-2xl font-bold text-[#7CCFD0]">
                   {monthlyTrips.filter(trip => !trip.billable && trip.status !== 'pending').length}
                 </div>
                 <div className="text-gray-600">Other Status</div>
-                <div className="text-xs text-blue-600">Upcoming/Confirmed</div>
+                <div className="text-xs text-[#7CCFD0]">Upcoming/Confirmed</div>
               </div>
             </div>
           </div>
@@ -1261,7 +1261,7 @@ ${monthlyTrips.map(trip => {
             
             {monthlyTrips.length === 0 && (
               <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                <h4 className="text-sm font-medium text-blue-900 mb-2">What you can do:</h4>
+                <h4 className="text-sm font-medium text-[#60BFC0] mb-2">What you can do:</h4>
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>• Check the trips dashboard to see upcoming trips</li>
                   <li>• Try selecting a different month</li>
@@ -1296,7 +1296,7 @@ ${monthlyTrips.map(trip => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-lg">
+            <div className="bg-gradient-to-r from-[#7CCFD0] to-[#60BFC0] text-white p-6 rounded-t-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold">Send Invoice</h2>
@@ -1329,7 +1329,7 @@ ${monthlyTrips.map(trip => {
                   </div>
                   <div>
                     <span className="text-gray-600">Total Amount:</span>
-                    <p className="font-bold text-blue-600 text-lg">${totalAmount.toFixed(2)}</p>
+                    <p className="font-bold text-[#7CCFD0] text-lg">${totalAmount.toFixed(2)}</p>
                   </div>
                   <div>
                     <span className="text-gray-600">Due Date:</span>
@@ -1352,7 +1352,7 @@ ${monthlyTrips.map(trip => {
                       name="emailOption"
                       checked={!useAlternateEmail}
                       onChange={() => setUseAlternateEmail(false)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      className="w-4 h-4 text-[#7CCFD0] border-gray-300 focus:ring-blue-500"
                     />
                     <span className="text-gray-900 font-medium">Default Email Address</span>
                   </label>
@@ -1360,7 +1360,7 @@ ${monthlyTrips.map(trip => {
                     <p className="text-sm text-blue-800 font-medium">
                       {invoiceEmail || 'billing@compassionatecaretransportation.com'}
                     </p>
-                    <p className="text-xs text-blue-600 mt-1">
+                    <p className="text-xs text-[#7CCFD0] mt-1">
                       This is your facility&apos;s registered billing email
                     </p>
                   </div>
@@ -1374,7 +1374,7 @@ ${monthlyTrips.map(trip => {
                       name="emailOption"
                       checked={useAlternateEmail}
                       onChange={() => setUseAlternateEmail(true)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      className="w-4 h-4 text-[#7CCFD0] border-gray-300 focus:ring-blue-500"
                     />
                     <span className="text-gray-900 font-medium">Send to Another Email Address</span>
                   </label>
@@ -1402,7 +1402,7 @@ ${monthlyTrips.map(trip => {
                       type="checkbox"
                       checked={markAsPaid}
                       onChange={(e) => setMarkAsPaid(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mt-0.5"
+                      className="w-4 h-4 text-[#7CCFD0] border-gray-300 focus:ring-blue-500 mt-0.5"
                     />
                     <div>
                       <span className="text-gray-900 font-medium">Already Paid?</span>
@@ -1414,7 +1414,7 @@ ${monthlyTrips.map(trip => {
                           <p className="text-sm text-blue-800 font-medium">
                             Status: Pending Approval from Dispatcher
                           </p>
-                          <p className="text-xs text-blue-600 mt-1">
+                          <p className="text-xs text-[#7CCFD0] mt-1">
                             This invoice will be marked as paid but require dispatcher approval
                           </p>
                         </div>
@@ -1435,7 +1435,7 @@ ${monthlyTrips.map(trip => {
                 <button
                   onClick={sendInvoice}
                   disabled={invoiceSending || (!useAlternateEmail && !invoiceEmail) || (useAlternateEmail && !alternateEmail)}
-                  className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 px-6 py-3 bg-[#7CCFD0] hover:bg-[#60BFC0] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
                   {invoiceSending ? (
                     <>

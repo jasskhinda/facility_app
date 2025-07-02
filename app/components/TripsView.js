@@ -457,13 +457,13 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                         <div className="flex space-x-2">
                           <Link
                             href={`/dashboard/trips/${trip.id}`}
-                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-md text-white bg-[#7CCFD0] hover:bg-[#60BFC0] border-[#7CCFD0]"
                           >
                             Details
                           </Link>
                           <button
                             onClick={() => startCancellation(trip.id)}
-                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-md text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
                           >
                             Cancel
                           </button>
@@ -488,13 +488,13 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                       <div className="flex space-x-2">
                         <Link
                           href={`/dashboard/trips/${trip.id}`}
-                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-md text-white bg-[#7CCFD0] hover:bg-[#60BFC0] border-[#7CCFD0]"
                         >
                           Details
                         </Link>
                         <button
                           onClick={() => startCancellation(trip.id)}
-                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-md text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
                         >
                           Cancel
                         </button>
@@ -513,7 +513,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                           {!trip.rating && (
                             <button
                               onClick={() => setRatingTrip(trip)}
-                              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-yellow-700 bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:hover:bg-yellow-900/50"
+                              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-md text-yellow-700 bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:hover:bg-yellow-900/50"
                             >
                               <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -524,7 +524,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                           <button
                             onClick={() => handleRebookTrip(trip)}
                             disabled={isSubmitting && rebookingTrip === trip.id}
-                            className="btn-success text-xs px-3 py-1.5"
+                            className="btn-success text-xs px-4 py-2"
                           >
                             {isSubmitting && rebookingTrip === trip.id ? (
                               <>
@@ -545,7 +545,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                           </button>
                           <Link
                             href={`/dashboard/trips/${trip.id}`}
-                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-md text-white bg-[#7CCFD0] hover:bg-[#60BFC0] border-[#7CCFD0]"
                           >
                             Details
                           </Link>
@@ -587,13 +587,13 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                       <div className="flex space-x-2">
                         <Link
                           href={`/dashboard/trips/${trip.id}`}
-                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-md text-white bg-[#7CCFD0] hover:bg-[#60BFC0] border-[#7CCFD0]"
                         >
                           Details
                         </Link>
                         <Link
                           href={`/dashboard/track/${trip.id}`}
-                          className="btn-success text-xs px-3 py-1.5"
+                          className="btn-success text-xs px-4 py-2"
                         >
                           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />

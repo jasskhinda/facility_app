@@ -123,9 +123,9 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
                   <Image 
                     src="/LOGO2.png" 
                     alt="Compassionate Care Transportation" 
-                    width={180}
-                    height={40}
-                    className="h-10 w-auto"
+                    width={220}
+                    height={50}
+                    className="h-12 w-auto"
                   />
                 </Link>
                 {userRole === 'facility' && (

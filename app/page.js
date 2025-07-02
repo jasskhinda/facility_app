@@ -30,7 +30,15 @@ function HomeContent() {
       <header className="p-4 bg-[#F8F9FA]  shadow border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-bold text-[#2E4F54] text-gray-900">Compassionate Care Transportation for Facilities</h1>
+            <Link href="/" className="flex items-center">
+              <Image 
+                src="/LOGO2.png" 
+                alt="Compassionate Care Transportation" 
+                width={220}
+                height={50}
+                className="h-12 w-auto"
+              />
+            </Link>
           </div>
           <nav>
             <ul className="flex space-x-6">
@@ -50,7 +58,7 @@ function HomeContent() {
       </header>
 
       <main className="flex-grow">
-        <section className="py-16 px-4 bg-gradient-to-b from-[#7CCFD0]/10 to-white dark:from-[#24393C] dark:to-[#1C2C2F]">
+        <section className="py-16 px-4 bg-gradient-to-b from-[#7CCFD0]/10 to-white">
           <div className="container mx-auto text-center">
             <h2 className="text-4xl font-bold mb-6 text-[#2E4F54] text-gray-900">
               Streamline Your Facility&apos;s Transportation Management
