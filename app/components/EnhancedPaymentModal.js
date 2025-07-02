@@ -202,6 +202,11 @@ function PaymentForm({
     setProcessingPayment(true)
 
     try {
+      const checkDetails = {
+        date_mailed: checkSubmissionType === 'already_mailed' ? document.getElementById('check_date_mailed')?.value : null,
+        tracking_number: checkSubmissionType === 'already_mailed' ? document.getElementById('check_tracking')?.value : null
+      }
+
       const response = await fetch('/api/facility/payment/process-check-payment', {
         method: 'POST',
         headers: {
@@ -212,7 +217,8 @@ function PaymentForm({
           invoice_number: invoiceNumber,
           month: selectedMonth,
           amount: totalAmount,
-          check_submission_type: checkSubmissionType
+          check_submission_type: checkSubmissionType,
+          check_details: checkDetails
         }),
       })
 
@@ -222,14 +228,27 @@ function PaymentForm({
         throw new Error(result.error || 'Check payment submission failed')
       }
 
-      const newStatus = checkSubmissionType === 'submit_request' ? 'PROCESSING PAYMENT' : 'PAID WITH CHECK (BEING VERIFIED)'
-      await updateInvoiceStatus(newStatus)
+      await updateInvoiceStatus(result.payment_status)
 
-      if (checkSubmissionType === 'submit_request') {
-        onPaymentSuccess('Check payment request submitted! Please send your check to the address provided. Status will update to "PAID WITH CHECK - VERIFIED" once received and verified by our dispatchers.')
+      // Create detailed success message with office address
+      const addressInfo = result.office_address.formatted
+      const checkInfo = result.check_instructions
+      
+      let successMessage = `${result.message}\n\n`
+      
+      if (checkSubmissionType === 'will_mail') {
+        successMessage += `📬 MAILING ADDRESS:\n${addressInfo}\n\n`
+        successMessage += `💰 CHECK DETAILS:\n`
+        successMessage += `• Payable to: ${checkInfo.payable_to}\n`
+        successMessage += `• Amount: ${checkInfo.amount}\n`
+        successMessage += `• Memo: ${checkInfo.memo}\n`
+        successMessage += `• Mail within: ${checkInfo.mail_within_days} business days\n\n`
+        successMessage += `📋 NEXT STEPS:\n${result.next_steps}`
       } else {
-        onPaymentSuccess('Check marked as sent! It will be verified by our dispatch team and status updated accordingly.')
+        successMessage += `📋 NEXT STEPS:\n${result.next_steps}`
       }
+
+      onPaymentSuccess(successMessage)
 
     } catch (error) {
       console.error('Check payment error:', error)
@@ -530,80 +549,170 @@ function PaymentForm({
   }
 
   const renderCheckPayment = () => (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-gray-900">Check Payment Options</h3>
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-4">
+        <div className="flex items-center space-x-3">
+          <FileText className="h-8 w-8 text-orange-600" />
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Professional Check Payment</h3>
+            <p className="text-sm text-gray-600">Secure business-to-business payment processing</p>
+          </div>
+        </div>
+      </div>
 
-      <div className="space-y-3">
-        {/* Pay Now with Check */}
+      <div className="space-y-4">
+        {/* I Will Mail Check */}
         <div
           className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
-            checkSubmissionType === 'submit_request' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+            checkSubmissionType === 'will_mail' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
           }`}
-          onClick={() => setCheckSubmissionType('submit_request')}
+          onClick={() => setCheckSubmissionType('will_mail')}
         >
           <div className="flex items-center space-x-3">
-            <FileText className="h-6 w-6 text-blue-600" />
+            <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
             <div>
-              <h4 className="font-medium text-gray-900">PAY NOW WITH CHECK</h4>
-              <p className="text-sm text-gray-600">Submit payment request</p>
+              <h4 className="font-medium text-gray-900">I Will Mail Check</h4>
+              <p className="text-sm text-gray-600">Get mailing address and instructions</p>
             </div>
           </div>
         </div>
 
-        {/* Check Already Sent */}
+        {/* Check Already Mailed */}
         <div
           className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
-            checkSubmissionType === 'already_sent' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+            checkSubmissionType === 'already_mailed' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
           }`}
-          onClick={() => setCheckSubmissionType('already_sent')}
+          onClick={() => setCheckSubmissionType('already_mailed')}
         >
           <div className="flex items-center space-x-3">
-            <CheckCircle className="h-6 w-6 text-green-600" />
+            <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
             <div>
-              <h4 className="font-medium text-gray-900">CHECK ALREADY SENT</h4>
-              <p className="text-sm text-gray-600">Mark as sent</p>
+              <h4 className="font-medium text-gray-900">Check Already Mailed</h4>
+              <p className="text-sm text-gray-600">Check is in transit to our office</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Hand Delivered */}
+        <div
+          className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
+            checkSubmissionType === 'hand_delivered' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+          }`}
+          onClick={() => setCheckSubmissionType('hand_delivered')}
+        >
+          <div className="flex items-center space-x-3">
+            <CheckCircle className="h-6 w-6 text-purple-600" />
+            <div>
+              <h4 className="font-medium text-gray-900">Hand Delivered</h4>
+              <p className="text-sm text-gray-600">Check delivered directly to our office</p>
             </div>
           </div>
         </div>
       </div>
 
-      {checkSubmissionType === 'submit_request' && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-start space-x-3">
-            <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+      {/* Additional Details for Already Mailed */}
+      {checkSubmissionType === 'already_mailed' && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
+          <h4 className="font-medium text-green-800">Check Details (Optional)</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <h4 className="font-medium text-yellow-800">Payment Instructions</h4>
-              <p className="text-sm text-yellow-700 mt-1">
-                After submitting this request, please send a check for ${totalAmount.toFixed(2)} to:
-              </p>
-              <div className="mt-2 text-sm text-yellow-800 font-mono bg-yellow-100 p-2 rounded">
-                Compassionate Care Transportation<br />
-                123 Main Street<br />
-                City, State 12345
-              </div>
-              <p className="text-xs text-yellow-600 mt-2">
-                Status will change to "PAID WITH CHECK - VERIFIED" once received and verified by our dispatchers.
-              </p>
+              <label className="block text-sm font-medium text-green-700 mb-1">Date Mailed</label>
+              <input
+                type="date"
+                id="check_date_mailed"
+                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-green-700 mb-1">Tracking Number</label>
+              <input
+                type="text"
+                id="check_tracking"
+                placeholder="Optional tracking number"
+                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
             </div>
           </div>
         </div>
       )}
 
+      {/* Payment Instructions */}
+      {checkSubmissionType === 'will_mail' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-start space-x-3">
+            <svg className="h-5 w-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <h4 className="font-medium text-blue-800">Check Payment Instructions</h4>
+              <p className="text-sm text-blue-700 mt-1">
+                You will receive complete mailing instructions and check details after submitting this payment request.
+              </p>
+              <div className="mt-3 p-3 bg-blue-100 rounded border border-blue-300">
+                <p className="text-sm text-blue-800 font-medium">Payment Amount: ${totalAmount.toFixed(2)}</p>
+                <p className="text-xs text-blue-600 mt-1">
+                  Mail check within 5 business days to maintain payment status
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Processing Information */}
+      {checkSubmissionType && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <h4 className="font-medium text-gray-800 mb-2">⏱️ Processing Timeline</h4>
+          <div className="space-y-2 text-sm text-gray-600">
+            {checkSubmissionType === 'will_mail' && (
+              <>
+                <p>• Payment status: "CHECK PAYMENT - WILL MAIL"</p>
+                <p>• Mail check within 5 business days</p>
+                <p>• Status updates when check is received (3-7 business days)</p>
+                <p>• Final verification and deposit (1-2 business days)</p>
+              </>
+            )}
+            {checkSubmissionType === 'already_mailed' && (
+              <>
+                <p>• Payment status: "CHECK PAYMENT - IN TRANSIT"</p>
+                <p>• Status updates when check is received</p>
+                <p>• Verification and deposit (1-2 business days)</p>
+              </>
+            )}
+            {checkSubmissionType === 'hand_delivered' && (
+              <>
+                <p>• Payment status: "CHECK PAYMENT - BEING VERIFIED"</p>
+                <p>• Verification and deposit (1-2 business days)</p>
+                <p>• Status will update to "PAID WITH CHECK - VERIFIED"</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Submit Check Payment Button */}
       <button
         onClick={handleCheckPayment}
         disabled={processingPayment || !checkSubmissionType}
-        className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2"
+        className="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 disabled:bg-gray-300 text-white font-semibold py-4 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2 shadow-lg"
       >
         {processingPayment ? (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            <span>Submitting Request...</span>
+            <span>Processing Check Payment...</span>
           </>
         ) : (
           <>
             <FileText className="h-5 w-5" />
             <span>
-              {checkSubmissionType === 'submit_request' ? 'Submit Request' : 'Mark as Sent'}
+              {checkSubmissionType === 'will_mail' ? 'Submit Check Payment Request' :
+               checkSubmissionType === 'already_mailed' ? 'Mark Check as Mailed' :
+               checkSubmissionType === 'hand_delivered' ? 'Mark Check as Delivered' :
+               'Process Check Payment'}
             </span>
           </>
         )}
@@ -734,9 +843,15 @@ export default function EnhancedPaymentModal({
 
           {success && (
             <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center">
-                <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                <span className="text-green-700">{success}</span>
+              <div className="flex items-start">
+                <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                <div className="text-green-700">
+                  {success.split('\n').map((line, index) => (
+                    <div key={index} className={index > 0 ? 'mt-1' : ''}>
+                      {line}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

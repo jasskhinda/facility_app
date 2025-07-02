@@ -2,7 +2,7 @@ import { createRouteHandlerClient } from '@/lib/route-handler-client'
 
 export async function POST(request) {
   try {
-    const { facility_id, invoice_number, month, amount, check_submission_type } = await request.json()
+    const { facility_id, invoice_number, month, amount, check_submission_type, check_details } = await request.json()
 
     if (!facility_id || !invoice_number || !amount || !check_submission_type) {
       return Response.json(
@@ -36,134 +36,180 @@ export async function POST(request) {
       )
     }
 
-    // Get payment settings for check details
-    const { data: paymentSettings } = await supabase
-      .from('payment_settings')
-      .select('check_payable_to, check_mailing_address')
+    // Get facility information
+    const { data: facility, error: facilityError } = await supabase
+      .from('facilities')
+      .select('name, billing_email')
+      .eq('id', facility_id)
       .single()
 
-    const checkPayableTo = paymentSettings?.check_payable_to || 'Compassionate Care Transportation'
-    const checkMailingAddress = paymentSettings?.check_mailing_address || '123 Main Street, City, State 12345'
-
-    // Determine payment method and status based on submission type
-    let paymentMethod
-    let paymentStatus
-    let message
-
-    if (check_submission_type === 'submit_request') {
-      paymentMethod = 'check_submit'
-      paymentStatus = 'pending'
-      message = `Check payment request submitted. Please send check for $${amount.toFixed(2)} to: ${checkMailingAddress}. Make check payable to: ${checkPayableTo}`
-    } else if (check_submission_type === 'already_sent') {
-      paymentMethod = 'check_sent'
-      paymentStatus = 'pending'
-      message = 'Check marked as sent. Our dispatch team will verify receipt and update status accordingly.'
-    } else {
+    if (facilityError) {
       return Response.json(
-        { error: 'Invalid check submission type' },
-        { status: 400 }
+        { error: 'Facility not found' },
+        { status: 404 }
       )
     }
 
-    // Record payment submission in database
-    const { data: paymentData, error: paymentError } = await supabase
+    // Enhanced payment tracking with check details
+    const now = new Date()
+    const isCurrentMonth = month === now.toISOString().slice(0, 7)
+    const currentDate = now.getDate()
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+    const isPartialMonthPayment = isCurrentMonth && currentDate < lastDayOfMonth - 2
+
+    // Professional check payment workflow
+    let paymentStatus, paymentNote, nextSteps, facilityMessage
+
+    switch (check_submission_type) {
+      case 'will_mail':
+        paymentStatus = 'CHECK PAYMENT - WILL MAIL'
+        paymentNote = `Check payment initiated on ${now.toLocaleDateString('en-US', { 
+          month: 'long', 
+          day: 'numeric', 
+          year: 'numeric' 
+        })}. Facility indicated they will mail check for $${amount}. Awaiting check delivery to our office.`
+        nextSteps = 'Please mail your check to our office address below. Your payment status will be updated when we receive and verify the check.'
+        facilityMessage = 'Your payment is being processed. Please mail your check within 5 business days to complete the payment process.'
+        break
+        
+      case 'already_mailed':
+        paymentStatus = 'CHECK PAYMENT - IN TRANSIT'
+        paymentNote = `Check payment marked as already mailed on ${now.toLocaleDateString('en-US', { 
+          month: 'long', 
+          day: 'numeric', 
+          year: 'numeric' 
+        })}. Check for $${amount} is in transit to our office.`
+        
+        if (check_details?.date_mailed) {
+          paymentNote += ` Mailed on: ${check_details.date_mailed}.`
+        }
+        if (check_details?.tracking_number) {
+          paymentNote += ` Tracking: ${check_details.tracking_number}.`
+        }
+        
+        nextSteps = 'Your check is in transit. We will update the payment status once received and verified by our dispatch team.'
+        facilityMessage = 'Your check is in transit to our office. It may take 3-7 business days for us to receive and verify your payment.'
+        break
+        
+      case 'hand_delivered':
+        paymentStatus = 'CHECK PAYMENT - BEING VERIFIED'
+        paymentNote = `Check payment marked as hand-delivered on ${now.toLocaleDateString('en-US', { 
+          month: 'long', 
+          day: 'numeric', 
+          year: 'numeric' 
+        })}. Check for $${amount} was delivered directly to our office. Awaiting dispatcher verification and deposit.`
+        nextSteps = 'Your check has been delivered to our office. Our dispatch team will verify and deposit it within 1-2 business days.'
+        facilityMessage = 'Your check has been received at our office and is being processed by our dispatch team.'
+        break
+        
+      default:
+        return Response.json(
+          { error: 'Invalid check submission type' },
+          { status: 400 }
+        )
+    }
+
+    // Add partial month context to notes if applicable
+    if (isPartialMonthPayment) {
+      paymentNote += ` This is a mid-month payment - additional trips completed after this payment will be billed separately.`
+    }
+
+    // Record check payment in database
+    const { error: paymentError } = await supabase
       .from('facility_invoice_payments')
       .insert({
         facility_id: facility_id,
         amount: amount,
-        payment_method: paymentMethod,
+        payment_method: 'check',
         month: month,
-        status: paymentStatus,
-        billing_name: profile.full_name || 'Facility Payment'
+        status: 'pending_verification',
+        payment_note: paymentNote,
+        partial_month_payment: isPartialMonthPayment,
+        payment_date: new Date().toISOString(),
+        check_submission_type: check_submission_type,
+        check_details: check_details || null
       })
-      .select()
-      .single()
 
     if (paymentError) {
       console.error('Error recording check payment:', paymentError)
       return Response.json(
-        { error: 'Failed to record payment submission' },
+        { error: 'Failed to record payment' },
         { status: 500 }
       )
     }
 
-    // Update invoice status based on submission type
-    let invoiceStatus
-    if (check_submission_type === 'submit_request') {
-      invoiceStatus = 'PROCESSING PAYMENT'
-    } else {
-      invoiceStatus = 'PAID WITH CHECK (BEING VERIFIED)'
-    }
-
-    // Find or create the facility invoice record
-    const { data: existingInvoice, error: invoiceQueryError } = await supabase
+    // Update or create invoice record
+    const { data: existingInvoice } = await supabase
       .from('facility_invoices')
       .select('id')
       .eq('facility_id', facility_id)
       .eq('month', month)
       .single()
 
-    if (invoiceQueryError && invoiceQueryError.code !== 'PGRST116') {
-      console.error('Error querying invoice:', invoiceQueryError)
-    }
-
     if (existingInvoice) {
       // Update existing invoice
-      const { error: updateError } = await supabase
+      await supabase.rpc('update_payment_status_with_audit', {
+        p_invoice_id: existingInvoice.id,
+        p_new_status: paymentStatus,
+        p_user_id: userData.user.id,
+        p_user_role: 'facility',
+        p_notes: paymentNote
+      })
+
+      // Also update the payment_notes field directly
+      await supabase
         .from('facility_invoices')
-        .update({
-          payment_status: invoiceStatus,
-          last_updated: new Date().toISOString()
+        .update({ 
+          payment_notes: paymentNote,
+          partial_month_payment: isPartialMonthPayment,
+          check_submission_type: check_submission_type,
+          check_details: check_details || null
         })
         .eq('id', existingInvoice.id)
-
-      if (updateError) {
-        console.error('Error updating invoice status:', updateError)
-      }
     } else {
-      // Create new invoice record
-      const { error: createError } = await supabase
+      // Create new invoice
+      await supabase
         .from('facility_invoices')
         .insert({
           facility_id: facility_id,
           invoice_number: invoice_number,
           month: month,
           total_amount: amount,
-          payment_status: invoiceStatus,
-          total_trips: 0, // This should be calculated based on actual trips
-          billing_email: profile.email
+          payment_status: paymentStatus,
+          payment_notes: paymentNote,
+          partial_month_payment: isPartialMonthPayment,
+          check_submission_type: check_submission_type,
+          check_details: check_details || null
         })
-
-      if (createError) {
-        console.error('Error creating invoice:', createError)
-      }
     }
-
-    // Create audit log entry
-    const auditResult = await supabase.rpc('update_payment_status_with_audit', {
-      p_invoice_id: existingInvoice?.id || null,
-      p_new_status: invoiceStatus,
-      p_user_id: userData.user.id,
-      p_user_role: 'facility',
-      p_notes: `Check payment ${check_submission_type === 'submit_request' ? 'request submitted' : 'marked as sent'}`,
-      p_verification_notes: message
-    }).catch(err => {
-      console.error('Audit log error:', err)
-      // Don't fail the main operation for audit log errors
-    })
 
     return Response.json({
       success: true,
-      payment_id: paymentData.id,
-      message: message,
-      check_details: {
-        payable_to: checkPayableTo,
-        mailing_address: checkMailingAddress,
-        amount: amount
+      payment_status: paymentStatus,
+      message: facilityMessage,
+      next_steps: nextSteps,
+      office_address: {
+        name: 'Compassionate Care Transportation',
+        address_line_1: '5050 Blazer Pkwy Suite 100-B',
+        city: 'Dublin',
+        state: 'OH',
+        zip: '43017',
+        attention: 'Billing Department',
+        formatted: 'Compassionate Care Transportation\nBilling Department\n5050 Blazer Pkwy Suite 100-B\nDublin, OH 43017'
       },
-      next_steps: check_submission_type === 'submit_request' 
-        ? 'Please send your check to the provided address. Status will update once received and verified.'
-        : 'Our dispatch team will verify receipt of your check and update the status accordingly.'
+      check_instructions: {
+        payable_to: 'Compassionate Care Transportation',
+        amount: `$${amount.toFixed(2)}`,
+        memo: `Invoice ${invoice_number} - ${month}`,
+        mail_within_days: check_submission_type === 'will_mail' ? 5 : null
+      },
+      payment_details: {
+        amount: amount,
+        invoice_number: invoice_number,
+        facility_name: facility.name,
+        month: month,
+        submission_type: check_submission_type
+      }
     })
 
   } catch (error) {
