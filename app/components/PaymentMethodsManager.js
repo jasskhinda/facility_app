@@ -3,6 +3,13 @@
 import { useState, useEffect } from 'react';
 import { createClientSupabase } from '@/lib/client-supabase';
 import { getStripe } from '@/lib/stripe';
+import dynamic from 'next/dynamic';
+
+// Dynamically import Stripe Elements to avoid SSR issues
+const StripeCardElement = dynamic(() => import('./StripeCardElement'), {
+  ssr: false,
+  loading: () => <div className="p-4 text-center">Loading payment form...</div>
+});
 
 export default function PaymentMethodsManager({ user, facilityId }) {
   const [paymentMethods, setPaymentMethods] = useState([]);
@@ -16,6 +23,7 @@ export default function PaymentMethodsManager({ user, facilityId }) {
   const [showAddBankModal, setShowAddBankModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [methodToDelete, setMethodToDelete] = useState(null);
+  const [setupClientSecret, setSetupClientSecret] = useState(null);
 
   // Form states
   const [cardForm, setCardForm] = useState({
@@ -124,20 +132,11 @@ export default function PaymentMethodsManager({ user, facilityId }) {
     }
   };
 
-  const handleAddCard = async () => {
-    console.log('handleAddCard called with form data:', cardForm);
-    
-    if (!cardForm.cardNumber || !cardForm.expiryDate || !cardForm.cvv || !cardForm.cardholderName) {
-      setError('Please fill in all required card details');
-      return;
-    }
-
+  const handleOpenCardModal = async () => {
     setProcessing(true);
     setError('');
-
+    
     try {
-      console.log('Starting card addition process for facility:', facilityId);
-      
       // Create Stripe setup intent for the facility
       const setupResponse = await fetch('/api/stripe/setup-intent', {
         method: 'POST',
@@ -153,30 +152,33 @@ export default function PaymentMethodsManager({ user, facilityId }) {
       }
 
       const { clientSecret } = await setupResponse.json();
-      const stripe = await getStripe();
+      setSetupClientSecret(clientSecret);
+      setShowAddCardModal(true);
+      
+    } catch (err) {
+      console.error('Error creating setup intent:', err);
+      setError(err.message || 'Failed to initialize payment form');
+    } finally {
+      setProcessing(false);
+    }
+  };
 
-      // Confirm the setup intent with card details
-      const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
-        payment_method: {
-          card: {
-            number: cardForm.cardNumber.replace(/\s/g, ''),
-            exp_month: parseInt(cardForm.expiryDate.split('/')[0]),
-            exp_year: parseInt('20' + cardForm.expiryDate.split('/')[1]),
-            cvc: cardForm.cvv
-          },
-          billing_details: {
-            name: cardForm.cardholderName
-          }
-        }
+  const handleCardSuccess = async ({ paymentMethodId, cardholderName, nickname }) => {
+    try {
+      // Get payment method details from Stripe
+      const response = await fetch(`/api/stripe/payment-methods?paymentMethodId=${paymentMethodId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
       });
 
-      if (stripeError) {
-        throw new Error(stripeError.message);
+      if (!response.ok) {
+        throw new Error('Failed to get payment method details');
       }
 
+      const { paymentMethod } = await response.json();
+      
       // Save to database with real Stripe payment method ID
       const isFirstMethod = paymentMethods.length === 0;
-      const paymentMethod = setupIntent.payment_method;
       
       const { error: dbError } = await supabase
         .from('facility_payment_methods')
@@ -188,8 +190,8 @@ export default function PaymentMethodsManager({ user, facilityId }) {
           card_brand: paymentMethod.card.brand,
           expiry_month: paymentMethod.card.exp_month,
           expiry_year: paymentMethod.card.exp_year,
-          cardholder_name: cardForm.cardholderName,
-          nickname: cardForm.nickname || `${paymentMethod.card.brand.toUpperCase()} ****${paymentMethod.card.last4}`,
+          cardholder_name: cardholderName,
+          nickname: nickname || `${paymentMethod.card.brand.toUpperCase()} ****${paymentMethod.card.last4}`,
           is_default: isFirstMethod
         });
 
@@ -198,9 +200,7 @@ export default function PaymentMethodsManager({ user, facilityId }) {
         throw dbError;
       }
 
-      console.log('Payment method saved to database successfully');
-
-      setSuccessMessage('Credit card added successfully! (Test mode)');
+      setSuccessMessage('Credit card added successfully!');
       setShowAddCardModal(false);
       setCardForm({
         cardNumber: '',
@@ -209,14 +209,28 @@ export default function PaymentMethodsManager({ user, facilityId }) {
         cardholderName: '',
         nickname: ''
       });
+      setSetupClientSecret(null);
       fetchPaymentMethods();
 
     } catch (err) {
-      console.error('Error adding card:', err);
-      setError(err.message || 'Failed to add credit card');
-    } finally {
-      setProcessing(false);
+      console.error('Error saving card:', err);
+      setError(err.message || 'Failed to save credit card');
     }
+  };
+
+  const handleCardError = (error) => {
+    if (error !== 'Cancelled') {
+      setError(error);
+    }
+    setShowAddCardModal(false);
+    setSetupClientSecret(null);
+    setCardForm({
+      cardNumber: '',
+      expiryDate: '',
+      cvv: '',
+      cardholderName: '',
+      nickname: ''
+    });
   };
 
   const handleAddBank = async () => {
@@ -457,7 +471,7 @@ export default function PaymentMethodsManager({ user, facilityId }) {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button
-            onClick={() => setShowAddCardModal(true)}
+            onClick={handleOpenCardModal}
             className="flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors group"
           >
             <div className="text-center">
@@ -586,15 +600,15 @@ export default function PaymentMethodsManager({ user, facilityId }) {
         )}
       </div>
 
-      {/* Add Credit Card Modal */}
-      {showAddCardModal && (
+      {/* Add Credit Card Modal with Stripe Elements */}
+      {showAddCardModal && setupClientSecret && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="bg-blue-600 text-white p-6 rounded-t-lg">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold">Add Credit Card</h2>
                 <button
-                  onClick={() => setShowAddCardModal(false)}
+                  onClick={() => handleCardError('Cancelled')}
                   className="text-blue-200 hover:text-white transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -604,89 +618,16 @@ export default function PaymentMethodsManager({ user, facilityId }) {
               </div>
             </div>
 
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Card Nickname (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={cardForm.nickname}
-                  onChange={(e) => setCardForm({...cardForm, nickname: e.target.value})}
-                  placeholder="e.g., Main Business Card"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Cardholder Name *
-                </label>
-                <input
-                  type="text"
-                  value={cardForm.cardholderName}
-                  onChange={(e) => setCardForm({...cardForm, cardholderName: e.target.value})}
-                  placeholder="Name on card"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Card Number *
-                </label>
-                <input
-                  type="text"
-                  value={cardForm.cardNumber}
-                  onChange={(e) => setCardForm({...cardForm, cardNumber: formatCardNumber(e.target.value)})}
-                  placeholder="1234 5678 9012 3456"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Expiry Date *
-                  </label>
-                  <input
-                    type="text"
-                    value={cardForm.expiryDate}
-                    onChange={(e) => setCardForm({...cardForm, expiryDate: formatExpiryDate(e.target.value)})}
-                    placeholder="MM/YY"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    CVV *
-                  </label>
-                  <input
-                    type="text"
-                    value={cardForm.cvv}
-                    onChange={(e) => setCardForm({...cardForm, cvv: e.target.value.replace(/\D/g, '').substr(0, 4)})}
-                    placeholder="123"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => setShowAddCardModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddCard}
-                  disabled={processing}
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-semibold rounded-lg transition-colors"
-                >
-                  {processing ? 'Adding...' : 'Add Card'}
-                </button>
-              </div>
+            <div className="p-6">
+              <StripeCardElement
+                clientSecret={setupClientSecret}
+                facilityId={facilityId}
+                nickname={cardForm.nickname}
+                onSuccess={handleCardSuccess}
+                onError={handleCardError}
+                processing={processing}
+                setProcessing={setProcessing}
+              />
             </div>
           </div>
         </div>

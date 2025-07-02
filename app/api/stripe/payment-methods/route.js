@@ -6,7 +6,7 @@ import Stripe from 'stripe';
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
 // GET handler to retrieve payment methods
-export async function GET() {
+export async function GET(request) {
   try {
     // Check if Stripe is properly initialized
     if (!stripe) {
@@ -25,6 +25,24 @@ export async function GET() {
         { error: 'You must be logged in to view payment methods' },
         { status: 401 }
       );
+    }
+    
+    // Check if we're getting a specific payment method
+    const { searchParams } = new URL(request.url);
+    const paymentMethodId = searchParams.get('paymentMethodId');
+    
+    if (paymentMethodId) {
+      // Retrieve a single payment method
+      try {
+        const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+        return NextResponse.json({ paymentMethod });
+      } catch (err) {
+        console.error('Error retrieving payment method:', err);
+        return NextResponse.json(
+          { error: 'Failed to retrieve payment method' },
+          { status: 404 }
+        );
+      }
     }
     
     // Get the Stripe customer ID
