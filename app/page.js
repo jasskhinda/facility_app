@@ -30,7 +30,7 @@ function HomeContent() {
       <header className="p-4 bg-[#F8F9FA]  shadow border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-bold text-[#2E4F54] text-gray-900">Compassionate Rides for Facilities</h1>
+            <h1 className="text-xl font-bold text-[#2E4F54] text-gray-900">Compassionate Care Transportation for Facilities</h1>
           </div>
           <nav>
             <ul className="flex space-x-6">
@@ -156,7 +156,7 @@ function HomeContent() {
           <div className="container mx-auto text-center">
             <h2 className="text-3xl font-bold mb-6">Trusted by Healthcare Facilities</h2>
             <p className="text-xl mb-8 max-w-3xl mx-auto opacity-90">
-              Join dozens of healthcare facilities that trust Compassionate Rides to manage their client transportation needs.
+              Join dozens of healthcare facilities that trust Compassionate Care Transportation to manage their client transportation needs.
             </p>
             <div className="grid md:grid-cols-3 gap-8 text-center mb-10">
               <div>
@@ -178,7 +178,7 @@ function HomeContent() {
         <section id="contact" className="py-16 px-4">
           <div className="container mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold mb-6 text-[#2E4F54] text-gray-900">
-              Get Started with Compassionate Rides
+              Get Started with Compassionate Care Transportation
             </h2>
             <p className="text-xl mb-8 text-[#2E4F54]/80 text-gray-900/80">
               Contact our sales team to learn how we can help streamline your facility&apos;s transportation management.
@@ -214,7 +214,7 @@ function HomeContent() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-[#2E4F54]/70 text-gray-900/70 mb-4 md:mb-0">
-              &copy; 2025 Compassionate Rides for Facilities. All rights reserved.
+              &copy; 2025 Compassionate Care Transportation for Facilities. All rights reserved.
             </p>
             <div className="flex space-x-6">
               <Link href="#" className="text-[#2E4F54]/70 text-gray-900/70 hover:text-[#7CCFD0] dark:hover:text-[#7CCFD0]">

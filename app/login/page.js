@@ -36,7 +36,7 @@ function LoginContent() {
       <header className="p-4 bg-white shadow-sm border-b border-gray-200">
         <div className="container mx-auto flex justify-between items-center">
           <Link href="/" className="flex items-center space-x-2">
-            <h1 className="text-xl font-bold text-gray-900">Compassionate Rides for Facilities</h1>
+            <h1 className="text-xl font-bold text-gray-900">Compassionate Care Transportation for Facilities</h1>
           </Link>
           <Link href="/" className="text-[#7CCFD0] hover:text-[#60BFC0] font-medium">
             Back to Home
@@ -87,7 +87,7 @@ function LoginContent() {
 
       {/* Footer */}
       <footer className="py-4 text-center text-sm text-gray-600">
-        <p>© 2025 Compassionate Rides. Facility Portal v1.0</p>
+        <p>© 2025 Compassionate Care Transportation. Facility Portal v1.0</p>
       </footer>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
 
@@ -118,8 +119,14 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <Link href="/" className="text-xl font-bold text-gray-900">
-                  Compassionate Rides
+                <Link href="/" className="flex items-center">
+                  <Image 
+                    src="/LOGO2.png" 
+                    alt="Compassionate Care Transportation" 
+                    width={180}
+                    height={40}
+                    className="h-10 w-auto"
+                  />
                 </Link>
                 {userRole === 'facility' && (
                   <span className="ml-2 px-2 py-0.5 text-xs bg-[#7CCFD0] text-white rounded-md font-medium">
@@ -233,7 +240,7 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-600 text-sm">
-              &copy; 2025 Compassionate Rides. All rights reserved.
+              &copy; 2025 Compassionate Care Transportation. All rights reserved.
             </p>
             <div className="flex space-x-4 mt-4 md:mt-0">
               <Link 
