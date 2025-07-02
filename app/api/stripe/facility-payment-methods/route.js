@@ -145,24 +145,53 @@ export async function DELETE(request) {
       .eq('id', facilityId)
       .single();
     
-    if (!facility?.stripe_customer_id) {
+    // Try to retrieve and detach the payment method from Stripe
+    let stripeDetachSuccess = false;
+    
+    try {
+      if (facility?.stripe_customer_id) {
+        const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+        
+        if (paymentMethod.customer === facility.stripe_customer_id) {
+          // Detach the payment method from the customer
+          await stripe.paymentMethods.detach(paymentMethodId);
+          stripeDetachSuccess = true;
+          console.log(`Successfully detached payment method ${paymentMethodId} from Stripe`);
+        } else {
+          console.log(`Payment method ${paymentMethodId} belongs to different customer, skipping Stripe detach`);
+        }
+      } else {
+        console.log('Facility has no stripe_customer_id, skipping Stripe detach');
+      }
+    } catch (stripeError) {
+      console.error('Stripe detach error:', stripeError);
+      
+      // If payment method doesn't exist in Stripe, that's actually what we want
+      if (stripeError.code === 'resource_missing') {
+        console.log(`Payment method ${paymentMethodId} not found in Stripe (already deleted)`);
+        stripeDetachSuccess = true; // Consider this success since the goal is achieved
+      } else {
+        console.error('Unexpected Stripe error:', stripeError.message);
+        // Continue anyway to clean up database
+      }
+    }
+    
+    // Always try to remove from database regardless of Stripe result
+    const { error: dbError } = await supabase
+      .from('facility_payment_methods')
+      .delete()
+      .eq('stripe_payment_method_id', paymentMethodId)
+      .eq('facility_id', facilityId);
+    
+    if (dbError) {
+      console.error('Database deletion error:', dbError);
       return NextResponse.json(
-        { error: 'Facility has no associated payment methods' },
-        { status: 400 }
+        { error: 'Failed to remove payment method from database' },
+        { status: 500 }
       );
     }
     
-    const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
-    
-    if (paymentMethod.customer !== facility.stripe_customer_id) {
-      return NextResponse.json(
-        { error: 'This payment method does not belong to the facility' },
-        { status: 403 }
-      );
-    }
-    
-    // Detach the payment method from the customer
-    await stripe.paymentMethods.detach(paymentMethodId);
+    console.log(`Successfully removed payment method ${paymentMethodId} from database`);
     
     return NextResponse.json({ success: true });
   } catch (error) {
