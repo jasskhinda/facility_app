@@ -104,8 +104,8 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
 
   if (isLoading && !userRole) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#7CCFD0]"></div>
       </div>
     );
   }
@@ -113,16 +113,16 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
   return (
     <div className="min-h-screen flex flex-col">
       {/* Top Navigation Bar */}
-      <header className="bg-white dark:bg-[#1C2C2F] shadow-sm border-b border-[#DDE5E7] dark:border-[#3F5E63]">
+      <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <Link href="/" className="text-xl font-bold text-[#2E4F54] dark:text-[#E0F4F5]">
+                <Link href="/" className="text-xl font-bold text-gray-900">
                   Compassionate Rides
                 </Link>
                 {userRole === 'facility' && (
-                  <span className="ml-2 px-2 py-0.5 text-xs bg-secondary text-onSecondary rounded-md">
+                  <span className="ml-2 px-2 py-0.5 text-xs bg-[#7CCFD0] text-white rounded-md font-medium">
                     Facility
                   </span>
                 )}
@@ -138,8 +138,8 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
                     href={item.href}
                     className={`px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1 ${
                       activeTab === item.id 
-                        ? 'bg-[#7CCFD0]/20 text-[#2E4F54] dark:bg-[#7CCFD0]/30 dark:text-[#E0F4F5]' 
-                        : 'text-[#2E4F54] hover:text-[#2E4F54] hover:bg-[#F8F9FA] dark:text-[#E0F4F5]/70 dark:hover:text-[#E0F4F5] dark:hover:bg-[#24393C]'
+                        ? 'bg-[#7CCFD0] text-white' 
+                        : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
                     }`}
                   >
                     {item.icon}
@@ -152,13 +152,13 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
               <div className="ml-3 relative flex items-center space-x-4">
                 <Link 
                   href={userRole === 'facility' ? "/dashboard/facility-settings" : "/dashboard/settings"}
-                  className="text-sm text-[#2E4F54] dark:text-[#E0F4F5] hover:text-[#7CCFD0] dark:hover:text-[#7CCFD0]"
+                  className="text-sm text-gray-700 hover:text-[#7CCFD0] font-medium"
                 >
                   {user?.user_metadata?.full_name || user?.email}
                 </Link>
                 <button
                   onClick={handleSignOut}
-                  className="text-sm text-[#7CCFD0] hover:text-[#60BFC0]"
+                  className="text-sm text-white bg-red-500 hover:bg-red-600 px-3 py-1 rounded-md font-medium transition-colors"
                 >
                   Sign out
                 </button>
@@ -169,7 +169,7 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
             <div className="flex items-center sm:hidden">
               <button
                 type="button"
-                className="inline-flex items-center justify-center p-2 rounded-md text-[#2E4F54] hover:text-[#7CCFD0] hover:bg-[#F8F9FA] dark:text-[#E0F4F5] dark:hover:text-[#7CCFD0] dark:hover:bg-[#24393C]"
+                className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-[#7CCFD0] hover:bg-gray-100"
                 aria-controls="mobile-menu"
                 aria-expanded={isMobileMenuOpen}
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -199,8 +199,8 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
                   href={item.href}
                   className={`block px-3 py-2 rounded-md text-base font-medium flex items-center space-x-2 ${
                     activeTab === item.id 
-                      ? 'bg-[#7CCFD0]/20 text-[#2E4F54] dark:bg-[#7CCFD0]/30 dark:text-[#E0F4F5]' 
-                      : 'text-[#2E4F54] hover:text-[#2E4F54] hover:bg-[#F8F9FA] dark:text-[#E0F4F5]/70 dark:hover:text-[#E0F4F5] dark:hover:bg-[#24393C]'
+                      ? 'bg-[#7CCFD0] text-white' 
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -214,7 +214,7 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
                   setIsMobileMenuOpen(false);
                   handleSignOut();
                 }}
-                className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-[#7CCFD0] hover:bg-[#F8F9FA] dark:hover:bg-[#24393C]"
+                className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-white bg-red-500 hover:bg-red-600 mt-2"
               >
                 Sign out
               </button>
@@ -224,33 +224,33 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
       </header>
 
       {/* Main content */}
-      <main className="flex-grow container mx-auto px-4 py-8">
+      <main className="flex-grow container mx-auto px-4 py-8 bg-gray-50 min-h-screen">
         {children}
       </main>
 
       {/* Footer */}
-      <footer className="bg-[#F8F9FA] dark:bg-[#24393C] py-6 border-t border-[#DDE5E7] dark:border-[#3F5E63]">
+      <footer className="bg-white py-6 border-t border-gray-200">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-[#2E4F54] dark:text-[#E0F4F5] opacity-80 text-sm">
+            <p className="text-gray-600 text-sm">
               &copy; 2025 Compassionate Rides. All rights reserved.
             </p>
             <div className="flex space-x-4 mt-4 md:mt-0">
               <Link 
                 href="#" 
-                className="text-[#2E4F54] dark:text-[#E0F4F5] opacity-80 text-sm hover:text-[#7CCFD0] dark:hover:text-[#7CCFD0]"
+                className="text-gray-600 text-sm hover:text-[#7CCFD0] transition-colors"
               >
                 Help
               </Link>
               <Link 
                 href="#" 
-                className="text-[#2E4F54] dark:text-[#E0F4F5] opacity-80 text-sm hover:text-[#7CCFD0] dark:hover:text-[#7CCFD0]"
+                className="text-gray-600 text-sm hover:text-[#7CCFD0] transition-colors"
               >
                 Privacy
               </Link>
               <Link 
                 href="#" 
-                className="text-[#2E4F54] dark:text-[#E0F4F5] opacity-80 text-sm hover:text-[#7CCFD0] dark:hover:text-[#7CCFD0]"
+                className="text-gray-600 text-sm hover:text-[#7CCFD0] transition-colors"
               >
                 Terms
               </Link>

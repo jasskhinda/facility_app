@@ -31,14 +31,14 @@ function LoginContent() {
   }, [searchParams, supabase.auth]);
   
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-[#F8F9FA] to-white dark:from-[#1C2C2F] dark:to-[#24393C]">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-white">
       {/* Header */}
-      <header className="p-4 bg-[#F8F9FA] dark:bg-[#1C2C2F] shadow-sm border-b border-[#DDE5E7] dark:border-[#3F5E63]">
+      <header className="p-4 bg-white shadow-sm border-b border-gray-200">
         <div className="container mx-auto flex justify-between items-center">
           <Link href="/" className="flex items-center space-x-2">
-            <h1 className="text-xl font-bold text-[#2E4F54] dark:text-[#E0F4F5]">Compassionate Rides for Facilities</h1>
+            <h1 className="text-xl font-bold text-gray-900">Compassionate Rides for Facilities</h1>
           </Link>
-          <Link href="/" className="text-[#7CCFD0] hover:text-[#60BFC0]">
+          <Link href="/" className="text-[#7CCFD0] hover:text-[#60BFC0] font-medium">
             Back to Home
           </Link>
         </div>
@@ -47,13 +47,13 @@ function LoginContent() {
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <div className="bg-white dark:bg-[#1C2C2F] rounded-xl shadow-lg border border-[#DDE5E7] dark:border-[#3F5E63] p-8">
+          <div className="card p-8">
             <div className="text-center mb-8">
               <div className="text-5xl mb-4">🏥</div>
-              <h2 className="text-2xl font-bold text-[#2E4F54] dark:text-[#E0F4F5]">
+              <h2 className="text-2xl font-bold text-gray-900">
                 Facility Portal Login
               </h2>
-              <p className="mt-2 text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+              <p className="mt-2 text-gray-600">
                 Access your facility management dashboard
               </p>
             </div>
@@ -61,7 +61,7 @@ function LoginContent() {
             <LoginForm />
             
             <div className="mt-6 text-center">
-              <p className="text-sm text-[#2E4F54]/60 dark:text-[#E0F4F5]/60">
+              <p className="text-sm text-gray-600">
                 Need access for your facility?
               </p>
               <Link href="/#contact" className="text-sm text-[#7CCFD0] hover:text-[#60BFC0] font-medium">
@@ -71,11 +71,11 @@ function LoginContent() {
           </div>
 
           {/* Info Box */}
-          <div className="mt-6 bg-[#7CCFD0]/10 dark:bg-[#7CCFD0]/20 rounded-lg p-4 border border-[#7CCFD0]/20 dark:border-[#7CCFD0]/30">
-            <h3 className="font-semibold text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+          <div className="mt-6 bg-[#7CCFD0]/10 rounded-lg p-4 border border-[#7CCFD0]/20">
+            <h3 className="font-semibold text-gray-900 mb-2">
               Facility Benefits:
             </h3>
-            <ul className="text-sm text-[#2E4F54]/80 dark:text-[#E0F4F5]/80 space-y-1">
+            <ul className="text-sm text-gray-700 space-y-1">
               <li>• Manage all client transportation in one place</li>
               <li>• Streamlined booking process for staff</li>
               <li>• Consolidated monthly billing</li>
@@ -86,7 +86,7 @@ function LoginContent() {
       </div>
 
       {/* Footer */}
-      <footer className="py-4 text-center text-sm text-[#2E4F54]/60 dark:text-[#E0F4F5]/60">
+      <footer className="py-4 text-center text-sm text-gray-600">
         <p>© 2025 Compassionate Rides. Facility Portal v1.0</p>
       </footer>
     </div>

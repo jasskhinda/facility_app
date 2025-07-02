@@ -8,18 +8,23 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Light mode
-        'cr-primary': '#2E4F54',
-        'cr-accent': '#7CCFD0',
-        'cr-button-text': '#FFFFFF',
-        'cr-card-bg': '#F8F9FA',
-        'cr-border': '#DDE5E7',
+        // Primary brand color
+        'primary': '#7CCFD0',
+        'primary-hover': '#60BFC0',
         
-        // Dark mode variants
-        'cr-dark-bg': '#1C2C2F',
-        'cr-dark-text': '#E0F4F5',
-        'cr-dark-card-bg': '#24393C',
-        'cr-dark-border': '#3F5E63',
+        // UI Colors
+        'background': '#FFFFFF',
+        'foreground': '#1A1A1A',
+        'card-bg': '#F8F9FA',
+        'border': '#E0E0E0',
+        
+        // Button colors
+        'btn-primary': '#7CCFD0',
+        'btn-success': '#22C55E',
+        'btn-danger': '#EF4444',
+        'btn-info': '#3B82F6',
+        'btn-warning': '#F59E0B',
+        'btn-secondary': '#6B7280',
       },
     },
   },

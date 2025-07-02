@@ -1,23 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  /* Original Colors - For Reference */
-  /* --background: #ffffff;
-  --foreground: #171717; */
-  
-  /* Compassionate Rides Color Palette - Light Mode */
+  /* Compassionate Care Transportation Color Palette */
   --background: #FFFFFF;
-  --foreground: #2E4F54;
+  --foreground: #1A1A1A;
   --accent: #7CCFD0;
+  --accent-hover: #60BFC0;
   --button-text: #FFFFFF;
   --card-background: #F8F9FA;
-  --border-color: #DDE5E7;
+  --border-color: #E0E0E0;
   
-  /* Tailwind CSS custom colors */
-  --primary: #2E4F54;
-  --primary-hover: #1A3438;
-  --secondary: #7CCFD0;
-  --secondary-hover: #60BFC0;
+  /* Button Colors */
+  --btn-primary: #7CCFD0;
+  --btn-primary-hover: #60BFC0;
+  --btn-success: #22C55E;
+  --btn-success-hover: #16A34A;
+  --btn-danger: #EF4444;
+  --btn-danger-hover: #DC2626;
+  --btn-info: #3B82F6;
+  --btn-info-hover: #2563EB;
+  --btn-warning: #F59E0B;
+  --btn-warning-hover: #D97706;
+  --btn-secondary: #6B7280;
+  --btn-secondary-hover: #4B5563;
 }
 
 @theme inline {
@@ -27,25 +32,17 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* No dark mode - everything stays white/light */
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Original Colors - For Reference */
-    /* --background: #0a0a0a;
-    --foreground: #ededed; */
-    
-    /* Compassionate Rides Color Palette - Dark Mode */
-    --background: #1C2C2F;
-    --foreground: #E0F4F5;
+    /* Keep same light colors in dark mode */
+    --background: #FFFFFF;
+    --foreground: #1A1A1A;
     --accent: #7CCFD0;
-    --button-text: #1C2C2F;
-    --card-background: #24393C;
-    --border-color: #3F5E63;
-    
-    /* Tailwind CSS custom colors */
-    --primary: #E0F4F5;
-    --primary-hover: #C0E4E5;
-    --secondary: #7CCFD0;
-    --secondary-hover: #60BFC0;
+    --accent-hover: #60BFC0;
+    --button-text: #FFFFFF;
+    --card-background: #F8F9FA;
+    --border-color: #E0E0E0;
   }
 }
 
@@ -55,42 +52,83 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Custom utility classes for the Compassionate Rides color scheme */
+/* Professional Button Styles */
 .btn-primary {
-  @apply bg-[#7CCFD0] text-white hover:bg-[#60BFC0] focus:ring-[#7CCFD0]/50;
+  @apply bg-[#7CCFD0] text-white hover:bg-[#60BFC0] focus:ring-2 focus:ring-[#7CCFD0]/50 font-medium px-4 py-2 rounded-md transition-colors;
+}
+
+.btn-success {
+  @apply bg-green-500 text-white hover:bg-green-600 focus:ring-2 focus:ring-green-500/50 font-medium px-4 py-2 rounded-md transition-colors;
+}
+
+.btn-danger {
+  @apply bg-red-500 text-white hover:bg-red-600 focus:ring-2 focus:ring-red-500/50 font-medium px-4 py-2 rounded-md transition-colors;
+}
+
+.btn-info {
+  @apply bg-blue-500 text-white hover:bg-blue-600 focus:ring-2 focus:ring-blue-500/50 font-medium px-4 py-2 rounded-md transition-colors;
+}
+
+.btn-warning {
+  @apply bg-amber-500 text-white hover:bg-amber-600 focus:ring-2 focus:ring-amber-500/50 font-medium px-4 py-2 rounded-md transition-colors;
 }
 
 .btn-secondary {
-  @apply bg-transparent border border-[#7CCFD0] text-[#7CCFD0] hover:bg-[#7CCFD0]/10 focus:ring-[#7CCFD0]/50;
+  @apply bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-2 focus:ring-gray-300/50 font-medium px-4 py-2 rounded-md transition-colors;
+}
+
+.btn-outline-primary {
+  @apply bg-transparent border-2 border-[#7CCFD0] text-[#7CCFD0] hover:bg-[#7CCFD0] hover:text-white focus:ring-2 focus:ring-[#7CCFD0]/50 font-medium px-4 py-2 rounded-md transition-all;
 }
 
 .card {
-  @apply bg-[#F8F9FA] dark:bg-[#24393C] border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg shadow-sm;
+  @apply bg-white border border-gray-200 rounded-lg shadow-sm;
 }
 
-/* Status colors */
+/* Status colors - Professional look */
 .status-pending {
-  @apply bg-[#7CCFD0]/20 text-[#7CCFD0] dark:bg-[#7CCFD0]/30 dark:text-[#E0F4F5];
+  @apply bg-amber-100 text-amber-800 border border-amber-300 font-medium;
 }
 
 .status-upcoming {
-  @apply bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300;
+  @apply bg-blue-100 text-blue-800 border border-blue-300 font-medium;
 }
 
 .status-in-process {
-  @apply bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300;
+  @apply bg-blue-100 text-blue-800 border border-blue-300 font-medium;
 }
 
 .status-completed {
-  @apply bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300;
+  @apply bg-green-100 text-green-800 border border-green-300 font-medium;
 }
 
 .status-cancelled {
-  @apply bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300;
+  @apply bg-red-100 text-red-800 border border-red-300 font-medium;
 }
 
 .status-in-progress {
-  @apply bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300;
+  @apply bg-yellow-100 text-yellow-800 border border-yellow-300 font-medium;
+}
+
+/* Badge styles */
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-primary {
+  @apply bg-[#7CCFD0]/20 text-[#60BFC0] border border-[#7CCFD0];
+}
+
+.badge-success {
+  @apply bg-green-100 text-green-800 border border-green-300;
+}
+
+.badge-danger {
+  @apply bg-red-100 text-red-800 border border-red-300;
+}
+
+.badge-info {
+  @apply bg-blue-100 text-blue-800 border border-blue-300;
 }
 
 /* Custom datetime-local input styling */
@@ -100,10 +138,26 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
 }
 
-/* Dark mode calendar icon */
-@media (prefers-color-scheme: dark) {
-  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-    filter: invert(95%) sepia(12%) saturate(529%) hue-rotate(167deg) brightness(103%) contrast(96%);
-    opacity: 0.9;
-  }
+/* Form input styles */
+.input-field {
+  @apply w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-transparent transition-all;
+}
+
+/* Section headers */
+.section-header {
+  @apply text-xl font-bold text-gray-900 mb-4 pb-2 border-b-2 border-[#7CCFD0];
+}
+
+/* Table styles */
+.table-header {
+  @apply bg-gray-50 text-gray-700 font-semibold uppercase text-xs;
+}
+
+.table-row {
+  @apply border-b border-gray-200 hover:bg-gray-50 transition-colors;
+}
+
+/* Link styles */
+.link-primary {
+  @apply text-[#7CCFD0] hover:text-[#60BFC0] underline transition-colors;
 }

@@ -168,11 +168,11 @@ export default function FacilityDashboardView({ user }) {
     <DashboardLayout user={user} activeTab="dashboard">
       <div className="space-y-6">
         {/* Header */}
-        <div className="bg-white dark:bg-[#1C2C2F] rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
-          <h1 className="text-2xl font-bold text-[#2E4F54] dark:text-[#E0F4F5]">
+        <div className="card p-6">
+          <h1 className="section-header">
             {facilityName} Dashboard
           </h1>
-          <p className="text-[#2E4F54]/80 dark:text-[#E0F4F5]/80 mt-1">
+          <p className="text-gray-600 mt-1">
             Manage your facility&apos;s transportation needs
           </p>
         </div>
@@ -181,7 +181,7 @@ export default function FacilityDashboardView({ user }) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link
             href="/dashboard/book"
-            className="bg-[#7CCFD0] hover:bg-[#60BFC0] text-white rounded-lg p-6 flex items-center justify-between transition-colors"
+            className="bg-[#7CCFD0] hover:bg-[#60BFC0] text-white rounded-lg p-6 flex items-center justify-between transition-colors shadow-md"
           >
             <div>
               <h3 className="font-semibold text-lg">Book New Trip</h3>
@@ -192,7 +192,7 @@ export default function FacilityDashboardView({ user }) {
 
           <Link
             href="/dashboard/clients/add"
-            className="bg-[#3B5B63] hover:bg-[#2E4F54] text-white rounded-lg p-6 flex items-center justify-between transition-colors"
+            className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg p-6 flex items-center justify-between transition-colors shadow-md"
           >
             <div>
               <h3 className="font-semibold text-lg">Add Client</h3>
@@ -203,7 +203,7 @@ export default function FacilityDashboardView({ user }) {
 
           <Link
             href="/dashboard/trips"
-            className="bg-[#5C8A92] hover:bg-[#4A7880] text-white rounded-lg p-6 flex items-center justify-between transition-colors"
+            className="bg-green-500 hover:bg-green-600 text-white rounded-lg p-6 flex items-center justify-between transition-colors shadow-md"
           >
             <div>
               <h3 className="font-semibold text-lg">Today&apos;s Schedule</h3>
@@ -215,27 +215,27 @@ export default function FacilityDashboardView({ user }) {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white dark:bg-[#1C2C2F] rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
+          <div className="card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[#2E4F54]/60 dark:text-[#E0F4F5]/60">Total Clients</p>
-                <p className="text-2xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5] mt-1">
+                <p className="text-sm font-medium text-gray-600">Total Clients</p>
+                <p className="text-2xl font-semibold text-gray-900 mt-1">
                   {stats.totalClients}
                 </p>
-                <p className="text-sm text-[#7CCFD0] mt-1">{stats.activeClients} active</p>
+                <p className="text-sm text-[#7CCFD0] mt-1 font-medium">{stats.activeClients} active</p>
               </div>
               <span className="text-4xl opacity-20">👥</span>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-[#1C2C2F] rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
+          <div className="card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[#2E4F54]/60 dark:text-[#E0F4F5]/60">Today&apos;s Trips</p>
-                <p className="text-2xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5] mt-1">
+                <p className="text-sm font-medium text-gray-600">Today&apos;s Trips</p>
+                <p className="text-2xl font-semibold text-gray-900 mt-1">
                   {stats.todayTrips}
                 </p>
-                <p className="text-sm text-[#7CCFD0] mt-1">{stats.weeklyTrips} this week</p>
+                <p className="text-sm text-[#7CCFD0] mt-1 font-medium">{stats.weeklyTrips} this week</p>
               </div>
               <span className="text-4xl opacity-20">🚐</span>
             </div>

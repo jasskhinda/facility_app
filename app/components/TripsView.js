@@ -218,20 +218,20 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
       case 'in_progress':
         return 'status-in-progress';
       default:
-        return 'bg-gray-100 text-[#2E4F54] dark:bg-gray-800 dark:text-[#E0F4F5]';
+        return 'badge-primary';
     }
   };
 
   return (
     <DashboardLayout user={user} activeTab="trips">
-      <div className="bg-[#F8F9FA] dark:bg-[#24393C] rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6 mb-6">
+      <div className="card p-6 mb-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5]">Your Trips</h2>
+          <h2 className="section-header">Your Trips</h2>
           <div className="flex space-x-3">
             {onRefresh && (
               <button
                 onClick={onRefresh}
-                className="bg-gray-500 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-600 flex items-center"
+                className="btn-secondary"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -241,7 +241,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
             )}
             <Link 
               href="/dashboard/book" 
-              className="bg-[#7CCFD0] text-white px-4 py-2 rounded-md text-sm hover:bg-[#60BFC0]"
+              className="btn-primary"
             >
               Book New Trip
             </Link>
@@ -304,7 +304,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
         {displayTrips.length === 0 ? (
           <div className="text-center py-12">
             <svg 
-              className="mx-auto h-12 w-12 text-[#7CCFD0] dark:text-[#7CCFD0]" 
+              className="mx-auto h-12 w-12 text-[#7CCFD0]" 
               fill="none" 
               viewBox="0 0 24 24" 
               stroke="currentColor" 
@@ -323,8 +323,8 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                 d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" 
               />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">No trips found</h3>
-            <p className="mt-1 text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No trips found</h3>
+            <p className="mt-1 text-sm text-gray-600">
               {trips.length === 0 
                 ? "You haven't booked any trips yet." 
                 : `No ${filter !== 'all' ? filter : ''} trips found.`}
@@ -332,7 +332,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
             <div className="mt-6">
               <Link
                 href="/dashboard/book"
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#7CCFD0] hover:bg-[#60BFC0] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7CCFD0]"
+                className="btn-primary"
               >
                 Book your first trip
               </Link>
@@ -344,7 +344,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
               {displayTrips.map((trip) => (
                 <div 
                   key={trip.id} 
-                  className="bg-white dark:bg-[#1C2C2F] rounded-lg p-4 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]"
+                  className="card p-4"
                 >
                   <div className="flex flex-col sm:flex-row justify-between">
                     <div className="mb-2 sm:mb-0">
@@ -524,7 +524,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                           <button
                             onClick={() => handleRebookTrip(trip)}
                             disabled={isSubmitting && rebookingTrip === trip.id}
-                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50"
+                            className="btn-success text-xs px-3 py-1.5"
                           >
                             {isSubmitting && rebookingTrip === trip.id ? (
                               <>
@@ -593,7 +593,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                         </Link>
                         <Link
                           href={`/dashboard/track/${trip.id}`}
-                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50"
+                          className="btn-success text-xs px-3 py-1.5"
                         >
                           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
