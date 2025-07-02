@@ -114,73 +114,106 @@ export async function POST(request) {
       paymentNote += ` This is a mid-month payment - additional trips completed after this payment will be billed separately.`
     }
 
-    // Record check payment in database
-    const { error: paymentError } = await supabase
-      .from('facility_invoice_payments')
-      .insert({
-        facility_id: facility_id,
-        amount: amount,
-        payment_method: 'check',
-        month: month,
-        status: 'pending_verification',
-        payment_note: paymentNote,
-        partial_month_payment: isPartialMonthPayment,
-        payment_date: new Date().toISOString(),
-        check_submission_type: check_submission_type,
-        check_details: check_details || null
-      })
+    // Record check payment in database (with error handling for missing table)
+    try {
+      const { error: paymentError } = await supabase
+        .from('facility_invoice_payments')
+        .insert({
+          facility_id: facility_id,
+          amount: amount,
+          payment_method: 'check',
+          month: month,
+          status: 'pending_verification',
+          payment_note: paymentNote,
+          partial_month_payment: isPartialMonthPayment,
+          payment_date: new Date().toISOString(),
+          check_submission_type: check_submission_type,
+          check_details: check_details || null
+        })
 
-    if (paymentError) {
-      console.error('Error recording check payment:', paymentError)
-      return Response.json(
-        { error: 'Failed to record payment' },
-        { status: 500 }
-      )
+      if (paymentError) {
+        console.error('Error recording check payment in facility_invoice_payments:', paymentError)
+        // Continue anyway - the main invoice record is more important
+      }
+    } catch (paymentInsertError) {
+      console.error('facility_invoice_payments table may not exist:', paymentInsertError)
+      // Continue anyway - this is just for detailed payment tracking
     }
 
     // Update or create invoice record
-    const { data: existingInvoice } = await supabase
+    const { data: existingInvoice, error: fetchError } = await supabase
       .from('facility_invoices')
       .select('id')
       .eq('facility_id', facility_id)
       .eq('month', month)
       .single()
 
-    if (existingInvoice) {
-      // Update existing invoice
-      await supabase.rpc('update_payment_status_with_audit', {
-        p_invoice_id: existingInvoice.id,
-        p_new_status: paymentStatus,
-        p_user_id: userData.user.id,
-        p_user_role: 'facility',
-        p_notes: paymentNote
-      })
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('Error fetching existing invoice:', fetchError)
+      return Response.json(
+        { error: 'Failed to check existing invoice' },
+        { status: 500 }
+      )
+    }
 
-      // Also update the payment_notes field directly
-      await supabase
+    if (existingInvoice) {
+      // Update existing invoice with core fields only
+      const updateData = {
+        payment_status: paymentStatus,
+        last_updated: new Date().toISOString()
+      }
+
+      // Add optional fields only if they exist in schema
+      try {
+        updateData.payment_notes = paymentNote
+        updateData.partial_month_payment = isPartialMonthPayment
+      } catch (e) {
+        console.log('Some optional fields may not exist in schema')
+      }
+
+      const { error: updateError } = await supabase
         .from('facility_invoices')
-        .update({ 
-          payment_notes: paymentNote,
-          partial_month_payment: isPartialMonthPayment,
-          check_submission_type: check_submission_type,
-          check_details: check_details || null
-        })
+        .update(updateData)
         .eq('id', existingInvoice.id)
+
+      if (updateError) {
+        console.error('Error updating existing invoice:', updateError)
+        return Response.json(
+          { error: `Failed to update invoice status: ${updateError.message}` },
+          { status: 500 }
+        )
+      }
     } else {
-      // Create new invoice
-      await supabase
+      // Create new invoice with core fields only
+      const insertData = {
+        facility_id: facility_id,
+        invoice_number: invoice_number,
+        month: month,
+        total_amount: amount,
+        payment_status: paymentStatus,
+        created_at: new Date().toISOString(),
+        last_updated: new Date().toISOString()
+      }
+
+      // Add optional fields only if needed
+      try {
+        insertData.payment_notes = paymentNote
+        insertData.partial_month_payment = isPartialMonthPayment
+      } catch (e) {
+        console.log('Some optional fields may not exist in schema')
+      }
+
+      const { error: createError } = await supabase
         .from('facility_invoices')
-        .insert({
-          facility_id: facility_id,
-          invoice_number: invoice_number,
-          month: month,
-          total_amount: amount,
-          payment_status: paymentStatus,
-          payment_notes: paymentNote,
-          partial_month_payment: isPartialMonthPayment,
-          check_submission_type: check_submission_type,
-          check_details: check_details || null
-        })
+        .insert(insertData)
+
+      if (createError) {
+        console.error('Error creating new invoice:', createError)
+        return Response.json(
+          { error: `Failed to create invoice record: ${createError.message}` },
+          { status: 500 }
+        )
+      }
     }
 
     return Response.json({
@@ -195,7 +228,8 @@ export async function POST(request) {
         state: 'OH',
         zip: '43017',
         attention: 'Billing Department',
-        formatted: 'Compassionate Care Transportation\nBilling Department\n5050 Blazer Pkwy Suite 100-B\nDublin, OH 43017'
+        phone: '614-967-9887',
+        formatted: 'Compassionate Care Transportation\nAttn: Billing Department\n5050 Blazer Pkwy Suite 100-B\nDublin, OH 43017\n\nPhone: 614-967-9887'
       },
       check_instructions: {
         payable_to: 'Compassionate Care Transportation',

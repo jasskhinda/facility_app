@@ -80,6 +80,16 @@ function PaymentForm({
     }
   }, [defaultPaymentMethod])
 
+  // Reset payment form state whenever modal reopens
+  useEffect(() => {
+    // Reset payment method selection to force showing payment options screen
+    setPaymentMethod('')
+    setShowCheckOptions(false)
+    setCheckSubmissionType('')
+    setUseNewCard(false)
+    setProcessingPayment(false)
+  }, [totalAmount, facilityId, invoiceNumber, selectedMonth])
+
   const handleCreditCardPayment = async () => {
     if (!stripe || !elements) {
       onPaymentError('Stripe not loaded. Please refresh and try again.')
@@ -238,15 +248,17 @@ function PaymentForm({
       let successMessage = `${result.message}\n\n`
       
       if (checkSubmissionType === 'will_mail') {
-        successMessage += `📬 MAILING ADDRESS:\n${addressInfo}\n\n`
+        successMessage += `📬 MAIL YOUR CHECK TO:\n${addressInfo}\n\n`
         successMessage += `💰 CHECK DETAILS:\n`
-        successMessage += `• Payable to: ${checkInfo.payable_to}\n`
+        successMessage += `• Make payable to: ${checkInfo.payable_to}\n`
         successMessage += `• Amount: ${checkInfo.amount}\n`
-        successMessage += `• Memo: ${checkInfo.memo}\n`
+        successMessage += `• Write in memo line: ${checkInfo.memo}\n`
         successMessage += `• Mail within: ${checkInfo.mail_within_days} business days\n\n`
-        successMessage += `📋 NEXT STEPS:\n${result.next_steps}`
+        successMessage += `📞 QUESTIONS? Call us at 614-967-9887\n\n`
+        successMessage += `📋 WHAT HAPPENS NEXT:\n${result.next_steps}`
       } else {
-        successMessage += `📋 NEXT STEPS:\n${result.next_steps}`
+        successMessage += `📞 QUESTIONS? Call us at 614-967-9887\n\n`
+        successMessage += `📋 WHAT HAPPENS NEXT:\n${result.next_steps}`
       }
 
       onPaymentSuccess(successMessage)
@@ -649,14 +661,17 @@ function PaymentForm({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <h4 className="font-medium text-blue-800">Check Payment Instructions</h4>
+              <h4 className="font-medium text-blue-800">Professional Check Payment Process</h4>
               <p className="text-sm text-blue-700 mt-1">
-                You will receive complete mailing instructions and check details after submitting this payment request.
+                You will receive complete mailing instructions including our business address, check details, and next steps.
               </p>
               <div className="mt-3 p-3 bg-blue-100 rounded border border-blue-300">
                 <p className="text-sm text-blue-800 font-medium">Payment Amount: ${totalAmount.toFixed(2)}</p>
                 <p className="text-xs text-blue-600 mt-1">
-                  Mail check within 5 business days to maintain payment status
+                  Mail to: 5050 Blazer Pkwy Suite 100-B, Dublin, OH 43017
+                </p>
+                <p className="text-xs text-blue-600">
+                  Questions? Call 614-967-9887
                 </p>
               </div>
             </div>
@@ -769,6 +784,15 @@ export default function EnhancedPaymentModal({
       fetchPaymentMethods()
     }
   }, [isOpen, facilityId])
+
+  // Reset payment form state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      // Reset all payment-related state to ensure fresh start
+      setError('')
+      setSuccess('')
+    }
+  }, [isOpen])
 
   const fetchPaymentMethods = async () => {
     try {
