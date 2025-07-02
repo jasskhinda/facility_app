@@ -120,7 +120,7 @@ export default function SignupForm() {
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="firstName" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+            <label htmlFor="firstName" className="block text-sm font-medium text-[#2E4F54] text-gray-900">
               First name
             </label>
             <input
@@ -131,11 +131,11 @@ export default function SignupForm() {
               required
               value={formData.firstName}
               onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5]"
+              className="mt-1 block w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white  text-[#2E4F54] text-gray-900"
             />
           </div>
           <div>
-            <label htmlFor="lastName" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+            <label htmlFor="lastName" className="block text-sm font-medium text-[#2E4F54] text-gray-900">
               Last name
             </label>
             <input
@@ -146,13 +146,13 @@ export default function SignupForm() {
               required
               value={formData.lastName}
               onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5]"
+              className="mt-1 block w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white  text-[#2E4F54] text-gray-900"
             />
           </div>
         </div>
         
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+          <label htmlFor="email" className="block text-sm font-medium text-[#2E4F54] text-gray-900">
             Email address
           </label>
           <input
@@ -163,12 +163,12 @@ export default function SignupForm() {
             required
             value={formData.email}
             onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5]"
+            className="mt-1 block w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white  text-[#2E4F54] text-gray-900"
           />
         </div>
         
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+          <label htmlFor="password" className="block text-sm font-medium text-[#2E4F54] text-gray-900">
             Password
           </label>
           <input
@@ -179,12 +179,12 @@ export default function SignupForm() {
             required
             value={formData.password}
             onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5]"
+            className="mt-1 block w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white  text-[#2E4F54] text-gray-900"
           />
         </div>
         
         <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#2E4F54] text-gray-900">
             Confirm password
           </label>
           <input
@@ -195,12 +195,12 @@ export default function SignupForm() {
             required
             value={formData.confirmPassword}
             onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5]"
+            className="mt-1 block w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white  text-[#2E4F54] text-gray-900"
           />
         </div>
         
         <div>
-          <label htmlFor="birthdate" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+          <label htmlFor="birthdate" className="block text-sm font-medium text-[#2E4F54] text-gray-900">
             Date of Birth
           </label>
           <input
@@ -210,7 +210,7 @@ export default function SignupForm() {
             required
             value={formData.birthdate}
             onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5]"
+            className="mt-1 block w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white  text-[#2E4F54] text-gray-900"
           />
         </div>
         
@@ -226,10 +226,10 @@ export default function SignupForm() {
             />
           </div>
           <div className="ml-3 text-sm">
-            <label htmlFor="marketingConsent" className="font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+            <label htmlFor="marketingConsent" className="font-medium text-[#2E4F54] text-gray-900">
               Marketing emails
             </label>
-            <p className="text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+            <p className="text-[#2E4F54]/70 text-gray-900/70">
               I agree to receive marketing emails about special offers and promotions.
             </p>
           </div>

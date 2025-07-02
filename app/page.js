@@ -27,10 +27,10 @@ function HomeContent() {
   
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="p-4 bg-[#F8F9FA] dark:bg-[#1C2C2F] shadow border-b border-[#DDE5E7] dark:border-[#3F5E63]">
+      <header className="p-4 bg-[#F8F9FA]  shadow border-b border-[#DDE5E7] dark:border-[#3F5E63]">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-bold text-[#2E4F54] dark:text-[#E0F4F5]">Compassionate Rides for Facilities</h1>
+            <h1 className="text-xl font-bold text-[#2E4F54] text-gray-900">Compassionate Rides for Facilities</h1>
           </div>
           <nav>
             <ul className="flex space-x-6">
@@ -52,10 +52,10 @@ function HomeContent() {
       <main className="flex-grow">
         <section className="py-16 px-4 bg-gradient-to-b from-[#3B5B63]/10 to-white dark:from-[#24393C] dark:to-[#1C2C2F]">
           <div className="container mx-auto text-center">
-            <h2 className="text-4xl font-bold mb-6 text-[#2E4F54] dark:text-[#E0F4F5]">
+            <h2 className="text-4xl font-bold mb-6 text-[#2E4F54] text-gray-900">
               Streamline Your Facility&apos;s Transportation Management
             </h2>
-            <p className="text-xl mb-10 max-w-3xl mx-auto text-[#2E4F54]/80 dark:text-[#E0F4F5]/80">
+            <p className="text-xl mb-10 max-w-3xl mx-auto text-[#2E4F54]/80 text-gray-900/80">
               Efficiently manage transportation for all your clients with our comprehensive facility portal. 
               Perfect for healthcare facilities, nursing homes, rehabilitation centers, and senior living communities.
             </p>
@@ -63,39 +63,39 @@ function HomeContent() {
               <Link href="/login" className="bg-[#7CCFD0] text-white px-6 py-3 rounded-lg hover:bg-[#60BFC0] font-medium">
                 Access Facility Portal
               </Link>
-              <Link href="#features" className="border border-[#DDE5E7] dark:border-[#3F5E63] px-6 py-3 rounded-lg hover:bg-[#F8F9FA] dark:hover:bg-[#24393C] font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+              <Link href="#features" className="border border-[#DDE5E7] dark:border-[#3F5E63] px-6 py-3 rounded-lg hover:bg-[#F8F9FA] dark:hover:bg-[#24393C] font-medium text-[#2E4F54] text-gray-900">
                 See Features
               </Link>
             </div>
           </div>
         </section>
 
-        <section id="features" className="py-16 px-4 bg-[#F8F9FA] dark:bg-[#24393C]">
+        <section id="features" className="py-16 px-4 bg-[#F8F9FA] ">
           <div className="container mx-auto">
-            <h2 className="text-3xl font-bold text-center mb-12 text-[#2E4F54] dark:text-[#E0F4F5]">
+            <h2 className="text-3xl font-bold text-center mb-12 text-[#2E4F54] text-gray-900">
               Facility Management Features
             </h2>
             <div className="grid md:grid-cols-3 gap-8">
-              <div className="bg-white dark:bg-[#1C2C2F] p-6 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
+              <div className="bg-white  p-6 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
                 <div className="text-3xl mb-4">👥</div>
-                <h3 className="text-xl font-bold mb-2 text-[#2E4F54] dark:text-[#E0F4F5]">Client Management</h3>
-                <p className="text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+                <h3 className="text-xl font-bold mb-2 text-[#2E4F54] text-gray-900">Client Management</h3>
+                <p className="text-[#2E4F54]/70 text-gray-900/70">
                   Manage all your clients in one place. Track medical needs, accessibility requirements, and transportation history.
                 </p>
               </div>
               
-              <div className="bg-white dark:bg-[#1C2C2F] p-6 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
+              <div className="bg-white  p-6 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
                 <div className="text-3xl mb-4">📅</div>
-                <h3 className="text-xl font-bold mb-2 text-[#2E4F54] dark:text-[#E0F4F5]">Bulk Booking</h3>
-                <p className="text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+                <h3 className="text-xl font-bold mb-2 text-[#2E4F54] text-gray-900">Bulk Booking</h3>
+                <p className="text-[#2E4F54]/70 text-gray-900/70">
                   Schedule transportation for multiple clients efficiently. Set up recurring trips for regular appointments.
                 </p>
               </div>
               
-              <div className="bg-white dark:bg-[#1C2C2F] p-6 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
+              <div className="bg-white  p-6 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
                 <div className="text-3xl mb-4">💰</div>
-                <h3 className="text-xl font-bold mb-2 text-[#2E4F54] dark:text-[#E0F4F5]">Consolidated Billing</h3>
-                <p className="text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+                <h3 className="text-xl font-bold mb-2 text-[#2E4F54] text-gray-900">Consolidated Billing</h3>
+                <p className="text-[#2E4F54]/70 text-gray-900/70">
                   Single monthly invoice for all client trips. Detailed reporting and cost allocation tools.
                 </p>
               </div>
@@ -105,46 +105,46 @@ function HomeContent() {
 
         <section className="py-16 px-4">
           <div className="container mx-auto">
-            <h2 className="text-3xl font-bold text-center mb-12 text-[#2E4F54] dark:text-[#E0F4F5]">
+            <h2 className="text-3xl font-bold text-center mb-12 text-[#2E4F54] text-gray-900">
               How Facility Management Works
             </h2>
             <div className="grid md:grid-cols-4 gap-8">
               <div className="text-center">
                 <div className="bg-[#7CCFD0]/20 dark:bg-[#7CCFD0]/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-[#2E4F54] dark:text-[#E0F4F5] text-2xl font-bold">1</span>
+                  <span className="text-[#2E4F54] text-gray-900 text-2xl font-bold">1</span>
                 </div>
-                <h3 className="text-lg font-bold mb-2 text-[#2E4F54] dark:text-[#E0F4F5]">Add Clients</h3>
-                <p className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+                <h3 className="text-lg font-bold mb-2 text-[#2E4F54] text-gray-900">Add Clients</h3>
+                <p className="text-sm text-[#2E4F54]/70 text-gray-900/70">
                   Register your facility&apos;s clients with their medical and accessibility needs
                 </p>
               </div>
               
               <div className="text-center">
                 <div className="bg-[#7CCFD0]/20 dark:bg-[#7CCFD0]/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-[#2E4F54] dark:text-[#E0F4F5] text-2xl font-bold">2</span>
+                  <span className="text-[#2E4F54] text-gray-900 text-2xl font-bold">2</span>
                 </div>
-                <h3 className="text-lg font-bold mb-2 text-[#2E4F54] dark:text-[#E0F4F5]">Book Trips</h3>
-                <p className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+                <h3 className="text-lg font-bold mb-2 text-[#2E4F54] text-gray-900">Book Trips</h3>
+                <p className="text-sm text-[#2E4F54]/70 text-gray-900/70">
                   Schedule transportation for any client with our streamlined booking system
                 </p>
               </div>
               
               <div className="text-center">
                 <div className="bg-[#7CCFD0]/20 dark:bg-[#7CCFD0]/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-[#2E4F54] dark:text-[#E0F4F5] text-2xl font-bold">3</span>
+                  <span className="text-[#2E4F54] text-gray-900 text-2xl font-bold">3</span>
                 </div>
-                <h3 className="text-lg font-bold mb-2 text-[#2E4F54] dark:text-[#E0F4F5]">Track & Manage</h3>
-                <p className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+                <h3 className="text-lg font-bold mb-2 text-[#2E4F54] text-gray-900">Track & Manage</h3>
+                <p className="text-sm text-[#2E4F54]/70 text-gray-900/70">
                   Monitor all trips in real-time and manage your transportation schedule
                 </p>
               </div>
               
               <div className="text-center">
                 <div className="bg-[#7CCFD0]/20 dark:bg-[#7CCFD0]/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-[#2E4F54] dark:text-[#E0F4F5] text-2xl font-bold">4</span>
+                  <span className="text-[#2E4F54] text-gray-900 text-2xl font-bold">4</span>
                 </div>
-                <h3 className="text-lg font-bold mb-2 text-[#2E4F54] dark:text-[#E0F4F5]">Single Invoice</h3>
-                <p className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+                <h3 className="text-lg font-bold mb-2 text-[#2E4F54] text-gray-900">Single Invoice</h3>
+                <p className="text-sm text-[#2E4F54]/70 text-gray-900/70">
                   Receive one consolidated monthly invoice for all client transportation
                 </p>
               </div>
@@ -177,29 +177,29 @@ function HomeContent() {
 
         <section id="contact" className="py-16 px-4">
           <div className="container mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold mb-6 text-[#2E4F54] dark:text-[#E0F4F5]">
+            <h2 className="text-3xl font-bold mb-6 text-[#2E4F54] text-gray-900">
               Get Started with Compassionate Rides
             </h2>
-            <p className="text-xl mb-8 text-[#2E4F54]/80 dark:text-[#E0F4F5]/80">
+            <p className="text-xl mb-8 text-[#2E4F54]/80 text-gray-900/80">
               Contact our sales team to learn how we can help streamline your facility&apos;s transportation management.
             </p>
-            <div className="bg-[#F8F9FA] dark:bg-[#24393C] p-8 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
+            <div className="bg-[#F8F9FA]  p-8 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
               <div className="space-y-4 text-left">
                 <div>
-                  <strong className="text-[#2E4F54] dark:text-[#E0F4F5]">Email:</strong>
+                  <strong className="text-[#2E4F54] text-gray-900">Email:</strong>
                   <span className="text-[#7CCFD0] ml-2">info@compassionatecaretransportation.com</span>
                 </div>
                 <div>
-                  <strong className="text-[#2E4F54] dark:text-[#E0F4F5]">Phone:</strong>
-                  <span className="text-[#2E4F54]/80 dark:text-[#E0F4F5]/80 ml-2">614-967-9887</span>
+                  <strong className="text-[#2E4F54] text-gray-900">Phone:</strong>
+                  <span className="text-[#2E4F54]/80 text-gray-900/80 ml-2">614-967-9887</span>
                 </div>
                 <div>
-                  <strong className="text-[#2E4F54] dark:text-[#E0F4F5]">Hours:</strong>
-                  <span className="text-[#2E4F54]/80 dark:text-[#E0F4F5]/80 ml-2">Monday – Sunday 8:00 am to 10:00 pm</span>
+                  <strong className="text-[#2E4F54] text-gray-900">Hours:</strong>
+                  <span className="text-[#2E4F54]/80 text-gray-900/80 ml-2">Monday – Sunday 8:00 am to 10:00 pm</span>
                 </div>
                 <div>
-                  <strong className="text-[#2E4F54] dark:text-[#E0F4F5]">Address:</strong>
-                  <span className="text-[#2E4F54]/80 dark:text-[#E0F4F5]/80 ml-2">5050 Blazer Pkwy Suite 100-B, Dublin, OH 43017</span>
+                  <strong className="text-[#2E4F54] text-gray-900">Address:</strong>
+                  <span className="text-[#2E4F54]/80 text-gray-900/80 ml-2">5050 Blazer Pkwy Suite 100-B, Dublin, OH 43017</span>
                 </div>
               </div>
               <Link href="/login" className="inline-block mt-6 bg-[#7CCFD0] text-white px-6 py-3 rounded-lg hover:bg-[#60BFC0] font-medium">
@@ -210,20 +210,20 @@ function HomeContent() {
         </section>
       </main>
 
-      <footer className="bg-[#F8F9FA] dark:bg-[#1C2C2F] py-8 border-t border-[#DDE5E7] dark:border-[#3F5E63]">
+      <footer className="bg-[#F8F9FA]  py-8 border-t border-[#DDE5E7] dark:border-[#3F5E63]">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-[#2E4F54]/70 dark:text-[#E0F4F5]/70 mb-4 md:mb-0">
+            <p className="text-[#2E4F54]/70 text-gray-900/70 mb-4 md:mb-0">
               &copy; 2025 Compassionate Rides for Facilities. All rights reserved.
             </p>
             <div className="flex space-x-6">
-              <Link href="#" className="text-[#2E4F54]/70 dark:text-[#E0F4F5]/70 hover:text-[#7CCFD0] dark:hover:text-[#7CCFD0]">
+              <Link href="#" className="text-[#2E4F54]/70 text-gray-900/70 hover:text-[#7CCFD0] dark:hover:text-[#7CCFD0]">
                 Terms
               </Link>
-              <Link href="#" className="text-[#2E4F54]/70 dark:text-[#E0F4F5]/70 hover:text-[#7CCFD0] dark:hover:text-[#7CCFD0]">
+              <Link href="#" className="text-[#2E4F54]/70 text-gray-900/70 hover:text-[#7CCFD0] dark:hover:text-[#7CCFD0]">
                 Privacy
               </Link>
-              <Link href="#contact" className="text-[#2E4F54]/70 dark:text-[#E0F4F5]/70 hover:text-[#7CCFD0] dark:hover:text-[#7CCFD0]">
+              <Link href="#contact" className="text-[#2E4F54]/70 text-gray-900/70 hover:text-[#7CCFD0] dark:hover:text-[#7CCFD0]">
                 Contact Sales
               </Link>
             </div>

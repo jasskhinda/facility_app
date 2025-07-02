@@ -94,7 +94,7 @@ export default function LoginForm() {
       
       <div className="space-y-4">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+          <label htmlFor="email" className="block text-sm font-medium text-[#2E4F54] text-gray-900">
             Email address
           </label>
           <input
@@ -105,13 +105,13 @@ export default function LoginForm() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5]"
+            className="mt-1 block w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white  text-[#2E4F54] text-gray-900"
           />
         </div>
         
         <div>
           <div className="flex justify-between">
-            <label htmlFor="password" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+            <label htmlFor="password" className="block text-sm font-medium text-[#2E4F54] text-gray-900">
               Password
             </label>
             <button 

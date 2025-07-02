@@ -89,7 +89,7 @@ export default function UpdatePasswordForm() {
       
       <div className="space-y-4">
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+          <label htmlFor="password" className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
             New password
           </label>
           <input
@@ -100,13 +100,13 @@ export default function UpdatePasswordForm() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5]"
+            className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white  text-[#2E4F54] text-gray-900"
             placeholder="Enter your new password"
           />
         </div>
         
         <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
             Confirm new password
           </label>
           <input
@@ -117,7 +117,7 @@ export default function UpdatePasswordForm() {
             required
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5]"
+            className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0] bg-white  text-[#2E4F54] text-gray-900"
             placeholder="Confirm your new password"
           />
         </div>

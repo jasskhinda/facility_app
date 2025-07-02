@@ -93,10 +93,10 @@ export default function BillingPage() {
       <div className="max-w-7xl mx-auto">
         {/* Page Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+          <h1 className="text-2xl font-bold text-[#2E4F54] text-gray-900 mb-2">
             Monthly Billing & Invoices
           </h1>
-          <p className="text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+          <p className="text-[#2E4F54]/70 text-gray-900/70">
             View and download monthly ride summaries, manage invoices and billing information.
           </p>
         </div>

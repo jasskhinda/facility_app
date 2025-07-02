@@ -530,13 +530,13 @@ ${monthlyTrips.map(trip => {
       </div>
 
       {/* Month Selection and Summary */}
-      <div className="bg-white dark:bg-[#1C2C2F] rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
+      <div className="bg-white  rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
-            <h2 className="text-xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5] mb-1">
+            <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900 mb-1">
               Monthly Ride Summary
             </h2>
-            <p className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+            <p className="text-sm text-[#2E4F54]/70 text-gray-900/70">
               Showing trips for {displayMonth}
             </p>
           </div>
@@ -580,7 +580,7 @@ ${monthlyTrips.map(trip => {
                   setLoading(false);
                 }
               }}
-              className="px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+              className="px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
             >
               {monthOptions.map(option => (
                 <option key={option.value} value={option.value}>
@@ -593,19 +593,19 @@ ${monthlyTrips.map(trip => {
 
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-[#F8F9FA] dark:bg-[#24393C] rounded-lg p-4">
-            <h3 className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-1">Total Trips</h3>
-            <p className="text-2xl font-bold text-[#2E4F54] dark:text-[#E0F4F5]">{monthlyTrips.length}</p>
+          <div className="bg-[#F8F9FA]  rounded-lg p-4">
+            <h3 className="text-sm font-medium text-[#2E4F54] text-gray-900 mb-1">Total Trips</h3>
+            <p className="text-2xl font-bold text-[#2E4F54] text-gray-900">{monthlyTrips.length}</p>
           </div>
           
-          <div className="bg-[#F8F9FA] dark:bg-[#24393C] rounded-lg p-4">
-            <h3 className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-1">Total Amount</h3>
+          <div className="bg-[#F8F9FA]  rounded-lg p-4">
+            <h3 className="text-sm font-medium text-[#2E4F54] text-gray-900 mb-1">Total Amount</h3>
             <p className="text-2xl font-bold text-[#7CCFD0]">${totalAmount.toFixed(2)}</p>
           </div>
           
-          <div className="bg-[#F8F9FA] dark:bg-[#24393C] rounded-lg p-4">
-            <h3 className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-1">Billing Email</h3>
-            <p className="text-sm text-[#2E4F54] dark:text-[#E0F4F5] truncate">
+          <div className="bg-[#F8F9FA]  rounded-lg p-4">
+            <h3 className="text-sm font-medium text-[#2E4F54] text-gray-900 mb-1">Billing Email</h3>
+            <p className="text-sm text-[#2E4F54] text-gray-900 truncate">
               {facility?.billing_email || 'Not set'}
             </p>
           </div>
@@ -641,25 +641,25 @@ ${monthlyTrips.map(trip => {
       {loading ? (
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7CCFD0] mx-auto"></div>
-          <p className="text-[#2E4F54] dark:text-[#E0F4F5] mt-2">Loading trips...</p>
+          <p className="text-[#2E4F54] text-gray-900 mt-2">Loading trips...</p>
         </div>
       ) : monthlyTrips.length > 0 ? (
-        <div className="bg-white dark:bg-[#1C2C2F] rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] overflow-hidden">
+        <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] overflow-hidden">
           <div className="px-6 py-4 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
-            <h3 className="text-lg font-semibold text-[#2E4F54] dark:text-[#E0F4F5]">
+            <h3 className="text-lg font-semibold text-[#2E4F54] text-gray-900">
               Trip Details ({monthlyTrips.length} trips)
             </h3>
           </div>
           
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-[#F8F9FA] dark:bg-[#24393C]">
+              <thead className="bg-[#F8F9FA] ">
                 <tr>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-[#2E4F54] dark:text-[#E0F4F5] uppercase tracking-wider">Date</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-[#2E4F54] dark:text-[#E0F4F5] uppercase tracking-wider">Client</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-[#2E4F54] dark:text-[#E0F4F5] uppercase tracking-wider">Route</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-[#2E4F54] dark:text-[#E0F4F5] uppercase tracking-wider">Price</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-[#2E4F54] dark:text-[#E0F4F5] uppercase tracking-wider">Status</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-[#2E4F54] text-gray-900 uppercase tracking-wider">Date</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-[#2E4F54] text-gray-900 uppercase tracking-wider">Client</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-[#2E4F54] text-gray-900 uppercase tracking-wider">Route</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-[#2E4F54] text-gray-900 uppercase tracking-wider">Price</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-[#2E4F54] text-gray-900 uppercase tracking-wider">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#DDE5E7] dark:divide-[#3F5E63]">
@@ -671,16 +671,16 @@ ${monthlyTrips.map(trip => {
 
                   return (
                     <tr key={trip.id} className="hover:bg-[#F8F9FA] dark:hover:bg-[#24393C]">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E4F54] text-gray-900">
                         {formattedDate}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E4F54] text-gray-900">
                         <div className="font-medium">{clientName}</div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
+                      <td className="px-6 py-4 text-sm text-[#2E4F54] text-gray-900">
                         <div className="max-w-xs">
                           <p className="truncate font-medium">{trip.pickup_address || 'Unknown pickup'}</p>
-                          <p className="truncate text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+                          <p className="truncate text-xs text-[#2E4F54]/70 text-gray-900/70">
                             → {trip.destination_address || 'Unknown destination'}
                           </p>
                         </div>
@@ -706,7 +706,7 @@ ${monthlyTrips.map(trip => {
         </div>
       ) : (
         <div className="text-center py-8">
-          <p className="text-[#2E4F54] dark:text-[#E0F4F5]">
+          <p className="text-[#2E4F54] text-gray-900">
             No trips found for {displayMonth}
           </p>
         </div>
@@ -715,7 +715,7 @@ ${monthlyTrips.map(trip => {
       {/* Professional Invoice Modal */}
       {showInvoiceModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#1C2C2F] rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white  rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-[#7CCFD0] to-[#6BB8BA] text-white p-6 rounded-t-lg">
               <div className="flex items-center justify-between">
@@ -737,16 +737,16 @@ ${monthlyTrips.map(trip => {
             {/* Modal Content */}
             <div className="p-6 space-y-6">
               {/* Invoice Summary */}
-              <div className="bg-gray-50 dark:bg-[#24393C] rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-[#2E4F54] dark:text-[#E0F4F5] mb-3">Invoice Summary</h3>
+              <div className="bg-gray-50  rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-[#2E4F54] text-gray-900 mb-3">Invoice Summary</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-gray-600 dark:text-gray-400">Period:</span>
-                    <p className="font-medium text-[#2E4F54] dark:text-[#E0F4F5]">{displayMonth}</p>
+                    <p className="font-medium text-[#2E4F54] text-gray-900">{displayMonth}</p>
                   </div>
                   <div>
                     <span className="text-gray-600 dark:text-gray-400">Total Trips:</span>
-                    <p className="font-medium text-[#2E4F54] dark:text-[#E0F4F5]">{monthlyTrips.length}</p>
+                    <p className="font-medium text-[#2E4F54] text-gray-900">{monthlyTrips.length}</p>
                   </div>
                   <div>
                     <span className="text-gray-600 dark:text-gray-400">Total Amount:</span>
@@ -754,7 +754,7 @@ ${monthlyTrips.map(trip => {
                   </div>
                   <div>
                     <span className="text-gray-600 dark:text-gray-400">Due Date:</span>
-                    <p className="font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+                    <p className="font-medium text-[#2E4F54] text-gray-900">
                       {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
                     </p>
                   </div>
@@ -763,7 +763,7 @@ ${monthlyTrips.map(trip => {
 
               {/* Email Options */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-[#2E4F54] dark:text-[#E0F4F5]">Email Delivery</h3>
+                <h3 className="text-lg font-semibold text-[#2E4F54] text-gray-900">Email Delivery</h3>
                 
                 {/* Default Email */}
                 <div className="space-y-2">
@@ -775,7 +775,7 @@ ${monthlyTrips.map(trip => {
                       onChange={() => setUseAlternateEmail(false)}
                       className="w-4 h-4 text-[#7CCFD0] border-gray-300 focus:ring-[#7CCFD0]"
                     />
-                    <span className="text-[#2E4F54] dark:text-[#E0F4F5] font-medium">Default Email Address</span>
+                    <span className="text-[#2E4F54] text-gray-900 font-medium">Default Email Address</span>
                   </label>
                   <div className="ml-7 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                     <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
@@ -797,7 +797,7 @@ ${monthlyTrips.map(trip => {
                       onChange={() => setUseAlternateEmail(true)}
                       className="w-4 h-4 text-[#7CCFD0] border-gray-300 focus:ring-[#7CCFD0]"
                     />
-                    <span className="text-[#2E4F54] dark:text-[#E0F4F5] font-medium">Send to Another Email Address</span>
+                    <span className="text-[#2E4F54] text-gray-900 font-medium">Send to Another Email Address</span>
                   </label>
                   {useAlternateEmail && (
                     <div className="ml-7">
@@ -806,7 +806,7 @@ ${monthlyTrips.map(trip => {
                         value={alternateEmail}
                         onChange={(e) => setAlternateEmail(e.target.value)}
                         placeholder="Enter email address"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-transparent"
                       />
                     </div>
                   )}
@@ -815,7 +815,7 @@ ${monthlyTrips.map(trip => {
 
               {/* Payment Status */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-[#2E4F54] dark:text-[#E0F4F5]">Payment Status</h3>
+                <h3 className="text-lg font-semibold text-[#2E4F54] text-gray-900">Payment Status</h3>
                 
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
                   <label className="flex items-start space-x-3">
@@ -826,7 +826,7 @@ ${monthlyTrips.map(trip => {
                       className="w-4 h-4 text-[#7CCFD0] border-gray-300 focus:ring-[#7CCFD0] mt-0.5"
                     />
                     <div>
-                      <span className="text-[#2E4F54] dark:text-[#E0F4F5] font-medium">Already Paid?</span>
+                      <span className="text-[#2E4F54] text-gray-900 font-medium">Already Paid?</span>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         Check this if the client has already paid this invoice
                       </p>

@@ -42,16 +42,16 @@ export default function DashboardView({ user }) {
 
   return (
     <DashboardLayout user={user} activeTab="dashboard">
-      <div className="bg-[#F8F9FA] dark:bg-[#24393C] rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4 text-[#2E4F54] dark:text-[#E0F4F5]">Welcome to your dashboard!</h2>
-        <p className="text-[#2E4F54] dark:text-[#E0F4F5] opacity-80 mb-3">
+      <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4 text-[#2E4F54] text-gray-900">Welcome to your dashboard!</h2>
+        <p className="text-[#2E4F54] text-gray-900 opacity-80 mb-3">
           This is your personal dashboard where you can manage your rides and account settings.
         </p>
         
         <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
-          <div className="bg-white dark:bg-[#1C2C2F] p-6 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
-            <h3 className="font-medium mb-2 text-[#2E4F54] dark:text-[#E0F4F5]">Book a Ride</h3>
-            <p className="text-sm text-[#2E4F54]/80 dark:text-[#E0F4F5]/80 mb-4">
+          <div className="bg-white  p-6 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
+            <h3 className="font-medium mb-2 text-[#2E4F54] text-gray-900">Book a Ride</h3>
+            <p className="text-sm text-[#2E4F54]/80 text-gray-900/80 mb-4">
               Schedule a new ride with one of our compassionate drivers.
             </p>
             <Link 
@@ -62,9 +62,9 @@ export default function DashboardView({ user }) {
             </Link>
           </div>
           
-          <div className="bg-white dark:bg-[#1C2C2F] p-6 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
-            <h3 className="font-medium mb-2 text-[#2E4F54] dark:text-[#E0F4F5]">My Trips</h3>
-            <p className="text-sm text-[#2E4F54]/80 dark:text-[#E0F4F5]/80 mb-4">
+          <div className="bg-white  p-6 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
+            <h3 className="font-medium mb-2 text-[#2E4F54] text-gray-900">My Trips</h3>
+            <p className="text-sm text-[#2E4F54]/80 text-gray-900/80 mb-4">
               View and manage your completed and upcoming trips.
             </p>
             <Link 
@@ -75,9 +75,9 @@ export default function DashboardView({ user }) {
             </Link>
           </div>
           
-          <div className="bg-white dark:bg-[#1C2C2F] p-6 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
-            <h3 className="font-medium mb-2 text-[#2E4F54] dark:text-[#E0F4F5]">Account Settings</h3>
-            <p className="text-sm text-[#2E4F54]/80 dark:text-[#E0F4F5]/80 mb-4">
+          <div className="bg-white  p-6 rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
+            <h3 className="font-medium mb-2 text-[#2E4F54] text-gray-900">Account Settings</h3>
+            <p className="text-sm text-[#2E4F54]/80 text-gray-900/80 mb-4">
               Update your profile and preferences.
             </p>
             <Link 

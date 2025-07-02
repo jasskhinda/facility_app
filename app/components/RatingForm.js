@@ -54,8 +54,8 @@ export default function RatingForm({ trip, onRatingSubmitted }) {
   };
 
   return (
-    <div className="bg-white dark:bg-[#1C2C2F] rounded-lg p-4 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
-      <h3 className="text-lg font-medium mb-4 text-[#2E4F54] dark:text-[#E0F4F5]">Rate your trip</h3>
+    <div className="bg-white  rounded-lg p-4 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
+      <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Rate your trip</h3>
       
       {errorMessage && (
         <div className="mb-4 p-3 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 rounded-md">
@@ -91,7 +91,7 @@ export default function RatingForm({ trip, onRatingSubmitted }) {
               ))}
             </div>
           </div>
-          <div className="text-center mt-2 text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+          <div className="text-center mt-2 text-sm text-[#2E4F54]/70 text-gray-900/70">
             {rating === 0 && 'Tap to rate'}
             {rating === 1 && 'Poor'}
             {rating === 2 && 'Fair'}
@@ -102,12 +102,12 @@ export default function RatingForm({ trip, onRatingSubmitted }) {
         </div>
         
         <div className="mb-4">
-          <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-1">
+          <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-1">
             Additional Feedback (Optional)
           </label>
           <textarea
             rows={3}
-            className="w-full p-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md dark:bg-[#1C2C2F] text-[#2E4F54] dark:text-[#E0F4F5]"
+            className="w-full p-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md  text-[#2E4F54] text-gray-900"
             placeholder="Tell us about your experience..."
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}

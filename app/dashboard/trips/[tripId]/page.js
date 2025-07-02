@@ -367,7 +367,7 @@ Website: https://compassionatecaretransportation.com
       case 'in_progress':
         return 'status-in-progress';
       default:
-        return 'bg-gray-100 text-[#2E4F54] dark:bg-gray-800 dark:text-[#E0F4F5]';
+        return 'bg-gray-100 text-[#2E4F54] dark:bg-gray-800 text-gray-900';
     }
   };
 
@@ -384,9 +384,9 @@ Website: https://compassionatecaretransportation.com
   if (error) {
     return (
       <DashboardLayout user={user} activeTab="trips">
-        <div className="bg-[#F8F9FA] dark:bg-[#24393C] rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
+        <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5]">Trip Details</h2>
+            <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900">Trip Details</h2>
             <Link 
               href="/dashboard/trips" 
               className="text-[#7CCFD0] hover:text-[#60BFC0]"
@@ -412,9 +412,9 @@ Website: https://compassionatecaretransportation.com
   if (!trip) {
     return (
       <DashboardLayout user={user} activeTab="trips">
-        <div className="bg-[#F8F9FA] dark:bg-[#24393C] rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
+        <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5]">Trip Details</h2>
+            <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900">Trip Details</h2>
             <Link 
               href="/dashboard/trips" 
               className="text-[#7CCFD0] hover:text-[#60BFC0]"
@@ -433,9 +433,9 @@ Website: https://compassionatecaretransportation.com
 
   return (
     <DashboardLayout user={user} activeTab="trips">
-      <div className="bg-[#F8F9FA] dark:bg-[#24393C] rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
+      <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5]">Trip Details</h2>
+          <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900">Trip Details</h2>
           <Link 
             href="/dashboard/trips" 
             className="text-[#7CCFD0] hover:text-[#60BFC0] flex items-center"
@@ -448,7 +448,7 @@ Website: https://compassionatecaretransportation.com
         </div>
         
         {successMessage && (
-          <div className="p-4 mb-6 rounded-md bg-[#7CCFD0]/20 text-[#2E4F54] dark:bg-[#7CCFD0]/30 dark:text-[#E0F4F5]">
+          <div className="p-4 mb-6 rounded-md bg-[#7CCFD0]/20 text-[#2E4F54] dark:bg-[#7CCFD0]/30 text-gray-900">
             {successMessage}
           </div>
         )}
@@ -462,23 +462,23 @@ Website: https://compassionatecaretransportation.com
              trip.status === 'completed' ? 'Completed' : 
              trip.status === 'in_progress' ? 'In Progress' : 'Cancelled'}
           </span>
-          <p className="mt-2 text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+          <p className="mt-2 text-sm text-[#2E4F54]/70 text-gray-900/70">
             Trip ID: {trip.id}
           </p>
         </div>
         
         {/* Trip Details Card */}
-        <div className="bg-white dark:bg-[#1C2C2F] rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] mb-6">
-          <h3 className="text-lg font-medium mb-6 text-[#2E4F54] dark:text-[#E0F4F5]">Trip Information</h3>
+        <div className="bg-white  rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] mb-6">
+          <h3 className="text-lg font-medium mb-6 text-[#2E4F54] text-gray-900">Trip Information</h3>
           
           {/* Client Information Section - For facility users */}
           {(trip.user_profile || trip.managed_client) && (
-            <div className="mb-6 p-4 bg-[#F8F9FA] dark:bg-[#24393C] rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
-              <h4 className="text-md font-medium mb-3 text-[#2E4F54] dark:text-[#E0F4F5]">Client Information</h4>
+            <div className="mb-6 p-4 bg-[#F8F9FA]  rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
+              <h4 className="text-md font-medium mb-3 text-[#2E4F54] text-gray-900">Client Information</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Client Name</p>
-                  <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+                  <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Client Name</p>
+                  <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">
                     {trip.user_profile 
                       ? `${trip.user_profile.first_name || ''} ${trip.user_profile.last_name || ''}`.trim() || 'Unknown'
                       : trip.managed_client
@@ -488,23 +488,23 @@ Website: https://compassionatecaretransportation.com
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Client Type</p>
-                  <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+                  <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Client Type</p>
+                  <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">
                     {trip.user_profile ? 'Registered Client' : trip.managed_client ? 'Managed Client' : 'Unknown'}
                   </p>
                 </div>
                 {(trip.user_profile?.phone_number || trip.managed_client?.phone_number) && (
                   <div>
-                    <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Phone Number</p>
-                    <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+                    <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Phone Number</p>
+                    <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">
                       {trip.user_profile?.phone_number || trip.managed_client?.phone_number}
                     </p>
                   </div>
                 )}
                 {trip.user_profile?.email && (
                   <div>
-                    <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Email</p>
-                    <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.user_profile.email}</p>
+                    <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Email</p>
+                    <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">{trip.user_profile.email}</p>
                   </div>
                 )}
               </div>
@@ -514,39 +514,39 @@ Website: https://compassionatecaretransportation.com
           {/* Trip Details Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Pickup Date & Time</p>
-              <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90 font-medium">{formatDate(trip.pickup_time)}</p>
+              <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Pickup Date & Time</p>
+              <p className="text-sm text-[#2E4F54]/90 text-gray-900/90 font-medium">{formatDate(trip.pickup_time)}</p>
             </div>
             
             <div>
-              <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Trip Type</p>
-              <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+              <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Trip Type</p>
+              <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">
                 {trip.is_round_trip ? 'Round Trip' : 'One Way'}
               </p>
             </div>
             
             <div className="md:col-span-2">
-              <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">Route</p>
+              <p className="text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">Route</p>
               <div className="space-y-2">
                 <div className="flex items-center">
                   <div className="w-3 h-3 bg-green-500 rounded-full mr-3 flex-shrink-0"></div>
                   <div>
-                    <p className="text-xs text-[#2E4F54]/60 dark:text-[#E0F4F5]/60">Pickup Address</p>
-                    <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.pickup_address}</p>
+                    <p className="text-xs text-[#2E4F54]/60 text-gray-900/60">Pickup Address</p>
+                    <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">{trip.pickup_address}</p>
                   </div>
                 </div>
                 <div className="flex items-center">
                   <div className="w-3 h-3 bg-red-500 rounded-full mr-3 flex-shrink-0"></div>
                   <div>
-                    <p className="text-xs text-[#2E4F54]/60 dark:text-[#E0F4F5]/60">Destination Address</p>
-                    <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.destination_address || trip.dropoff_address}</p>
+                    <p className="text-xs text-[#2E4F54]/60 text-gray-900/60">Destination Address</p>
+                    <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">{trip.destination_address || trip.dropoff_address}</p>
                   </div>
                 </div>
               </div>
             </div>
             
             <div>
-              <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Trip Status</p>
+              <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Trip Status</p>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(trip.status)} mt-1`}>
                 {trip.status === 'pending' ? 'Pending Approval' :
                  trip.status === 'upcoming' ? 'Upcoming' : 
@@ -557,8 +557,8 @@ Website: https://compassionatecaretransportation.com
             </div>
             
             <div>
-              <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Accessibility Requirements</p>
-              <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+              <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Accessibility Requirements</p>
+              <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">
                 {trip.wheelchair_type === 'wheelchair' ? 'Wheelchair Accessible Vehicle Required' : 
                  trip.accessibility_needs ? trip.accessibility_needs : 'Standard Vehicle'}
               </p>
@@ -566,28 +566,28 @@ Website: https://compassionatecaretransportation.com
             
             {trip.distance && (
               <div>
-                <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Estimated Distance</p>
-                <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.distance} miles</p>
+                <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Estimated Distance</p>
+                <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">{trip.distance} miles</p>
               </div>
             )}
             
             {trip.additional_passengers && trip.additional_passengers > 0 && (
               <div>
-                <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Additional Passengers</p>
-                <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.additional_passengers}</p>
+                <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Additional Passengers</p>
+                <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">{trip.additional_passengers}</p>
               </div>
             )}
             
             <div>
-              <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Booking Date</p>
-              <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{formatDate(trip.created_at)}</p>
+              <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Booking Date</p>
+              <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">{formatDate(trip.created_at)}</p>
             </div>
             
             {/* Edit Tracking Information */}
             {trip.last_edited_by && trip.editor && (
               <div>
-                <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Last Edited</p>
-                <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+                <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Last Edited</p>
+                <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">
                   {formatDate(trip.last_edited_at || trip.updated_at)}
                 </p>
                 <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
@@ -601,29 +601,29 @@ Website: https://compassionatecaretransportation.com
             
             {trip.notes && (
               <div className="md:col-span-2">
-                <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Special Instructions</p>
-                <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.notes}</p>
+                <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Special Instructions</p>
+                <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">{trip.notes}</p>
               </div>
             )}
           </div>
         </div>
         
         {/* Cost Breakdown Section */}
-        <div className="bg-white dark:bg-[#1C2C2F] rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] mb-6">
-          <h3 className="text-lg font-medium mb-4 text-[#2E4F54] dark:text-[#E0F4F5]">Cost Breakdown</h3>
+        <div className="bg-white  rounded-lg p-6 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] mb-6">
+          <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Cost Breakdown</h3>
           
           <div className="space-y-3">
             <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
-              <span className="text-sm text-[#2E4F54] dark:text-[#E0F4F5]">Base Fare</span>
-              <span className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+              <span className="text-sm text-[#2E4F54] text-gray-900">Base Fare</span>
+              <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
                 ${trip.base_price?.toFixed(2) || (trip.price ? (trip.price * 0.8).toFixed(2) : '0.00')}
               </span>
             </div>
             
             {trip.wheelchair_type === 'wheelchair' && (
               <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
-                <span className="text-sm text-[#2E4F54] dark:text-[#E0F4F5]">Wheelchair Accessible Surcharge</span>
-                <span className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+                <span className="text-sm text-[#2E4F54] text-gray-900">Wheelchair Accessible Surcharge</span>
+                <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
                   ${trip.wheelchair_fee?.toFixed(2) || (trip.price ? (trip.price * 0.1).toFixed(2) : '0.00')}
                 </span>
               </div>
@@ -631,8 +631,8 @@ Website: https://compassionatecaretransportation.com
             
             {trip.additional_passengers && trip.additional_passengers > 0 && (
               <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
-                <span className="text-sm text-[#2E4F54] dark:text-[#E0F4F5]">Additional Passengers ({trip.additional_passengers})</span>
-                <span className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+                <span className="text-sm text-[#2E4F54] text-gray-900">Additional Passengers ({trip.additional_passengers})</span>
+                <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
                   ${trip.passenger_fee?.toFixed(2) || (trip.additional_passengers * 5).toFixed(2)}
                 </span>
               </div>
@@ -640,28 +640,28 @@ Website: https://compassionatecaretransportation.com
             
             {trip.is_round_trip && (
               <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
-                <span className="text-sm text-[#2E4F54] dark:text-[#E0F4F5]">Round Trip</span>
-                <span className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+                <span className="text-sm text-[#2E4F54] text-gray-900">Round Trip</span>
+                <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
                   ${trip.round_trip_fee?.toFixed(2) || (trip.price ? (trip.price * 0.1).toFixed(2) : '0.00')}
                 </span>
               </div>
             )}
             
-            <div className="flex justify-between items-center py-3 bg-[#F8F9FA] dark:bg-[#24393C] rounded-lg px-4 mt-4">
-              <span className="text-lg font-semibold text-[#2E4F54] dark:text-[#E0F4F5]">Total Amount</span>
+            <div className="flex justify-between items-center py-3 bg-[#F8F9FA]  rounded-lg px-4 mt-4">
+              <span className="text-lg font-semibold text-[#2E4F54] text-gray-900">Total Amount</span>
               <span className="text-lg font-bold text-[#7CCFD0]">${trip.price?.toFixed(2) || '0.00'}</span>
             </div>
             
             {trip.status === 'completed' && (
               <div className="flex justify-between items-center py-2 text-sm">
-                <span className="text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">Payment Status</span>
+                <span className="text-[#2E4F54]/70 text-gray-900/70">Payment Status</span>
                 <span className="font-medium text-green-600 dark:text-green-400">Paid</span>
               </div>
             )}
             
             {trip.status === 'cancelled' && trip.refund_status && (
               <div className="flex justify-between items-center py-2 text-sm">
-                <span className="text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">Refund Status</span>
+                <span className="text-[#2E4F54]/70 text-gray-900/70">Refund Status</span>
                 <span className="font-medium text-yellow-600 dark:text-yellow-400">{trip.refund_status}</span>
               </div>
             )}
@@ -670,13 +670,13 @@ Website: https://compassionatecaretransportation.com
         
         {/* Driver Information (if assigned) */}
         {(trip.driver_id || trip.driver) && (
-          <div className="bg-white dark:bg-[#1C2C2F] rounded-lg p-5 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] mb-6">
-            <h3 className="text-lg font-medium mb-4 text-[#2E4F54] dark:text-[#E0F4F5]">Driver Information</h3>
+          <div className="bg-white  rounded-lg p-5 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] mb-6">
+            <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Driver Information</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Driver Name</p>
-                <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+                <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Driver Name</p>
+                <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">
                   {trip.driver 
                     ? (trip.driver.profile?.full_name || `${trip.driver.profile?.first_name || ''} ${trip.driver.profile?.last_name || ''}`.trim() || trip.driver_name || trip.driver.email) 
                     : (trip.driver_name || 'Not assigned')
@@ -685,14 +685,14 @@ Website: https://compassionatecaretransportation.com
               </div>
               
               <div>
-                <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Vehicle</p>
-                <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.vehicle || 'Not available'}</p>
+                <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Vehicle</p>
+                <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">{trip.vehicle || 'Not available'}</p>
               </div>
               
               {trip.driver?.profile?.phone_number && (
                 <div>
-                  <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Contact</p>
-                  <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.driver.profile.phone_number}</p>
+                  <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Contact</p>
+                  <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">{trip.driver.profile.phone_number}</p>
                 </div>
               )}
             </div>
@@ -701,8 +701,8 @@ Website: https://compassionatecaretransportation.com
         
         {/* Status-specific sections */}
         {trip.status === 'completed' && trip.rating && (
-          <div className="bg-white dark:bg-[#1C2C2F] rounded-lg p-5 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] mb-6">
-            <h3 className="text-lg font-medium mb-4 text-[#2E4F54] dark:text-[#E0F4F5]">Your Rating</h3>
+          <div className="bg-white  rounded-lg p-5 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] mb-6">
+            <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Your Rating</h3>
             
             <div className="flex items-center mb-3">
               <div className="flex items-center">
@@ -717,31 +717,31 @@ Website: https://compassionatecaretransportation.com
                   </svg>
                 ))}
               </div>
-              <span className="ml-2 text-sm text-[#2E4F54] dark:text-[#E0F4F5]">{trip.rating} out of 5</span>
+              <span className="ml-2 text-sm text-[#2E4F54] text-gray-900">{trip.rating} out of 5</span>
             </div>
             
             {trip.review && (
               <div>
-                <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Your Review</p>
-                <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.review}</p>
+                <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Your Review</p>
+                <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">{trip.review}</p>
               </div>
             )}
           </div>
         )}
         
         {trip.status === 'cancelled' && (
-          <div className="bg-white dark:bg-[#1C2C2F] rounded-lg p-5 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] mb-6">
-            <h3 className="text-lg font-medium mb-4 text-[#2E4F54] dark:text-[#E0F4F5]">Cancellation Details</h3>
+          <div className="bg-white  rounded-lg p-5 shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] mb-6">
+            <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Cancellation Details</h3>
             
             <div>
-              <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Reason</p>
-              <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.cancellation_reason || 'Customer cancelled'}</p>
+              <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Reason</p>
+              <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">{trip.cancellation_reason || 'Customer cancelled'}</p>
             </div>
             
             {trip.refund_status && (
               <div className="mt-3">
-                <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Refund Status</p>
-                <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.refund_status}</p>
+                <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Refund Status</p>
+                <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">{trip.refund_status}</p>
               </div>
             )}
           </div>
@@ -818,21 +818,21 @@ Website: https://compassionatecaretransportation.com
       {/* Cancellation Modal */}
       {cancellingTrip && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#24393C] rounded-lg p-6 w-full max-w-md mx-4 border border-[#DDE5E7] dark:border-[#3F5E63]">
-            <h3 className="text-lg font-medium mb-4 text-[#2E4F54] dark:text-[#E0F4F5]">Cancel Trip</h3>
-            <p className="text-[#2E4F54]/80 dark:text-[#E0F4F5]/80 mb-4">
+          <div className="bg-white  rounded-lg p-6 w-full max-w-md mx-4 border border-[#DDE5E7] dark:border-[#3F5E63]">
+            <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Cancel Trip</h3>
+            <p className="text-[#2E4F54]/80 text-gray-900/80 mb-4">
               Are you sure you want to cancel this trip? This action cannot be undone.
             </p>
             
             <div className="mb-4">
-              <label htmlFor="cancelReason" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-1">
+              <label htmlFor="cancelReason" className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-1">
                 Reason for cancellation (optional)
               </label>
               <textarea
                 id="cancelReason"
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
-                className="w-full p-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md dark:bg-[#1C2C2F] text-[#2E4F54] dark:text-[#E0F4F5]"
+                className="w-full p-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md  text-[#2E4F54] text-gray-900"
                 placeholder="Please provide a reason..."
                 rows={3}
               ></textarea>
@@ -841,7 +841,7 @@ Website: https://compassionatecaretransportation.com
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setCancellingTrip(false)}
-                className="px-4 py-2 text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] bg-[#F8F9FA] dark:bg-[#1C2C2F] rounded-md hover:bg-[#DDE5E7] dark:hover:bg-[#3F5E63]/50 border border-[#DDE5E7] dark:border-[#3F5E63]"
+                className="px-4 py-2 text-sm font-medium text-[#2E4F54] text-gray-900 bg-[#F8F9FA]  rounded-md hover:bg-[#DDE5E7] dark:hover:bg-[#3F5E63]/50 border border-[#DDE5E7] dark:border-[#3F5E63]"
                 disabled={isSubmitting}
               >
                 Keep Trip

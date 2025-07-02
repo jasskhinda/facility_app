@@ -227,14 +227,14 @@ export default function RouteMapDisplaySimple({
         <div className="bg-[#7CCFD0]/10 dark:bg-[#7CCFD0]/20 border border-[#7CCFD0]/20 dark:border-[#7CCFD0]/30 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="flex items-center text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
+              <div className="flex items-center text-sm text-[#2E4F54] text-gray-900">
                 <span className="font-medium">{routeInfo.distance.text}</span>
-                <span className="text-[#2E4F54]/60 dark:text-[#E0F4F5]/60 ml-1">
+                <span className="text-[#2E4F54]/60 text-gray-900/60 ml-1">
                   ({routeInfo.distance.miles} miles)
                 </span>
               </div>
               
-              <div className="flex items-center text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
+              <div className="flex items-center text-sm text-[#2E4F54] text-gray-900">
                 <span className="font-medium">{routeInfo.duration.text}</span>
               </div>
             </div>

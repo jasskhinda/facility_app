@@ -126,8 +126,8 @@ export default function FacilitySettings() {
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-8">
       {/* Facility Settings Section */}
-      <div className="bg-white dark:bg-[#1C2C2F] rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
-        <h2 className="text-xl font-semibold mb-6 text-[#2E4F54] dark:text-[#E0F4F5]">Facility Information</h2>
+      <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
+        <h2 className="text-xl font-semibold mb-6 text-[#2E4F54] text-gray-900">Facility Information</h2>
         
         {error && (
           <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
@@ -144,7 +144,7 @@ export default function FacilitySettings() {
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="name" className="block mb-1 font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+              <label htmlFor="name" className="block mb-1 font-medium text-[#2E4F54] text-gray-900">
                 Facility Name
               </label>
               <input
@@ -153,13 +153,13 @@ export default function FacilitySettings() {
                 type="text"
                 value={facility?.name || ''}
                 onChange={handleChange}
-                className="w-full p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
+                className="w-full p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
                 required
               />
             </div>
             
             <div>
-              <label htmlFor="address" className="block mb-1 font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+              <label htmlFor="address" className="block mb-1 font-medium text-[#2E4F54] text-gray-900">
                 Address
               </label>
               <textarea
@@ -167,14 +167,14 @@ export default function FacilitySettings() {
                 name="address"
                 value={facility?.address || ''}
                 onChange={handleChange}
-                className="w-full p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
+                className="w-full p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
                 rows="3"
                 required
               />
             </div>
             
             <div>
-              <label htmlFor="phone_number" className="block mb-1 font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+              <label htmlFor="phone_number" className="block mb-1 font-medium text-[#2E4F54] text-gray-900">
                 Phone Number
               </label>
               <input
@@ -183,12 +183,12 @@ export default function FacilitySettings() {
                 type="tel"
                 value={facility?.phone_number || ''}
                 onChange={handleChange}
-                className="w-full p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
+                className="w-full p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
               />
             </div>
             
             <div>
-              <label htmlFor="contact_email" className="block mb-1 font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+              <label htmlFor="contact_email" className="block mb-1 font-medium text-[#2E4F54] text-gray-900">
                 Contact Email
               </label>
               <input
@@ -197,12 +197,12 @@ export default function FacilitySettings() {
                 type="email"
                 value={facility?.contact_email || ''}
                 onChange={handleChange}
-                className="w-full p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
+                className="w-full p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
               />
             </div>
             
             <div>
-              <label htmlFor="billing_email" className="block mb-1 font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+              <label htmlFor="billing_email" className="block mb-1 font-medium text-[#2E4F54] text-gray-900">
                 Billing Email
               </label>
               <input
@@ -211,12 +211,12 @@ export default function FacilitySettings() {
                 type="email"
                 value={facility?.billing_email || ''}
                 onChange={handleChange}
-                className="w-full p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
+                className="w-full p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
               />
             </div>
             
             <div>
-              <label htmlFor="facility_type" className="block mb-1 font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+              <label htmlFor="facility_type" className="block mb-1 font-medium text-[#2E4F54] text-gray-900">
                 Facility Type
               </label>
               <select
@@ -224,7 +224,7 @@ export default function FacilitySettings() {
                 name="facility_type"
                 value={facility?.facility_type || ''}
                 onChange={handleChange}
-                className="w-full p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
+                className="w-full p-3 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
               >
                 <option value="">Select Facility Type</option>
                 <option value="hospital">Hospital</option>
@@ -251,10 +251,10 @@ export default function FacilitySettings() {
       </div>
 
       {/* Contract Management Section */}
-      <div className="bg-white dark:bg-[#1C2C2F] rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
+      <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
         <div className="p-6 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
-          <h2 className="text-xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5]">Contract Management</h2>
-          <p className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70 mt-1">
+          <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900">Contract Management</h2>
+          <p className="text-sm text-[#2E4F54]/70 text-gray-900/70 mt-1">
             Upload and manage your facility's transportation service contract
           </p>
         </div>
@@ -264,23 +264,23 @@ export default function FacilitySettings() {
       </div>
 
       {/* Account Security Section */}
-      <div className="bg-white dark:bg-[#1C2C2F] rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
+      <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
         <div className="p-6 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
-          <h2 className="text-xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5]">Account Security</h2>
-          <p className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70 mt-1">
+          <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900">Account Security</h2>
+          <p className="text-sm text-[#2E4F54]/70 text-gray-900/70 mt-1">
             Manage your account password and security settings
           </p>
         </div>
         <div className="p-6">
           <div className="space-y-4">
             <div>
-              <h3 className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">Password</h3>
-              <p className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70 mb-4">
+              <h3 className="text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">Password</h3>
+              <p className="text-sm text-[#2E4F54]/70 text-gray-900/70 mb-4">
                 Update your password to keep your account secure. You'll need to sign in again after changing your password.
               </p>
               <a
                 href="/update-password"
-                className="inline-flex items-center px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg shadow-sm text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] bg-white dark:bg-[#24393C] hover:bg-[#F8F9FA] dark:hover:bg-[#2A3A3D] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7CCFD0] transition-colors"
+                className="inline-flex items-center px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg shadow-sm text-sm font-medium text-[#2E4F54] text-gray-900 bg-white  hover:bg-[#F8F9FA] dark:hover:bg-[#2A3A3D] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7CCFD0] transition-colors"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m0 0a2 2 0 012 2v6a2 2 0 01-2 2H7a2 2 0 01-2-2v-6a2 2 0 012-2m0 0V7a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -290,8 +290,8 @@ export default function FacilitySettings() {
             </div>
             
             <div className="border-t border-[#DDE5E7] dark:border-[#3F5E63] pt-4">
-              <h3 className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">Account Information</h3>
-              <div className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+              <h3 className="text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">Account Information</h3>
+              <div className="text-sm text-[#2E4F54]/70 text-gray-900/70">
                 <p><strong>Email:</strong> {session?.user?.email || 'Not available'}</p>
                 <p><strong>Account ID:</strong> {session?.user?.id?.substring(0, 8)}...</p>
                 <p><strong>Last Sign In:</strong> {session?.user?.last_sign_in_at ? new Date(session.user.last_sign_in_at).toLocaleDateString() : 'Not available'}</p>

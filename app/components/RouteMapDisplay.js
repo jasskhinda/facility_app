@@ -225,18 +225,18 @@ export default function RouteMapDisplay({
         <div className="bg-[#7CCFD0]/10 dark:bg-[#7CCFD0]/20 border border-[#7CCFD0]/20 dark:border-[#7CCFD0]/30 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="flex items-center text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
+              <div className="flex items-center text-sm text-[#2E4F54] text-gray-900">
                 <svg className="w-4 h-4 text-[#7CCFD0] mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 <span className="font-medium">{routeInfo.distance.text}</span>
-                <span className="text-[#2E4F54]/60 dark:text-[#E0F4F5]/60 ml-1">
+                <span className="text-[#2E4F54]/60 text-gray-900/60 ml-1">
                   ({routeInfo.distance.miles} miles)
                 </span>
               </div>
               
-              <div className="flex items-center text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
+              <div className="flex items-center text-sm text-[#2E4F54] text-gray-900">
                 <svg className="w-4 h-4 text-[#7CCFD0] mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -244,13 +244,13 @@ export default function RouteMapDisplay({
               </div>
             </div>
             
-            <div className="text-xs text-[#2E4F54]/60 dark:text-[#E0F4F5]/60">
+            <div className="text-xs text-[#2E4F54]/60 text-gray-900/60">
               Driving route
             </div>
           </div>
           
           {/* Route addresses */}
-          <div className="mt-3 space-y-1 text-xs text-[#2E4F54]/80 dark:text-[#E0F4F5]/80">
+          <div className="mt-3 space-y-1 text-xs text-[#2E4F54]/80 text-gray-900/80">
             <div className="flex items-start">
               <span className="inline-block w-2 h-2 bg-green-500 rounded-full mt-1 mr-2 flex-shrink-0"></span>
               <span className="flex-1">{routeInfo.startAddress}</span>
@@ -266,7 +266,7 @@ export default function RouteMapDisplay({
       {/* No route message */}
       {mapsLoaded && !routeInfo && !error && (origin || destination) && (
         <div className="text-center py-4">
-          <p className="text-sm text-[#2E4F54]/60 dark:text-[#E0F4F5]/60">
+          <p className="text-sm text-[#2E4F54]/60 text-gray-900/60">
             {!origin || !destination 
               ? 'Enter both pickup and destination addresses to see route'
               : 'Calculating route...'

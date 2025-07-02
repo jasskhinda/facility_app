@@ -79,12 +79,12 @@ export default function WheelchairSelectionFlow({
     <div className={`space-y-4 ${className}`}>
       {/* Main Question */}
       <div className="bg-white dark:bg-[#1E1E1E] border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-[#2E4F54] dark:text-[#E0F4F5] mb-4 flex items-center">
+        <h3 className="text-lg font-semibold text-[#2E4F54] text-gray-900 mb-4 flex items-center">
           ♿ Wheelchair Transportation
         </h3>
         
         <div className="mb-4">
-          <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-3">
+          <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-3">
             What type of wheelchair do you have?
           </label>
           
@@ -100,10 +100,10 @@ export default function WheelchairSelectionFlow({
                 className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#3F5E63] focus:ring-[#7CCFD0] focus:ring-2"
               />
               <div className="ml-3 flex-1">
-                <span className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+                <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
                   None
                 </span>
-                <p className="text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+                <p className="text-xs text-[#2E4F54]/70 text-gray-900/70">
                   No wheelchair needed
                 </p>
               </div>
@@ -120,10 +120,10 @@ export default function WheelchairSelectionFlow({
                 className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#3F5E63] focus:ring-[#7CCFD0] focus:ring-2"
               />
               <div className="ml-3 flex-1">
-                <span className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+                <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
                   Manual wheelchair (I have my own)
                 </span>
-                <p className="text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+                <p className="text-xs text-[#2E4F54]/70 text-gray-900/70">
                   Standard manual wheelchair that you bring
                 </p>
                 <div className="flex items-center mt-1">
@@ -145,10 +145,10 @@ export default function WheelchairSelectionFlow({
                 className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#3F5E63] focus:ring-[#7CCFD0] focus:ring-2"
               />
               <div className="ml-3 flex-1">
-                <span className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+                <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
                   Power wheelchair (I have my own)
                 </span>
-                <p className="text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+                <p className="text-xs text-[#2E4F54]/70 text-gray-900/70">
                   Electric/motorized wheelchair that you bring
                 </p>
                 <div className="flex items-center mt-1">
@@ -213,7 +213,7 @@ export default function WheelchairSelectionFlow({
         {/* Provide Wheelchair Option */}
         {showProvideOption && (
           <div className="mt-6 p-4 bg-[#F8F9FA] dark:bg-[#2A3A3D] rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63]">
-            <h4 className="text-md font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-3">
+            <h4 className="text-md font-medium text-[#2E4F54] text-gray-900 mb-3">
               Do you want us to provide a wheelchair?
             </h4>
             
@@ -227,17 +227,17 @@ export default function WheelchairSelectionFlow({
                   className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#3F5E63] focus:ring-[#7CCFD0] focus:ring-2"
                 />
                 <div className="ml-3 flex-1">
-                  <span className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+                  <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
                     Yes, please provide a wheelchair
                   </span>
-                  <p className="text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70 mt-1">
+                  <p className="text-xs text-[#2E4F54]/70 text-gray-900/70 mt-1">
                     We will provide a suitable wheelchair for your trip
                   </p>
                   <div className="flex items-center mt-1">
                     <span className="text-xs font-semibold text-[#7CCFD0]">
                       +${WHEELCHAIR_PRICE}
                     </span>
-                    <span className="text-xs text-[#2E4F54]/50 dark:text-[#E0F4F5]/50 ml-1">
+                    <span className="text-xs text-[#2E4F54]/50 text-gray-900/50 ml-1">
                       wheelchair rental fee
                     </span>
                   </div>
@@ -253,10 +253,10 @@ export default function WheelchairSelectionFlow({
                   className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#3F5E63] focus:ring-[#7CCFD0] focus:ring-2"
                 />
                 <div className="ml-3 flex-1">
-                  <span className="text-sm text-[#2E4F54] dark:text-[#E0F4F5]">
+                  <span className="text-sm text-[#2E4F54] text-gray-900">
                     No, wheelchair not needed
                   </span>
-                  <p className="text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70 mt-1">
+                  <p className="text-xs text-[#2E4F54]/70 text-gray-900/70 mt-1">
                     Passenger can walk or transfer independently
                   </p>
                 </div>
@@ -268,7 +268,7 @@ export default function WheelchairSelectionFlow({
         {/* Custom Wheelchair Type Input */}
         {showCustomInput && (
           <div className="mt-4">
-            <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+            <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
               Please specify the type of wheelchair you need:
             </label>
             <input
@@ -276,9 +276,9 @@ export default function WheelchairSelectionFlow({
               value={customWheelchairType}
               onChange={(e) => setCustomWheelchairType(e.target.value)}
               placeholder="e.g., Standard manual wheelchair, Lightweight transport chair..."
-              className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] placeholder-[#2E4F54]/50 dark:placeholder-[#E0F4F5]/50 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0]"
+              className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 placeholder-[#2E4F54]/50 dark:placeholder-[#E0F4F5]/50 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0]"
             />
-            <p className="text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70 mt-1">
+            <p className="text-xs text-[#2E4F54]/70 text-gray-900/70 mt-1">
               This helps us ensure we provide the most suitable wheelchair for your needs.
             </p>
           </div>
@@ -288,14 +288,14 @@ export default function WheelchairSelectionFlow({
         {needsWheelchair && (
           <div className="mt-4 p-3 bg-[#7CCFD0]/10 dark:bg-[#7CCFD0]/20 rounded-lg border border-[#7CCFD0]/30">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+              <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
                 Wheelchair Rental Fee
               </span>
               <span className="text-sm font-bold text-[#7CCFD0]">
                 +${WHEELCHAIR_PRICE}
               </span>
             </div>
-            <p className="text-xs text-[#2E4F54]/70 dark:text-[#E0F4F5]/70 mt-1">
+            <p className="text-xs text-[#2E4F54]/70 text-gray-900/70 mt-1">
               This fee covers wheelchair rental and assistance
             </p>
           </div>

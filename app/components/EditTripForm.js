@@ -220,15 +220,15 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-[#24393C] rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5]">
+            <h2 className="text-xl font-semibold text-gray-900">
               Edit Trip Details
             </h2>
             <button
               onClick={onCancel}
-              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+              className="text-gray-400 hover:text-gray-600"
               disabled={loading}
             >
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -238,12 +238,12 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
           </div>
 
           {/* Status indicator */}
-          <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-md">
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
             <div className="flex items-center">
               <svg className="h-5 w-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
-              <span className="text-sm text-yellow-800 dark:text-yellow-300">
+              <span className="text-sm text-yellow-800">
                 Trip Status: <strong>Pending Approval</strong> - Only pending trips can be edited
               </span>
             </div>
@@ -266,7 +266,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
             {/* Date and Time */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                   Pickup Date *
                 </label>
                 <input
@@ -274,20 +274,20 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                   value={formData.pickupDate}
                   onChange={(e) => setFormData({ ...formData, pickupDate: e.target.value })}
                   min={today}
-                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   required
                   disabled={loading}
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                   Pickup Time *
                 </label>
                 <select
                   value={formData.pickupTime}
                   onChange={(e) => setFormData({ ...formData, pickupTime: e.target.value })}
-                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   required
                   disabled={loading}
                 >
@@ -302,14 +302,14 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
             {/* Addresses */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                   Pickup Address *
                 </label>
                 <SimpleAutocomplete
                   value={formData.pickupAddress}
                   onChange={(value) => setFormData({ ...formData, pickupAddress: value })}
                   placeholder="Enter pickup address"
-                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   required
                   disabled={loading}
                 />
@@ -318,20 +318,20 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                   value={formData.pickupDetails}
                   onChange={(e) => setFormData({ ...formData, pickupDetails: e.target.value })}
                   placeholder="Apartment, suite, building entrance, etc. (optional)"
-                  className="mt-2 w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className="mt-2 w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   disabled={loading}
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                   Destination Address *
                 </label>
                 <SimpleAutocomplete
                   value={formData.destinationAddress}
                   onChange={(value) => setFormData({ ...formData, destinationAddress: value })}
                   placeholder="Enter destination address"
-                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   required
                   disabled={loading}
                 />
@@ -340,7 +340,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                   value={formData.destinationDetails}
                   onChange={(e) => setFormData({ ...formData, destinationDetails: e.target.value })}
                   placeholder="Building, entrance, room number, etc. (optional)"
-                  className="mt-2 w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className="mt-2 w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   disabled={loading}
                 />
               </div>
@@ -349,7 +349,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
             {/* Route Map Display */}
             {formData.pickupAddress && formData.destinationAddress && (
               <div className="mt-6">
-                <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                   Route Overview
                 </label>
                 <SuperSimpleMap
@@ -370,18 +370,18 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                   className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] rounded focus:ring-[#7CCFD0]"
                   disabled={loading}
                 />
-                <span className="text-[#2E4F54] dark:text-[#E0F4F5]">Round trip</span>
+                <span className="text-[#2E4F54] text-gray-900">Round trip</span>
               </label>
               
               {formData.isRoundTrip && (
                 <div className="mt-3">
-                  <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                  <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                     Return Time
                   </label>
                   <select
                     value={formData.returnTime}
                     onChange={(e) => setFormData({ ...formData, returnTime: e.target.value })}
-                    className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                    className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                     disabled={loading}
                   >
                     <option value="">Select return time...</option>
@@ -405,7 +405,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
 
             {/* Additional Passengers */}
             <div>
-              <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+              <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                 Additional Passengers
               </label>
               <input
@@ -414,7 +414,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                 max="3"
                 value={formData.additionalPassengers}
                 onChange={(e) => setFormData({ ...formData, additionalPassengers: parseInt(e.target.value) || 0 })}
-                className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                 disabled={loading}
               />
             </div>
@@ -441,7 +441,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
 
             {/* Notes */}
             <div>
-              <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+              <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                 Trip Notes
               </label>
               <textarea
@@ -449,14 +449,14 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                 onChange={(e) => setFormData({ ...formData, tripNotes: e.target.value })}
                 placeholder="Special instructions, medical equipment, etc."
                 rows={3}
-                className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                 disabled={loading}
               />
             </div>
 
             {/* Billing */}
             <div>
-              <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+              <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                 Bill To
               </label>
               <div className="space-y-2">
@@ -469,7 +469,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                     className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] focus:ring-[#7CCFD0]"
                     disabled={loading}
                   />
-                  <span className="text-[#2E4F54] dark:text-[#E0F4F5]">Facility</span>
+                  <span className="text-[#2E4F54] text-gray-900">Facility</span>
                 </label>
                 <label className="flex items-center space-x-3">
                   <input
@@ -480,7 +480,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                     className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] focus:ring-[#7CCFD0]"
                     disabled={loading}
                   />
-                  <span className="text-[#2E4F54] dark:text-[#E0F4F5]">Client</span>
+                  <span className="text-[#2E4F54] text-gray-900">Client</span>
                 </label>
               </div>
             </div>
@@ -499,7 +499,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                 type="button"
                 onClick={onCancel}
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-[#F8F9FA] dark:bg-[#1C2C2F] text-[#2E4F54] dark:text-[#E0F4F5] rounded-lg hover:bg-[#DDE5E7] dark:hover:bg-[#3F5E63]/50 transition-colors disabled:opacity-50 border border-[#DDE5E7] dark:border-[#3F5E63]"
+                className="flex-1 px-4 py-2 bg-[#F8F9FA]  text-[#2E4F54] text-gray-900 rounded-lg hover:bg-[#DDE5E7] dark:hover:bg-[#3F5E63]/50 transition-colors disabled:opacity-50 border border-[#DDE5E7] dark:border-[#3F5E63]"
               >
                 Cancel
               </button>

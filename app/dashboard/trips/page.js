@@ -398,8 +398,8 @@ export default function TripsPage() {
   if (error && user) {
     return (
       <div className="min-h-screen p-4">
-        <div className="bg-[#F8F9FA] dark:bg-[#24393C] rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6 mb-6">
-          <h2 className="text-xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5] mb-4">Your Trips</h2>
+        <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6 mb-6">
+          <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900 mb-4">Your Trips</h2>
           <div className="p-4 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-md">
             <p className="text-red-600 dark:text-red-400">
               {error || 'There was an error loading your trips. Please try again later.'}

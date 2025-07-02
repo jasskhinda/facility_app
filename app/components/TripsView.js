@@ -250,7 +250,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
         
         {/* Success message */}
         {successMessage && (
-          <div className="p-4 mb-6 rounded-md bg-[#7CCFD0]/20 text-[#2E4F54] dark:bg-[#7CCFD0]/30 dark:text-[#E0F4F5]">
+          <div className="p-4 mb-6 rounded-md bg-[#7CCFD0]/20 text-[#2E4F54] dark:bg-[#7CCFD0]/30 text-gray-900">
             {successMessage}
           </div>
         )}
@@ -262,7 +262,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
               onClick={() => setFilter('all')}
               className={`pb-3 px-1 ${filter === 'all' 
                 ? 'border-b-2 border-[#7CCFD0] text-[#7CCFD0] font-medium' 
-                : 'border-b-2 border-transparent text-[#2E4F54] hover:text-[#7CCFD0] dark:text-[#E0F4F5]/70 dark:hover:text-[#7CCFD0]'}`}
+                : 'border-b-2 border-transparent text-[#2E4F54] hover:text-[#7CCFD0] text-gray-900/70 dark:hover:text-[#7CCFD0]'}`}
             >
               All
             </button>
@@ -270,7 +270,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
               onClick={() => setFilter('pending')}
               className={`pb-3 px-1 ${filter === 'pending' 
                 ? 'border-b-2 border-[#7CCFD0] text-[#7CCFD0] font-medium' 
-                : 'border-b-2 border-transparent text-[#2E4F54] hover:text-[#7CCFD0] dark:text-[#E0F4F5]/70 dark:hover:text-[#7CCFD0]'}`}
+                : 'border-b-2 border-transparent text-[#2E4F54] hover:text-[#7CCFD0] text-gray-900/70 dark:hover:text-[#7CCFD0]'}`}
             >
               Pending
             </button>
@@ -278,7 +278,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
               onClick={() => setFilter('upcoming')}
               className={`pb-3 px-1 ${filter === 'upcoming' 
                 ? 'border-b-2 border-[#7CCFD0] text-[#7CCFD0] font-medium' 
-                : 'border-b-2 border-transparent text-[#2E4F54] hover:text-[#7CCFD0] dark:text-[#E0F4F5]/70 dark:hover:text-[#7CCFD0]'}`}
+                : 'border-b-2 border-transparent text-[#2E4F54] hover:text-[#7CCFD0] text-gray-900/70 dark:hover:text-[#7CCFD0]'}`}
             >
               Upcoming
             </button>
@@ -286,7 +286,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
               onClick={() => setFilter('completed')}
               className={`pb-3 px-1 ${filter === 'completed' 
                 ? 'border-b-2 border-[#7CCFD0] text-[#7CCFD0] font-medium' 
-                : 'border-b-2 border-transparent text-[#2E4F54] hover:text-[#7CCFD0] dark:text-[#E0F4F5]/70 dark:hover:text-[#7CCFD0]'}`}
+                : 'border-b-2 border-transparent text-[#2E4F54] hover:text-[#7CCFD0] text-gray-900/70 dark:hover:text-[#7CCFD0]'}`}
             >
               Completed
             </button>
@@ -294,7 +294,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
               onClick={() => setFilter('cancelled')}
               className={`pb-3 px-1 ${filter === 'cancelled' 
                 ? 'border-b-2 border-[#7CCFD0] text-[#7CCFD0] font-medium' 
-                : 'border-b-2 border-transparent text-[#2E4F54] hover:text-[#7CCFD0] dark:text-[#E0F4F5]/70 dark:hover:text-[#7CCFD0]'}`}
+                : 'border-b-2 border-transparent text-[#2E4F54] hover:text-[#7CCFD0] text-gray-900/70 dark:hover:text-[#7CCFD0]'}`}
             >
               Cancelled
             </button>
@@ -355,13 +355,13 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                          trip.status === 'completed' ? 'Completed' : 
                          trip.status === 'in_progress' ? 'In Progress' : 'Cancelled'}
                       </span>
-                      <p className="mt-2 text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">
+                      <p className="mt-2 text-sm text-[#2E4F54]/70 text-gray-900/70">
                         {formatDate(trip.pickup_time)}
                       </p>
                     </div>
                     {trip.status === 'completed' && (
                       <div className="flex items-center">
-                        <span className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70 mr-2">Rating:</span>
+                        <span className="text-sm text-[#2E4F54]/70 text-gray-900/70 mr-2">Rating:</span>
                         <div className="flex items-center">
                           {[...Array(5)].map((_, i) => (
                             <svg 
@@ -381,8 +381,8 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                   <div className="mt-3 space-y-2">
                     {/* Client Information for facility trips - always show */}
                     <div>
-                      <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Client</p>
-                      <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+                      <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Client</p>
+                      <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">
                         {trip.user_profile 
                           ? `${trip.user_profile.first_name} ${trip.user_profile.last_name}${trip.user_profile.phone_number ? ` • ${trip.user_profile.phone_number}` : ''}`
                           : trip.managed_client
@@ -410,24 +410,24 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">From</p>
-                      <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.pickup_address}</p>
+                      <p className="text-sm font-medium text-[#2E4F54] text-gray-900">From</p>
+                      <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">{trip.pickup_address}</p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">To</p>
-                      <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">{trip.destination_address}</p>
+                      <p className="text-sm font-medium text-[#2E4F54] text-gray-900">To</p>
+                      <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">{trip.destination_address}</p>
                     </div>
                   </div>
                   
                   {/* Facility Information - show for facility trips */}
                   {trip.facility_id && (
                     <div className="mt-4">
-                      <p className="text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5]">Facility</p>
-                      <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+                      <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Facility</p>
+                      <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">
                         {getFacilityDisplayInfo(trip)?.facilityName || 'N/A'}
                       </p>
                       {getFacilityDisplayInfo(trip)?.facilityContact && (
-                        <p className="text-sm text-[#2E4F54]/90 dark:text-[#E0F4F5]/90">
+                        <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">
                           {getFacilityDisplayInfo(trip)?.facilityContact}
                         </p>
                       )}
@@ -614,21 +614,21 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
       {/* Cancellation Modal */}
       {cancellingTrip && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#24393C] rounded-lg p-6 w-full max-w-md mx-4 border border-[#DDE5E7] dark:border-[#3F5E63]">
-            <h3 className="text-lg font-medium mb-4 text-[#2E4F54] dark:text-[#E0F4F5]">Cancel Trip</h3>
-            <p className="text-[#2E4F54]/80 dark:text-[#E0F4F5]/80 mb-4">
+          <div className="bg-white  rounded-lg p-6 w-full max-w-md mx-4 border border-[#DDE5E7] dark:border-[#3F5E63]">
+            <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Cancel Trip</h3>
+            <p className="text-[#2E4F54]/80 text-gray-900/80 mb-4">
               Are you sure you want to cancel this trip? This action cannot be undone.
             </p>
             
             <div className="mb-4">
-              <label htmlFor="cancelReason" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-1">
+              <label htmlFor="cancelReason" className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-1">
                 Reason for cancellation (optional)
               </label>
               <textarea
                 id="cancelReason"
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
-                className="w-full p-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md dark:bg-[#1C2C2F] text-[#2E4F54] dark:text-[#E0F4F5]"
+                className="w-full p-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md  text-[#2E4F54] text-gray-900"
                 placeholder="Please provide a reason..."
                 rows={3}
               ></textarea>
@@ -637,7 +637,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
             <div className="flex justify-end space-x-3">
               <button
                 onClick={cancelCancellation}
-                className="px-4 py-2 text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] bg-[#F8F9FA] dark:bg-[#1C2C2F] rounded-md hover:bg-[#DDE5E7] dark:hover:bg-[#3F5E63]/50 border border-[#DDE5E7] dark:border-[#3F5E63]"
+                className="px-4 py-2 text-sm font-medium text-[#2E4F54] text-gray-900 bg-[#F8F9FA]  rounded-md hover:bg-[#DDE5E7] dark:hover:bg-[#3F5E63]/50 border border-[#DDE5E7] dark:border-[#3F5E63]"
                 disabled={isSubmitting}
               >
                 Keep Trip

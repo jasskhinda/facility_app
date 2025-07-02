@@ -241,11 +241,11 @@ export default function FacilityDashboardView({ user }) {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-[#1C2C2F] rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
+          <div className="bg-white  rounded-lg border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[#2E4F54]/60 dark:text-[#E0F4F5]/60">Monthly Spend</p>
-                <p className="text-2xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5] mt-1">
+                <p className="text-sm font-medium text-[#2E4F54]/60 text-gray-900/60">Monthly Spend</p>
+                <p className="text-2xl font-semibold text-[#2E4F54] text-gray-900 mt-1">
                   ${stats.monthlySpend.toFixed(2)}
                 </p>
                 <p className="text-sm text-orange-500 mt-1">{stats.pendingInvoices} pending invoices</p>
@@ -256,9 +256,9 @@ export default function FacilityDashboardView({ user }) {
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white dark:bg-[#1C2C2F] rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
+        <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63]">
           <div className="p-6 border-b border-[#DDE5E7] dark:border-[#3F5E63]">
-            <h2 className="text-lg font-semibold text-[#2E4F54] dark:text-[#E0F4F5]">Recent Trips</h2>
+            <h2 className="text-lg font-semibold text-[#2E4F54] text-gray-900">Recent Trips</h2>
           </div>
           <div className="divide-y divide-[#DDE5E7] dark:divide-[#3F5E63]">
             {recentTrips.length > 0 ? (
@@ -270,13 +270,13 @@ export default function FacilityDashboardView({ user }) {
                         <span className="text-lg">🕐</span>
                       </div>
                       <div>
-                        <p className="font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+                        <p className="font-medium text-[#2E4F54] text-gray-900">
                           {trip.user?.first_name && trip.user?.last_name ? 
                             `${trip.user.first_name} ${trip.user.last_name}` : 
                             'Unknown Client'
                           }
                         </p>
-                        <p className="text-sm text-[#2E4F54]/60 dark:text-[#E0F4F5]/60">
+                        <p className="text-sm text-[#2E4F54]/60 text-gray-900/60">
                           {new Date(trip.pickup_time).toLocaleDateString()} at {new Date(trip.pickup_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
@@ -302,7 +302,7 @@ export default function FacilityDashboardView({ user }) {
               ))
             ) : (
               <div className="p-8 text-center">
-                <p className="text-[#2E4F54]/60 dark:text-[#E0F4F5]/60">No recent trips</p>
+                <p className="text-[#2E4F54]/60 text-gray-900/60">No recent trips</p>
                 <Link
                   href="/dashboard/book"
                   className="inline-flex items-center mt-4 text-[#7CCFD0] hover:text-[#60BFC0]"

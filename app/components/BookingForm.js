@@ -255,13 +255,13 @@ export default function BookingForm({ user }) {
       if (!pickupAutocompleteContainerRef.current.firstChild && !destinationAutocompleteContainerRef.current.firstChild) {
         // Create traditional input fields for autocomplete
         const pickupInput = document.createElement('input');
-        pickupInput.className = 'w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] dark:bg-[#1C2C2F]';
+        pickupInput.className = 'w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] ';
         pickupInput.placeholder = 'Enter your pickup location';
         pickupInput.value = formData.pickupAddress || '';
         pickupInput.id = 'pickup-autocomplete-input';
         
         const destinationInput = document.createElement('input');
-        destinationInput.className = 'w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] dark:bg-[#1C2C2F]';
+        destinationInput.className = 'w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] ';
         destinationInput.placeholder = 'Enter your destination';
         destinationInput.value = formData.destinationAddress || '';
         destinationInput.id = 'destination-autocomplete-input';
@@ -642,11 +642,11 @@ export default function BookingForm({ user }) {
       />
 
       <DashboardLayout user={user} activeTab="book">
-        <div className="bg-[#F8F9FA] dark:bg-[#24393C] rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6 mb-6">
-          <h2 className="text-xl font-semibold text-[#2E4F54] dark:text-[#E0F4F5] mb-4">Book a Ride</h2>
+        <div className="bg-[#F8F9FA]  rounded-lg shadow-md border border-[#DDE5E7] dark:border-[#3F5E63] p-6 mb-6">
+          <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900 mb-4">Book a Ride</h2>
           
           {success ? (
-            <div className="bg-[#7CCFD0]/20 dark:bg-[#7CCFD0]/30 text-[#2E4F54] dark:text-[#E0F4F5] p-4 rounded mb-6">
+            <div className="bg-[#7CCFD0]/20 dark:bg-[#7CCFD0]/30 text-[#2E4F54] text-gray-900 p-4 rounded mb-6">
               <div className="flex items-center">
                 <svg className="w-6 h-6 text-[#3B5B63] dark:text-[#7CCFD0] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
@@ -665,7 +665,7 @@ export default function BookingForm({ user }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Pickup Address */}
                 <div className="col-span-1 md:col-span-2">
-                  <label htmlFor="pickupAddress" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-1">
+                  <label htmlFor="pickupAddress" className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-1">
                     Pickup Address
                   </label>
                   <div 
@@ -685,7 +685,7 @@ export default function BookingForm({ user }) {
                 
                 {/* Destination Address */}
                 <div className="col-span-1 md:col-span-2">
-                  <label htmlFor="destinationAddress" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-1">
+                  <label htmlFor="destinationAddress" className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-1">
                     Destination Address
                   </label>
                   <div 
@@ -706,7 +706,7 @@ export default function BookingForm({ user }) {
                 {/* Pickup Date and Time - Popup Picker */}
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="pickupDateTime" className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-1">
+                    <label htmlFor="pickupDateTime" className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-1">
                       Pickup Date & Time
                     </label>
                     <div className="relative">
@@ -714,9 +714,9 @@ export default function BookingForm({ user }) {
                         type="button"
                         id="pickupDateTime"
                         onClick={openDatePicker}
-                        className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0] dark:bg-[#1C2C2F] text-left flex justify-between items-center"
+                        className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-sm focus:outline-none focus:ring-[#7CCFD0] focus:border-[#7CCFD0]  text-left flex justify-between items-center"
                       >
-                        <span className={formData.pickupTime ? "text-[#2E4F54] dark:text-[#E0F4F5]" : "text-[#2E4F54]/50 dark:text-[#E0F4F5]/50"}>
+                        <span className={formData.pickupTime ? "text-[#2E4F54] text-gray-900" : "text-[#2E4F54]/50 text-gray-900/50"}>
                           {formData.pickupTime 
                             ? `${formatMonthDay(formData.pickupTime)}, ${getDayName(formData.pickupTime)} - ${formatTimeAmPm(formData.pickupTime)}`
                             : "Select pickup date and time"}
@@ -730,11 +730,11 @@ export default function BookingForm({ user }) {
                       {isDatePickerOpen && (
                         <div 
                           ref={datePickerRef}
-                          className="absolute z-50 mt-2 w-full bg-white dark:bg-[#1C2C2F] border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-lg p-4"
+                          className="absolute z-50 mt-2 w-full bg-white  border border-[#DDE5E7] dark:border-[#3F5E63] rounded-md shadow-lg p-4"
                         >
                           {/* Header with back button for time view */}
                           <div className="flex justify-between items-center mb-2">
-                            <h4 className="text-[#2E4F54] dark:text-[#E0F4F5] font-medium">
+                            <h4 className="text-[#2E4F54] text-gray-900 font-medium">
                               {currentView === 'date' ? 'Select Date' : 'Select Time'}
                             </h4>
                             {currentView === 'time' && (
@@ -766,7 +766,7 @@ export default function BookingForm({ user }) {
                                     className={`
                                       p-2 rounded-md border text-center flex flex-col items-center
                                       ${isSelected 
-                                        ? 'bg-[#7CCFD0]/20 border-[#7CCFD0] text-[#3B5B63] dark:text-[#E0F4F5]' 
+                                        ? 'bg-[#7CCFD0]/20 border-[#7CCFD0] text-[#3B5B63] text-gray-900' 
                                         : 'border-[#DDE5E7] dark:border-[#3F5E63] hover:bg-[#F8F9FA] dark:hover:bg-[#24393C]'}
                                     `}
                                   >
@@ -782,7 +782,7 @@ export default function BookingForm({ user }) {
                           {/* Time selection view */}
                           {currentView === 'time' && selectedDate && (
                             <div>
-                              <div className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70 mb-2">
+                              <div className="text-sm text-[#2E4F54]/70 text-gray-900/70 mb-2">
                                 {new Date(selectedDate).toLocaleDateString('en-US', { 
                                   weekday: 'long', 
                                   month: 'long', 
@@ -809,7 +809,7 @@ export default function BookingForm({ user }) {
                                 })}
                               </div>
                               
-                              <div className="text-xs text-[#2E4F54]/60 dark:text-[#E0F4F5]/60 mt-2 italic">
+                              <div className="text-xs text-[#2E4F54]/60 text-gray-900/60 mt-2 italic">
                                 All times shown are in your local timezone
                               </div>
                             </div>
@@ -870,13 +870,13 @@ export default function BookingForm({ user }) {
               </div>
 
               <div className="col-span-1 md:col-span-2 border-t border-[#DDE5E7] dark:border-[#3F5E63] pt-4">
-                <h3 className="text-md font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">Ride Details</h3>
+                <h3 className="text-md font-medium text-[#2E4F54] text-gray-900 mb-2">Ride Details</h3>
                 
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <p className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">Pickup Time</p>
+                    <p className="text-sm text-[#2E4F54]/70 text-gray-900/70">Pickup Time</p>
                     {formData.pickupTime ? (
-                      <p className="font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+                      <p className="font-medium text-[#2E4F54] text-gray-900">
                         {new Date(formData.pickupTime).toLocaleDateString('en-US', { 
                           weekday: 'short', 
                           month: 'short', 
@@ -884,39 +884,39 @@ export default function BookingForm({ user }) {
                         })}, {formatTimeAmPm(formData.pickupTime)}
                       </p>
                     ) : (
-                      <p className="font-medium text-[#2E4F54]/50 dark:text-[#E0F4F5]/50">Select a time</p>
+                      <p className="font-medium text-[#2E4F54]/50 text-gray-900/50">Select a time</p>
                     )}
                   </div>
                   <div>
-                    <p className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">Estimated Fare</p>
+                    <p className="text-sm text-[#2E4F54]/70 text-gray-900/70">Estimated Fare</p>
                     {pickupLocation && destinationLocation ? (
-                      <p className="font-medium text-[#2E4F54] dark:text-[#E0F4F5]">
+                      <p className="font-medium text-[#2E4F54] text-gray-900">
                         {estimatedFare ? `$${estimatedFare}`.replace('$$', '$') : 'Calculating...'}
                       </p>
                     ) : (
-                      <p className="font-medium text-[#2E4F54]/50 dark:text-[#E0F4F5]/50">Enter addresses</p>
+                      <p className="font-medium text-[#2E4F54]/50 text-gray-900/50">Enter addresses</p>
                     )}
                   </div>
                   <div>
-                    <p className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">Estimated Duration</p>
+                    <p className="text-sm text-[#2E4F54]/70 text-gray-900/70">Estimated Duration</p>
                     {pickupLocation && destinationLocation ? (
-                      <p className="font-medium text-[#2E4F54] dark:text-[#E0F4F5]">{formData.isRoundTrip ? `${estimatedDuration} × 2` : estimatedDuration}</p>
+                      <p className="font-medium text-[#2E4F54] text-gray-900">{formData.isRoundTrip ? `${estimatedDuration} × 2` : estimatedDuration}</p>
                     ) : (
-                      <p className="font-medium text-[#2E4F54]/50 dark:text-[#E0F4F5]/50">Enter addresses</p>
+                      <p className="font-medium text-[#2E4F54]/50 text-gray-900/50">Enter addresses</p>
                     )}
                   </div>
                   <div>
-                    <p className="text-sm text-[#2E4F54]/70 dark:text-[#E0F4F5]/70">Distance</p>
+                    <p className="text-sm text-[#2E4F54]/70 text-gray-900/70">Distance</p>
                     {pickupLocation && destinationLocation ? (
-                      <p className="font-medium text-[#2E4F54] dark:text-[#E0F4F5]">{distanceMiles > 0 ? `${distanceMiles.toFixed(1)} miles` : 'Calculating...'}</p>
+                      <p className="font-medium text-[#2E4F54] text-gray-900">{distanceMiles > 0 ? `${distanceMiles.toFixed(1)} miles` : 'Calculating...'}</p>
                     ) : (
-                      <p className="font-medium text-[#2E4F54]/50 dark:text-[#E0F4F5]/50">Enter addresses</p>
+                      <p className="font-medium text-[#2E4F54]/50 text-gray-900/50">Enter addresses</p>
                     )}
                   </div>
                 </div>
                 
                 <div className="bg-[#7CCFD0]/10 dark:bg-[#7CCFD0]/20 p-3 rounded-md text-sm mb-4">
-                  <p className="text-[#2E4F54] dark:text-[#E0F4F5]">
+                  <p className="text-[#2E4F54] text-gray-900">
                     <strong>Note:</strong> Your ride request will be reviewed and approved by a dispatcher. Once approved, it will be assigned to a compassionate driver who specializes in supportive transportation.
                   </p>
                 </div>

@@ -302,8 +302,8 @@ export default function StreamlinedBookingForm({ user }) {
   return (
     <DashboardLayout user={user} activeTab="book">
       <div className="max-w-3xl mx-auto">
-        <div className="bg-white dark:bg-[#1C2C2F] rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
-          <h1 className="text-2xl font-bold text-[#2E4F54] dark:text-[#E0F4F5] mb-6">
+        <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#3F5E63] p-6">
+          <h1 className="text-2xl font-bold text-[#2E4F54] text-gray-900 mb-6">
             Book Transportation
           </h1>
           
@@ -322,13 +322,13 @@ export default function StreamlinedBookingForm({ user }) {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Client Selection */}
             <div>
-              <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+              <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                 Select Client *
               </label>
               <select
                 value={formData.clientId}
                 onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
-                className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                 required
               >
                 <option value="">Choose a client...</option>
@@ -339,14 +339,14 @@ export default function StreamlinedBookingForm({ user }) {
                 ))}
               </select>
               {selectedClient && (
-                <div className="mt-2 p-3 bg-gray-50 dark:bg-[#24393C] rounded-lg text-sm">
+                <div className="mt-2 p-3 bg-gray-50  rounded-lg text-sm">
                   {selectedClient.medical_requirements && (
-                    <p className="text-[#2E4F54]/80 dark:text-[#E0F4F5]/80">
+                    <p className="text-[#2E4F54]/80 text-gray-900/80">
                       <span className="font-medium">Medical notes:</span> {selectedClient.medical_requirements}
                     </p>
                   )}
                   {selectedClient.accessibility_needs && (
-                    <p className="text-[#2E4F54]/80 dark:text-[#E0F4F5]/80 mt-1">
+                    <p className="text-[#2E4F54]/80 text-gray-900/80 mt-1">
                       <span className="font-medium">Accessibility:</span> {selectedClient.accessibility_needs}
                     </p>
                   )}
@@ -357,7 +357,7 @@ export default function StreamlinedBookingForm({ user }) {
             {/* Date and Time */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                   Pickup Date *
                 </label>
                 <input
@@ -365,19 +365,19 @@ export default function StreamlinedBookingForm({ user }) {
                   value={formData.pickupDate}
                   onChange={(e) => setFormData({ ...formData, pickupDate: e.target.value })}
                   min={today}
-                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                   Pickup Time *
                 </label>
                 <select
                   value={formData.pickupTime}
                   onChange={(e) => setFormData({ ...formData, pickupTime: e.target.value })}
-                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   required
                 >
                   <option value="">Select time...</option>
@@ -391,14 +391,14 @@ export default function StreamlinedBookingForm({ user }) {
             {/* Addresses */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                   Pickup Address *
                 </label>
                 <SimpleAutocomplete
                   value={formData.pickupAddress}
                   onChange={(value) => setFormData({ ...formData, pickupAddress: value })}
                   placeholder="Enter pickup address"
-                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   required
                 />
                 <input
@@ -406,19 +406,19 @@ export default function StreamlinedBookingForm({ user }) {
                   value={formData.pickupDetails}
                   onChange={(e) => setFormData({ ...formData, pickupDetails: e.target.value })}
                   placeholder="Apartment, suite, building entrance, etc. (optional)"
-                  className="mt-2 w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className="mt-2 w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                   Destination Address *
                 </label>
                 <SimpleAutocomplete
                   value={formData.destinationAddress}
                   onChange={(value) => setFormData({ ...formData, destinationAddress: value })}
                   placeholder="Enter destination address"
-                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   required
                 />
                 <input
@@ -426,7 +426,7 @@ export default function StreamlinedBookingForm({ user }) {
                   value={formData.destinationDetails}
                   onChange={(e) => setFormData({ ...formData, destinationDetails: e.target.value })}
                   placeholder="Building, entrance, room number, etc. (optional)"
-                  className="mt-2 w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className="mt-2 w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                 />
               </div>
             </div>
@@ -434,7 +434,7 @@ export default function StreamlinedBookingForm({ user }) {
             {/* Route Map Display */}
             {formData.pickupAddress && formData.destinationAddress && (
               <div className="mt-6">
-                <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                   Route Overview
                 </label>
                 <SuperSimpleMap
@@ -454,18 +454,18 @@ export default function StreamlinedBookingForm({ user }) {
                   onChange={(e) => setFormData({ ...formData, isRoundTrip: e.target.checked })}
                   className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] rounded focus:ring-[#7CCFD0]"
                 />
-                <span className="text-[#2E4F54] dark:text-[#E0F4F5]">Round trip</span>
+                <span className="text-[#2E4F54] text-gray-900">Round trip</span>
               </label>
               
               {formData.isRoundTrip && (
                 <div className="mt-3">
-                  <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+                  <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                     Return Time
                   </label>
                   <select
                     value={formData.returnTime}
                     onChange={(e) => setFormData({ ...formData, returnTime: e.target.value })}
-                    className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                    className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   >
                     <option value="">Select return time...</option>
                     {timeOptions.map(opt => (
@@ -506,7 +506,7 @@ export default function StreamlinedBookingForm({ user }) {
 
             {/* Additional Passengers */}
             <div>
-              <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+              <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                 Additional Passengers
               </label>
               <input
@@ -515,13 +515,13 @@ export default function StreamlinedBookingForm({ user }) {
                 max="3"
                 value={formData.additionalPassengers}
                 onChange={(e) => setFormData({ ...formData, additionalPassengers: parseInt(e.target.value) || 0 })}
-                className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
               />
             </div>
 
             {/* Notes */}
             <div>
-              <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+              <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                 Trip Notes
               </label>
               <textarea
@@ -529,7 +529,7 @@ export default function StreamlinedBookingForm({ user }) {
                 onChange={(e) => setFormData({ ...formData, tripNotes: e.target.value })}
                 placeholder="Special instructions, medical equipment, etc."
                 rows={3}
-                className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white dark:bg-[#24393C] text-[#2E4F54] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
               />
             </div>
 
@@ -543,7 +543,7 @@ export default function StreamlinedBookingForm({ user }) {
 
             {/* Billing */}
             <div>
-              <label className="block text-sm font-medium text-[#2E4F54] dark:text-[#E0F4F5] mb-2">
+              <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                 Bill To
               </label>
               <div className="space-y-2">
@@ -555,7 +555,7 @@ export default function StreamlinedBookingForm({ user }) {
                     onChange={(e) => setFormData({ ...formData, billTo: e.target.value })}
                     className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] focus:ring-[#7CCFD0]"
                   />
-                  <span className="text-[#2E4F54] dark:text-[#E0F4F5]">Facility</span>
+                  <span className="text-[#2E4F54] text-gray-900">Facility</span>
                 </label>
                 <label className="flex items-center space-x-3">
                   <input
@@ -565,7 +565,7 @@ export default function StreamlinedBookingForm({ user }) {
                     onChange={(e) => setFormData({ ...formData, billTo: e.target.value })}
                     className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] focus:ring-[#7CCFD0]"
                   />
-                  <span className="text-[#2E4F54] dark:text-[#E0F4F5]">Client</span>
+                  <span className="text-[#2E4F54] text-gray-900">Client</span>
                 </label>
               </div>
             </div>
@@ -575,7 +575,7 @@ export default function StreamlinedBookingForm({ user }) {
               <button
                 type="button"
                 onClick={() => router.push('/dashboard')}
-                className="px-6 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg text-[#2E4F54] dark:text-[#E0F4F5] hover:bg-gray-50 dark:hover:bg-[#24393C] transition-colors"
+                className="px-6 py-2 border border-[#DDE5E7] dark:border-[#3F5E63] rounded-lg text-[#2E4F54] text-gray-900 hover:bg-gray-50 dark:hover:bg-[#24393C] transition-colors"
               >
                 Cancel
               </button>
