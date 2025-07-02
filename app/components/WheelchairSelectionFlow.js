@@ -171,14 +171,14 @@ export default function WheelchairSelectionFlow({
               />
               <div className="ml-3 flex-1">
                 <div className="flex items-center">
-                  <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                  <span className="text-sm font-medium text-amber-800 dark:text-gray-900">
                     Transport wheelchair
                   </span>
-                  <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200">
+                  <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-white">
                     Not Available
                   </span>
                 </div>
-                <p className="text-xs text-amber-700 dark:text-amber-300">
+                <p className="text-xs text-amber-700 dark:text-gray-900">
                   Lightweight transport chair - Not permitted for safety reasons
                 </p>
               </div>
@@ -304,14 +304,14 @@ export default function WheelchairSelectionFlow({
         {/* Information Notice */}
         <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
           <div className="flex items-start">
-            <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-blue-600 dark:text-gray-900 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <h5 className="text-sm font-medium text-blue-800 dark:text-blue-300">
+              <h5 className="text-sm font-medium text-blue-800 dark:text-gray-900">
                 Wheelchair Accessibility Information
               </h5>
-              <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
+              <p className="text-xs text-blue-700 dark:text-gray-900 mt-1">
                 All our vehicles are equipped with wheelchair accessibility features. The same fee applies to all wheelchair types to ensure fair and transparent pricing.
               </p>
             </div>

@@ -477,7 +477,7 @@ export default function StreamlinedBookingForm({ user }) {
             </div>
 
             {/* Emergency Trip Option */}
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-lg p-4">
+            <div className="bg-red-50 dark:bg-[#fa2c37] border border-red-200 dark:border-red-800/30 rounded-lg p-4">
               <label className="flex items-start space-x-3">
                 <input
                   type="checkbox"
@@ -486,8 +486,8 @@ export default function StreamlinedBookingForm({ user }) {
                   className="mt-1 w-4 h-4 text-red-600 border-red-300 rounded focus:ring-red-500"
                 />
                 <div>
-                  <span className="text-red-800 dark:text-red-300 font-medium">🚨 Emergency Trip</span>
-                  <p className="text-sm text-red-700 dark:text-red-400 mt-1">
+                  <span className="text-red-800 dark:text-white font-medium">🚨 Emergency Trip</span>
+                  <p className="text-sm text-red-700 dark:text-white mt-1">
                     Check this box if this is an emergency trip requiring immediate attention.
                     <span className="font-medium"> Additional $40 emergency fee applies.</span>
                   </p>
@@ -557,16 +557,9 @@ export default function StreamlinedBookingForm({ user }) {
                   />
                   <span className="text-[#2E4F54] text-gray-900">Facility</span>
                 </label>
-                <label className="flex items-center space-x-3">
-                  <input
-                    type="radio"
-                    value="client"
-                    checked={formData.billTo === 'client'}
-                    onChange={(e) => setFormData({ ...formData, billTo: e.target.value })}
-                    className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] focus:ring-[#7CCFD0]"
-                  />
-                  <span className="text-[#2E4F54] text-gray-900">Client</span>
-                </label>
+                <p className="text-xs text-[#2E4F54]/70 text-gray-900/70 ml-7">
+                  All trips are billed to the facility for consolidated billing
+                </p>
               </div>
             </div>
 
