@@ -1179,14 +1179,15 @@ ${monthlyTrips.map(trip => {
       let finalStatus = 'UNPAID';
       
       if (!dispatcherError && dispatcherPaymentStatus && dispatcherPaymentStatus.status === 'PAID') {
-        finalStatus = '✅ PAID (Verified by Facility)';
+        finalStatus = '✅ PAID (Verified by Dispatchers)';
         console.log('✅ Dispatcher verified facility payment for', selectedMonth);
         
-        // CRITICAL: Set invoicePaid state to true when dispatcher verifies facility payment
+        // CRITICAL: Only mark specific paid trips, not all trips in the month
+        // The actual billable amount calculation is handled in the trip categorization logic above
         setInvoicePaid(true);
-        setActualBillableAmount(0); // All trips are paid when facility payment is verified
+        // DO NOT set setActualBillableAmount(0) here - let trip categorization handle amounts
         
-        console.log('🔧 Updated states: invoicePaid=true, billableAmount=0');
+        console.log('🔧 Updated states: invoicePaid=true (payment verified, but new trips may still be due)');
       } else {
         // Reset states if payment not verified
         setInvoicePaid(false);
@@ -1538,15 +1539,15 @@ ${monthlyTrips.map(trip => {
           
           {/* Show billable amount - professional display based on payment status */}
           {!showPaidAmount && !showNewBillableAmount && (
-            <div className={`rounded-lg p-4 ${invoiceStatus.includes('PAID') ? 'bg-blue-50 border-2 border-blue-200' : totalAmount > 0 ? 'bg-red-50 border-2 border-red-200' : 'bg-gray-50'}`}>
-              <h3 className={`text-sm font-medium mb-1 ${invoiceStatus.includes('PAID') ? 'text-blue-700' : totalAmount > 0 ? 'text-red-700' : 'text-gray-700'}`}>Billable Amount</h3>
-              <p className={`text-2xl font-bold ${invoiceStatus.includes('PAID') ? 'text-blue-600' : totalAmount > 0 ? 'text-red-600' : 'text-gray-600'}`}>
-                ${invoiceStatus.includes('PAID') ? '0.00' : totalAmount.toFixed(2)}
+            <div className={`rounded-lg p-4 ${invoiceStatus.includes('PAID') && totalAmount === 0 ? 'bg-blue-50 border-2 border-blue-200' : totalAmount > 0 ? 'bg-red-50 border-2 border-red-200' : 'bg-gray-50'}`}>
+              <h3 className={`text-sm font-medium mb-1 ${invoiceStatus.includes('PAID') && totalAmount === 0 ? 'text-blue-700' : totalAmount > 0 ? 'text-red-700' : 'text-gray-700'}`}>Billable Amount</h3>
+              <p className={`text-2xl font-bold ${invoiceStatus.includes('PAID') && totalAmount === 0 ? 'text-blue-600' : totalAmount > 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                ${totalAmount.toFixed(2)}
               </p>
-              {invoiceStatus.includes('PAID') && (
-                <p className="text-xs text-blue-600 mt-1">✅ Payment verified by facility</p>
+              {invoiceStatus.includes('PAID') && totalAmount === 0 && (
+                <p className="text-xs text-blue-600 mt-1">✅ Payment verified by dispatchers</p>
               )}
-              {!invoiceStatus.includes('PAID') && totalAmount > 0 && (
+              {totalAmount > 0 && (
                 <p className="text-xs text-red-600 mt-1">Awaiting payment</p>
               )}
               {totalAmount === 0 && !invoiceStatus.includes('PAID') && (
