@@ -670,15 +670,15 @@ export default function FacilityBillingComponent({ user, facilityId }) {
             invoiceStatusError: invoiceStatusError?.message
           });
           
-          // If either source confirms payment, mark all trips as paid
-          if ((!paymentStatusError && paymentStatus && paymentStatus.status === 'PAID') ||
-              (!invoiceStatusError && invoiceStatus && invoiceStatus.payment_status)) {
-            console.log('✅ Fallback: Found payment verification - marking all trips as paid');
-            categorizedPaidTrips = [...trips];
-            categorizedDueTrips = [];
-            currentActualBillableAmount = 0;
-            currentInvoicePaid = true;
-          }
+          // REMOVED PROBLEMATIC FALLBACK: Do not mark all trips as paid just because payment exists
+          // The specific trip ID logic above should handle payment categorization
+          console.log('⚠️ Payment verification found but no specific trip IDs - keeping current categorization');
+          console.log('📊 Current categorization:', {
+            dueTrips: categorizedDueTrips.length,
+            paidTrips: categorizedPaidTrips.length,
+            paymentFound: (!paymentStatusError && paymentStatus && paymentStatus.status === 'PAID') ||
+                         (!invoiceStatusError && invoiceStatus && invoiceStatus.payment_status)
+          });
         }
         
       } catch (error) {
