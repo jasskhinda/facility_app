@@ -636,12 +636,15 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           paidTripIds: Array.from(paidTripIds)
         });
         
-        // Fallback: Check old facility_payment_status table for backward compatibility
+        // Enhanced Fallback: Check multiple payment verification sources
         if (categorizedPaidTrips.length === 0) {
+          console.log('🔄 No trips found with specific trip_ids, checking alternative payment verification...');
+          
           const [year, monthStr] = monthToFetch.split('-');
           const monthNumber = parseInt(monthStr);
           const yearNumber = parseInt(year);
           
+          // Check facility_payment_status table (dispatcher verification)
           const { data: paymentStatus, error: paymentStatusError } = await supabase
             .from('facility_payment_status')
             .select('status, payment_date, total_amount, notes')
@@ -650,8 +653,27 @@ export default function FacilityBillingComponent({ user, facilityId }) {
             .eq('invoice_year', yearNumber)
             .single();
           
-          if (!paymentStatusError && paymentStatus && paymentStatus.status === 'PAID') {
-            console.log('✅ Fallback: Found old payment status - marking all trips as paid');
+          // Check facility_invoices for any PAID status
+          const { data: invoiceStatus, error: invoiceStatusError } = await supabase
+            .from('facility_invoices')
+            .select('payment_status, total_amount')
+            .eq('facility_id', facilityId)
+            .eq('month', monthToFetch)
+            .in('payment_status', ['PAID', 'PAID WITH CARD', 'PAID WITH CHECK - VERIFIED'])
+            .limit(1)
+            .single();
+          
+          console.log('🔍 Fallback payment verification:', {
+            paymentStatus: paymentStatus?.status,
+            invoiceStatus: invoiceStatus?.payment_status,
+            paymentStatusError: paymentStatusError?.message,
+            invoiceStatusError: invoiceStatusError?.message
+          });
+          
+          // If either source confirms payment, mark all trips as paid
+          if ((!paymentStatusError && paymentStatus && paymentStatus.status === 'PAID') ||
+              (!invoiceStatusError && invoiceStatus && invoiceStatus.payment_status)) {
+            console.log('✅ Fallback: Found payment verification - marking all trips as paid');
             categorizedPaidTrips = [...trips];
             categorizedDueTrips = [];
             currentActualBillableAmount = 0;
