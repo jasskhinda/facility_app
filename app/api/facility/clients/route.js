@@ -9,11 +9,22 @@ export async function GET(request) {
   const supabase = await createRouteHandlerClient();
   
   try {
-    // Get user session
-    const { data: { session } } = await supabase.auth.getSession();
+    console.log('GET /api/facility/clients - Starting...');
+    
+    // Get user session with debugging
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    console.log('Session check:', { 
+      hasSession: !!session, 
+      sessionError: sessionError?.message,
+      userEmail: session?.user?.email 
+    });
     
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      console.log('No session found - returning 401');
+      return NextResponse.json({ 
+        error: 'Unauthorized - No session found',
+        debug: { sessionError: sessionError?.message }
+      }, { status: 401 });
     }
     
     // Check if user is facility admin
@@ -23,16 +34,34 @@ export async function GET(request) {
       .eq('id', session.user.id)
       .single();
       
+    console.log('Profile check:', { 
+      profile, 
+      profileError: profileError?.message,
+      userId: session.user.id 
+    });
+      
     if (profileError) {
-      return NextResponse.json({ error: profileError.message }, { status: 500 });
+      console.log('Profile error:', profileError);
+      return NextResponse.json({ 
+        error: `Profile error: ${profileError.message}`,
+        debug: { userId: session.user.id, profileError }
+      }, { status: 500 });
     }
     
     if (profile.role !== 'facility') {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+      console.log('Access denied - user role:', profile.role);
+      return NextResponse.json({ 
+        error: 'Access denied - Invalid role',
+        debug: { userRole: profile.role, required: 'facility' }
+      }, { status: 403 });
     }
     
     if (!profile.facility_id) {
-      return NextResponse.json({ error: 'No facility associated with this account' }, { status: 400 });
+      console.log('No facility ID found for user');
+      return NextResponse.json({ 
+        error: 'No facility associated with this account',
+        debug: { profile }
+      }, { status: 400 });
     }
     
     // Get clients for this facility
