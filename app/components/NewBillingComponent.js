@@ -1653,7 +1653,7 @@ ${monthlyTrips.map(trip => {
           {/* Pay Monthly Invoice Button - Enhanced for Multiple Payments */}
           <button
             onClick={openPaymentModal}
-            disabled={loading || invoiceStatus.includes('PAID') || (invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED') && !invoiceStatus.includes('ISSUES') && !invoiceStatus.includes('REPLACEMENT'))
+            disabled={loading || invoiceStatus.includes('PAID') || (invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED') && !invoiceStatus.includes('ISSUES') && !invoiceStatus.includes('REPLACEMENT'))}
             className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
