@@ -218,7 +218,7 @@ function PaymentForm({
         tracking_number: checkSubmissionType === 'already_mailed' ? document.getElementById('check_tracking')?.value : null
       }
 
-      const response = await fetch('/api/facility/payment/process-check-payment', {
+      const response = await fetch('/api/facility/payment/process-check-payment-temp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
