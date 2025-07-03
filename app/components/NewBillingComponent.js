@@ -1156,6 +1156,67 @@ ${monthlyTrips.map(trip => {
           </div>
         </div>
 
+        {/* Check Payment Status Alert */}
+        {invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && (
+          <div className={`mb-4 p-4 rounded-lg border-2 ${
+            invoiceStatus.includes('WILL MAIL') ? 'bg-blue-50 border-blue-300' :
+            invoiceStatus.includes('IN TRANSIT') ? 'bg-indigo-50 border-indigo-300' :
+            invoiceStatus.includes('BEING VERIFIED') ? 'bg-purple-50 border-purple-300' :
+            invoiceStatus.includes('HAS ISSUES') ? 'bg-red-50 border-red-300' :
+            invoiceStatus.includes('REPLACEMENT REQUESTED') ? 'bg-orange-50 border-orange-300' :
+            'bg-gray-50 border-gray-300'
+          }`}>
+            <div className="flex items-start space-x-3">
+              <svg className={`w-6 h-6 flex-shrink-0 mt-0.5 ${
+                invoiceStatus.includes('WILL MAIL') ? 'text-blue-600' :
+                invoiceStatus.includes('IN TRANSIT') ? 'text-indigo-600' :
+                invoiceStatus.includes('BEING VERIFIED') ? 'text-purple-600' :
+                invoiceStatus.includes('HAS ISSUES') ? 'text-red-600' :
+                invoiceStatus.includes('REPLACEMENT REQUESTED') ? 'text-orange-600' :
+                'text-gray-600'
+              }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <div className="flex-1">
+                <h3 className={`font-semibold ${
+                  invoiceStatus.includes('WILL MAIL') ? 'text-blue-800' :
+                  invoiceStatus.includes('IN TRANSIT') ? 'text-indigo-800' :
+                  invoiceStatus.includes('BEING VERIFIED') ? 'text-purple-800' :
+                  invoiceStatus.includes('HAS ISSUES') ? 'text-red-800' :
+                  invoiceStatus.includes('REPLACEMENT REQUESTED') ? 'text-orange-800' :
+                  'text-gray-800'
+                }`}>
+                  Check Payment Status: {invoiceStatus}
+                </h3>
+                <p className={`text-sm mt-1 ${
+                  invoiceStatus.includes('WILL MAIL') ? 'text-blue-700' :
+                  invoiceStatus.includes('IN TRANSIT') ? 'text-indigo-700' :
+                  invoiceStatus.includes('BEING VERIFIED') ? 'text-purple-700' :
+                  invoiceStatus.includes('HAS ISSUES') ? 'text-red-700' :
+                  invoiceStatus.includes('REPLACEMENT REQUESTED') ? 'text-orange-700' :
+                  'text-gray-700'
+                }`}>
+                  {invoiceStatus === 'CHECK PAYMENT - WILL MAIL' && 
+                    'Your check payment request has been submitted. Please mail your check to our office within 5 business days.'}
+                  {invoiceStatus === 'CHECK PAYMENT - IN TRANSIT' && 
+                    'Your check is in transit to our office. Our dispatcher will verify and process it upon receipt.'}
+                  {invoiceStatus === 'CHECK PAYMENT - BEING VERIFIED' && 
+                    'Your check has been received and is being verified by our dispatcher. You will be notified once completed.'}
+                  {invoiceStatus === 'CHECK PAYMENT - HAS ISSUES' && 
+                    'There is an issue with your check payment. Please contact our billing department at 614-967-9887.'}
+                  {invoiceStatus === 'CHECK PAYMENT - REPLACEMENT REQUESTED' && 
+                    'A replacement check has been requested. Please send a new check to our office.'}
+                </p>
+                {invoiceStatus === 'CHECK PAYMENT - WILL MAIL' && (
+                  <div className="mt-2 p-2 bg-blue-100 rounded text-xs text-blue-800">
+                    <strong>Mail to:</strong> 5050 Blazer Pkwy Suite 100-B, Dublin, OH 43017
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Already Paid Button - Enhanced for Multiple Payments */}
@@ -1187,7 +1248,7 @@ ${monthlyTrips.map(trip => {
           {/* Pay Monthly Invoice Button - Enhanced for Multiple Payments */}
           <button
             onClick={openPaymentModal}
-            disabled={loading || totalAmount <= 0}
+            disabled={loading || totalAmount <= 0 || (invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED') && !invoiceStatus.includes('ISSUES') && !invoiceStatus.includes('REPLACEMENT'))}
             className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1195,10 +1256,15 @@ ${monthlyTrips.map(trip => {
             </svg>
             <span className="text-center">
               <div className="text-sm">
-                {invoiceStatus && invoiceStatus.includes('PAID') && totalAmount > 0 
+                {invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED')
+                  ? 'Check Payment Pending'
+                  : invoiceStatus && invoiceStatus.includes('PAID') && totalAmount > 0 
                   ? 'Pay Additional Trips' 
                   : 'Pay Monthly Invoice'}
               </div>
+              {invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED') && (
+                <div className="text-xs opacity-90">Awaiting verification</div>
+              )}
               {invoiceStatus && invoiceStatus.includes('PAID') && totalAmount > 0 && (
                 <div className="text-xs opacity-90">New completed trips</div>
               )}
