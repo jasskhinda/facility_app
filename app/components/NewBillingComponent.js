@@ -670,15 +670,52 @@ export default function FacilityBillingComponent({ user, facilityId }) {
             invoiceStatusError: invoiceStatusError?.message
           });
           
-          // REMOVED PROBLEMATIC FALLBACK: Do not mark all trips as paid just because payment exists
-          // The specific trip ID logic above should handle payment categorization
-          console.log('⚠️ Payment verification found but no specific trip IDs - keeping current categorization');
-          console.log('📊 Current categorization:', {
-            dueTrips: categorizedDueTrips.length,
-            paidTrips: categorizedPaidTrips.length,
-            paymentFound: (!paymentStatusError && paymentStatus && paymentStatus.status === 'PAID') ||
-                         (!invoiceStatusError && invoiceStatus && invoiceStatus.payment_status)
-          });
+          // SMART FALLBACK: Use payment date to categorize trips when specific trip IDs are missing
+          if ((!paymentStatusError && paymentStatus && paymentStatus.status === 'PAID' && paymentStatus.payment_date) ||
+              (!invoiceStatusError && invoiceStatus && invoiceStatus.payment_status)) {
+            
+            // Use payment date from dispatcher verification or default to early in month
+            const paymentDate = paymentStatus?.payment_date || `${year}-${monthStr.padStart(2, '0')}-03`;
+            const paymentDateTime = new Date(paymentDate);
+            
+            console.log('🧠 Smart fallback: Using payment date to categorize trips:', {
+              paymentDate,
+              totalTrips: trips.length
+            });
+            
+            // Reset categorization arrays
+            categorizedDueTrips = [];
+            categorizedPaidTrips = [];
+            currentActualBillableAmount = 0;
+            
+            // Categorize trips based on payment date
+            trips.forEach(trip => {
+              const tripDate = new Date(trip.pickup_time || trip.created_at);
+              
+              // If trip occurred before or on payment date, it's likely paid
+              if (tripDate <= paymentDateTime) {
+                categorizedPaidTrips.push(trip);
+                console.log(`📅 Trip ${trip.id} (${tripDate.toDateString()}) marked as PAID (before/on ${paymentDateTime.toDateString()})`);
+              } else {
+                categorizedDueTrips.push(trip);
+                // Only count completed trips with valid prices as billable
+                if (trip.status === 'completed' && trip.price > 0) {
+                  currentActualBillableAmount += (trip.price || 0);
+                }
+                console.log(`📅 Trip ${trip.id} (${tripDate.toDateString()}) marked as DUE (after ${paymentDateTime.toDateString()})`);
+              }
+            });
+            
+            currentInvoicePaid = categorizedPaidTrips.length > 0;
+            
+            console.log('✅ Smart categorization completed:', {
+              paidTrips: categorizedPaidTrips.length,
+              dueTrips: categorizedDueTrips.length,
+              billableAmount: currentActualBillableAmount
+            });
+          } else {
+            console.log('⚠️ No payment verification found - keeping current categorization');
+          }
         }
         
       } catch (error) {
