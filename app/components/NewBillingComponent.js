@@ -588,29 +588,16 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           console.log('✅ Invoice marked as PAID by dispatcher!');
           currentInvoicePaid = true;
           
-          // When dispatcher marks as paid, all current trips are considered paid
-          // New trips after this payment would be due
-          const paymentDate = new Date(paymentStatus.payment_date);
+          // When dispatcher marks as paid, ALL current trips for this month are considered paid
+          // Since dispatcher payment covers the entire month
+          categorizedPaidTrips = [...trips]; // All trips are paid
+          categorizedDueTrips = []; // No trips are due
+          currentActualBillableAmount = 0; // Nothing is billable since everything is paid
           
-          trips.forEach(trip => {
-            const tripDate = new Date(trip.pickup_time);
-            
-            // If trip was completed before or on payment date, it's already paid
-            if (tripDate <= paymentDate) {
-              categorizedPaidTrips.push(trip);
-            } else {
-              // Trip completed after payment, so it's due
-              categorizedDueTrips.push(trip);
-              if (trip.status === 'completed' && trip.price > 0) {
-                currentActualBillableAmount += (trip.price || 0);
-              }
-            }
-          });
-          
-          console.log('📊 Trip categorization:', {
+          console.log('📊 Dispatcher payment - all trips marked as PAID:', {
             paidTrips: categorizedPaidTrips.length,
             dueTrips: categorizedDueTrips.length,
-            newBillableAmount: currentActualBillableAmount
+            billableAmount: currentActualBillableAmount
           });
           
         } else {
@@ -1138,6 +1125,16 @@ ${monthlyTrips.map(trip => {
       if (!dispatcherError && dispatcherPaymentStatus && dispatcherPaymentStatus.status === 'PAID') {
         finalStatus = '✅ PAID (Verified by Dispatcher)';
         console.log('✅ Dispatcher confirmed payment for', selectedMonth);
+        
+        // CRITICAL: Set invoicePaid state to true when dispatcher confirms payment
+        setInvoicePaid(true);
+        setActualBillableAmount(0); // All trips are paid when dispatcher marks as paid
+        
+        console.log('🔧 Updated states: invoicePaid=true, billableAmount=0');
+      } else {
+        // Reset states if not paid
+        setInvoicePaid(false);
+        console.log('🔧 Payment not confirmed by dispatcher');
       }
       
       // Also check facility_invoices table for additional payment records
@@ -1485,19 +1482,19 @@ ${monthlyTrips.map(trip => {
           
           {/* Show billable amount - professional display based on payment status */}
           {!showPaidAmount && !showNewBillableAmount && (
-            <div className={`rounded-lg p-4 ${invoicePaid && totalAmount === 0 ? 'bg-blue-50 border-2 border-blue-200' : totalAmount > 0 ? 'bg-red-50 border-2 border-red-200' : 'bg-gray-50'}`}>
-              <h3 className={`text-sm font-medium mb-1 ${invoicePaid && totalAmount === 0 ? 'text-blue-700' : totalAmount > 0 ? 'text-red-700' : 'text-gray-700'}`}>Billable Amount</h3>
-              <p className={`text-2xl font-bold ${invoicePaid && totalAmount === 0 ? 'text-blue-600' : totalAmount > 0 ? 'text-red-600' : 'text-gray-600'}`}>
-                ${totalAmount.toFixed(2)}
+            <div className={`rounded-lg p-4 ${invoiceStatus.includes('PAID') ? 'bg-blue-50 border-2 border-blue-200' : totalAmount > 0 ? 'bg-red-50 border-2 border-red-200' : 'bg-gray-50'}`}>
+              <h3 className={`text-sm font-medium mb-1 ${invoiceStatus.includes('PAID') ? 'text-blue-700' : totalAmount > 0 ? 'text-red-700' : 'text-gray-700'}`}>Billable Amount</h3>
+              <p className={`text-2xl font-bold ${invoiceStatus.includes('PAID') ? 'text-blue-600' : totalAmount > 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                ${invoiceStatus.includes('PAID') ? '0.00' : totalAmount.toFixed(2)}
               </p>
-              {invoicePaid && totalAmount === 0 && (
+              {invoiceStatus.includes('PAID') && (
                 <p className="text-xs text-blue-600 mt-1">✅ Invoice fully paid by dispatcher</p>
               )}
-              {invoicePaid && totalAmount > 0 && (
-                <p className="text-xs text-red-600 mt-1">New trips after dispatcher payment</p>
-              )}
-              {!invoicePaid && totalAmount > 0 && (
+              {!invoiceStatus.includes('PAID') && totalAmount > 0 && (
                 <p className="text-xs text-red-600 mt-1">Awaiting payment</p>
+              )}
+              {totalAmount === 0 && !invoiceStatus.includes('PAID') && (
+                <p className="text-xs text-gray-600 mt-1">No billable trips</p>
               )}
             </div>
           )}
@@ -1633,7 +1630,7 @@ ${monthlyTrips.map(trip => {
               setMarkAsPaid(true);
               openInvoiceModal();
             }}
-            disabled={loading || (invoicePaid && totalAmount <= 0)}
+            disabled={loading || invoiceStatus.includes('PAID')}
             className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1656,7 +1653,7 @@ ${monthlyTrips.map(trip => {
           {/* Pay Monthly Invoice Button - Enhanced for Multiple Payments */}
           <button
             onClick={openPaymentModal}
-            disabled={loading || (invoicePaid && totalAmount <= 0) || (invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED') && !invoiceStatus.includes('ISSUES') && !invoiceStatus.includes('REPLACEMENT'))}
+            disabled={loading || invoiceStatus.includes('PAID') || (invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED') && !invoiceStatus.includes('ISSUES') && !invoiceStatus.includes('REPLACEMENT'))
             className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1711,7 +1708,7 @@ ${monthlyTrips.map(trip => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7CCFD0] mx-auto"></div>
           <p className="text-gray-600 mt-2">Loading trips...</p>
         </div>
-      ) : (dueTrips.length > 0 || paidTrips.length > 0) ? (
+      ) : (dueTrips.length > 0 || paidTrips.length > 0 || monthlyTrips.length > 0) ? (
         <div className="space-y-6">
           {/* DUE TRIPS Section */}
           {dueTrips.length > 0 && (
