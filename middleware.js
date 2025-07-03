@@ -19,6 +19,16 @@ export async function middleware(req) {
   const { pathname } = req.nextUrl;
   console.log(`Middleware handling path: ${pathname}`);
   
+  // Skip middleware for API routes, static files, and _next
+  const isApiRoute = pathname.startsWith('/api/');
+  const isStaticFile = pathname.startsWith('/_next/') || pathname.startsWith('/static/') || pathname.includes('.');
+  const isPublicRoute = ['/', '/login', '/signup', '/reset-password', '/update-password', '/auth/callback'].includes(pathname);
+  
+  if (isApiRoute || isStaticFile) {
+    console.log(`MIDDLEWARE: Skipping ${isApiRoute ? 'API route' : 'static file'}: ${pathname}`);
+    return NextResponse.next();
+  }
+  
   // Create a response object that we can modify
   const res = NextResponse.next();
   

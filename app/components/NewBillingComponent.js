@@ -105,6 +105,18 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         })
       });
       
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.log('Authentication required for payment breakdown - skipping');
+          return;
+        }
+        if (response.status === 403) {
+          console.log('Access denied for payment breakdown - skipping');
+          return;
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       
       if (data.success) {
@@ -136,6 +148,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       }
     } catch (error) {
       console.error('Error fetching payment breakdown:', error);
+      // Don't fail the entire component if payment breakdown fails
     }
   };
 
@@ -207,7 +220,6 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       fetchMonthlyTrips(selectedMonth);
       fetchSavedPaymentMethods();
       fetchInvoiceStatus();
-      fetchPaymentBreakdown(selectedMonth);
     }
   }, [selectedMonth, facilityId]);
 
@@ -669,9 +681,6 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       setMonthlyTrips(enhancedTrips);
       setTotalAmount(billableTotal);
       setError('');
-      
-      // Fetch professional payment breakdown after trips are loaded
-      await fetchPaymentBreakdown(monthToFetch);
 
     } catch (err) {
       console.error('Error fetching trips:', err);
@@ -842,7 +851,7 @@ ${monthlyTrips.map(trip => {
   };
 
   // Enhanced payment handlers with mid-month confirmation
-  const openPaymentModal = () => {
+  const openPaymentModal = async () => {
     if (totalAmount <= 0) {
       setError('No amount due for payment');
       return;
@@ -858,6 +867,9 @@ ${monthlyTrips.map(trip => {
     // Check if there's already been a payment this month
     const hasExistingPayment = invoiceStatus && invoiceStatus.includes('PAID');
 
+    // Fetch payment breakdown before opening payment modal
+    await fetchPaymentBreakdown(selectedMonth);
+    
     // If it's current month and not end of month, show confirmation
     // But if there's already been a payment, show different messaging
     if (isCurrentMonth && !isEndOfMonth) {

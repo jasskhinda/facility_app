@@ -22,6 +22,20 @@ export async function POST(request) {
       )
     }
 
+    // Verify user has facility role and access to this facility
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role, facility_id')
+      .eq('id', userData.user.id)
+      .single()
+
+    if (profileError || profile.role !== 'facility' || profile.facility_id !== facility_id) {
+      return Response.json(
+        { error: 'Access denied' },
+        { status: 403 }
+      )
+    }
+
     // Get the most recent verified payment for this facility in this month
     const { data: lastVerifiedPayment, error: paymentError } = await supabase
       .from('facility_invoice_payments')
