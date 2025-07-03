@@ -850,6 +850,30 @@ ${monthlyTrips.map(trip => {
     setSuccessMessage('');
   };
 
+  // Test basic authentication
+  const testAuth = async () => {
+    try {
+      console.log('Testing basic authentication...');
+      const response = await fetch('/api/debug/test-simple-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ test: 'auth' })
+      });
+      
+      const result = await response.json();
+      console.log('Auth test result:', result);
+      
+      if (response.ok) {
+        alert('Authentication working! User: ' + result.user.email);
+      } else {
+        alert('Authentication failed: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Auth test error:', error);
+      alert('Auth test failed: ' + error.message);
+    }
+  };
+
   // Enhanced payment handlers with mid-month confirmation
   const openPaymentModal = async () => {
     if (totalAmount <= 0) {
@@ -1931,6 +1955,20 @@ ${monthlyTrips.map(trip => {
           </div>
         </div>
       )}
+
+      {/* Temporary Auth Test Button */}
+      <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <h3 className="text-lg font-semibold text-yellow-800 mb-2">🔧 Debug: Authentication Test</h3>
+        <button
+          onClick={testAuth}
+          className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
+        >
+          Test Authentication
+        </button>
+        <p className="text-xs text-yellow-700 mt-2">
+          This will test if basic authentication is working. Remove this after debugging.
+        </p>
+      </div>
     </div>
   );
 }
