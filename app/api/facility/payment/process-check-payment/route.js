@@ -133,8 +133,19 @@ export async function POST(request) {
 
       if (paymentError) {
         console.error('Error recording check payment:', paymentError)
+        console.error('Payment data that failed:', {
+          facility_id,
+          amount,
+          payment_method: 'check',
+          month,
+          status: 'pending_verification',
+          payment_note: paymentNote,
+          partial_month_payment: isPartialMonthPayment,
+          check_submission_type,
+          check_details
+        })
         return Response.json(
-          { error: 'Failed to record payment details' },
+          { error: `Failed to record payment details: ${paymentError.message}` },
           { status: 500 }
         )
       }

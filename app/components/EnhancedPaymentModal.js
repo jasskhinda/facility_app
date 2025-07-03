@@ -661,9 +661,9 @@ function PaymentForm({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <h4 className="font-medium text-blue-800">Professional Check Payment Process</h4>
+              <h4 className="font-medium text-blue-800">Check Payment Instructions</h4>
               <p className="text-sm text-blue-700 mt-1">
-                You will receive complete mailing instructions including our business address, check details, and next steps.
+                Please send your check to the address below. Our dispatcher will verify and deposit your payment, and you will be notified once completed. Your billing status will change to PAID.
               </p>
               <div className="mt-3 p-3 bg-blue-100 rounded border border-blue-300">
                 <p className="text-sm text-blue-800 font-medium">Payment Amount: ${totalAmount.toFixed(2)}</p>
