@@ -558,71 +558,105 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         }
       }
 
-      // First, categorize trips into DUE (unpaid) and PAID (already included in previous payment)
+      // FIXED: Categorize trips into DUE (unpaid) and PAID (already included in previous payment)
       let categorizedDueTrips = [];
       let categorizedPaidTrips = [];
       let currentInvoicePaid = false;
       let currentActualBillableAmount = 0;
       
-      // Check if dispatcher has marked this month as PAID
+      // Check for facility invoices and payments that track specific trip IDs
       try {
-        // Parse month to get year and month number
-        const [year, monthStr] = monthToFetch.split('-');
-        const monthNumber = parseInt(monthStr);
-        const yearNumber = parseInt(year);
+        console.log('🔍 Checking payment status with trip ID tracking for:', { facilityId, monthToFetch });
         
-        console.log('🔍 Checking payment status for:', { facilityId, monthNumber, yearNumber });
-        
-        // Check facility_payment_status table (used by dispatcher)
-        const { data: paymentStatus, error: paymentError } = await supabase
-          .from('facility_payment_status')
-          .select('status, payment_date, total_amount, notes')
+        // Get all paid invoices/payments for this month
+        const { data: paidInvoices, error: invoiceError } = await supabase
+          .from('facility_invoices')
+          .select('trip_ids, payment_status, total_amount')
           .eq('facility_id', facilityId)
-          .eq('invoice_month', monthNumber)
-          .eq('invoice_year', yearNumber)
-          .single();
+          .eq('month', monthToFetch)
+          .in('payment_status', ['PAID', 'PAID WITH CARD', 'PAID WITH CHECK - VERIFIED']);
         
-        console.log('💳 Payment status check result:', { paymentStatus, paymentError });
+        console.log('💳 Invoice check result:', { paidInvoices: paidInvoices?.length || 0, invoiceError });
         
-        if (!paymentError && paymentStatus && paymentStatus.status === 'PAID') {
-          console.log('✅ Invoice marked as PAID by dispatcher!');
-          currentInvoicePaid = true;
-          
-          // When dispatcher marks as paid, ALL current trips for this month are considered paid
-          // Since dispatcher payment covers the entire month
-          categorizedPaidTrips = [...trips]; // All trips are paid
-          categorizedDueTrips = []; // No trips are due
-          currentActualBillableAmount = 0; // Nothing is billable since everything is paid
-          
-          console.log('📊 Dispatcher payment - all trips marked as PAID:', {
-            paidTrips: categorizedPaidTrips.length,
-            dueTrips: categorizedDueTrips.length,
-            billableAmount: currentActualBillableAmount
+        // Get all payment records with trip IDs
+        const { data: paymentRecords, error: paymentError } = await supabase
+          .from('facility_invoice_payments')
+          .select('trip_ids, amount, payment_date, status')
+          .eq('facility_id', facilityId)
+          .eq('month', monthToFetch)
+          .in('status', ['paid', 'PAID', 'PAID WITH CARD', 'PAID WITH CHECK - VERIFIED', 'completed'])
+          .order('payment_date', { ascending: false });
+        
+        console.log('💳 Payment records check result:', { paymentRecords: paymentRecords?.length || 0, paymentError });
+        
+        // Collect all trip IDs that have been paid for
+        const paidTripIds = new Set();
+        
+        // Add trip IDs from paid invoices
+        if (!invoiceError && paidInvoices && paidInvoices.length > 0) {
+          paidInvoices.forEach(invoice => {
+            if (invoice.trip_ids && Array.isArray(invoice.trip_ids)) {
+              invoice.trip_ids.forEach(tripId => paidTripIds.add(tripId));
+            }
           });
-          
-        } else {
-          // No payment found or not paid, all trips are due
-          console.log('❌ No payment found or invoice not paid');
-          categorizedDueTrips = trips;
-          trips.forEach(trip => {
+          console.log('📋 Found trip IDs from paid invoices:', Array.from(paidTripIds));
+        }
+        
+        // Add trip IDs from payment records
+        if (!paymentError && paymentRecords && paymentRecords.length > 0) {
+          paymentRecords.forEach(payment => {
+            if (payment.trip_ids && Array.isArray(payment.trip_ids)) {
+              payment.trip_ids.forEach(tripId => paidTripIds.add(tripId));
+            }
+          });
+          console.log('📋 Added trip IDs from payment records, total paid:', Array.from(paidTripIds));
+        }
+        
+        // Categorize trips based on whether their ID is in the paid set
+        trips.forEach(trip => {
+          if (paidTripIds.has(trip.id)) {
+            categorizedPaidTrips.push(trip);
+          } else {
+            categorizedDueTrips.push(trip);
+            // Only count completed trips with valid prices as billable
             if (trip.status === 'completed' && trip.price > 0) {
               currentActualBillableAmount += (trip.price || 0);
             }
-          });
-        }
+          }
+        });
         
-        // Also check facility_invoice_payments table for additional payment records
-        const { data: additionalPayments, error: additionalError } = await supabase
-          .from('facility_invoice_payments')
-          .select('amount, payment_date, status, trip_ids')
-          .eq('facility_id', facilityId)
-          .eq('month', monthToFetch)
-          .in('status', ['paid', 'PAID', 'PAID WITH CARD', 'PAID WITH CHECK - VERIFIED'])
-          .order('payment_date', { ascending: false });
+        // Set invoice paid status if there are any paid trips
+        currentInvoicePaid = categorizedPaidTrips.length > 0;
         
-        if (!additionalError && additionalPayments && additionalPayments.length > 0) {
-          console.log('📋 Found additional payment records:', additionalPayments);
-          // This would handle any additional payments beyond the main dispatcher payment
+        console.log('📊 Trip categorization completed:', {
+          totalTrips: trips.length,
+          paidTrips: categorizedPaidTrips.length,
+          dueTrips: categorizedDueTrips.length,
+          billableAmount: currentActualBillableAmount,
+          paidTripIds: Array.from(paidTripIds)
+        });
+        
+        // Fallback: Check old facility_payment_status table for backward compatibility
+        if (categorizedPaidTrips.length === 0) {
+          const [year, monthStr] = monthToFetch.split('-');
+          const monthNumber = parseInt(monthStr);
+          const yearNumber = parseInt(year);
+          
+          const { data: paymentStatus, error: paymentStatusError } = await supabase
+            .from('facility_payment_status')
+            .select('status, payment_date, total_amount, notes')
+            .eq('facility_id', facilityId)
+            .eq('invoice_month', monthNumber)
+            .eq('invoice_year', yearNumber)
+            .single();
+          
+          if (!paymentStatusError && paymentStatus && paymentStatus.status === 'PAID') {
+            console.log('✅ Fallback: Found old payment status - marking all trips as paid');
+            categorizedPaidTrips = [...trips];
+            categorizedDueTrips = [];
+            currentActualBillableAmount = 0;
+            currentInvoicePaid = true;
+          }
         }
         
       } catch (error) {
@@ -1123,18 +1157,18 @@ ${monthlyTrips.map(trip => {
       let finalStatus = 'UNPAID';
       
       if (!dispatcherError && dispatcherPaymentStatus && dispatcherPaymentStatus.status === 'PAID') {
-        finalStatus = '✅ PAID (Verified by Dispatcher)';
-        console.log('✅ Dispatcher confirmed payment for', selectedMonth);
+        finalStatus = '✅ PAID (Verified by Facility)';
+        console.log('✅ Dispatcher verified facility payment for', selectedMonth);
         
-        // CRITICAL: Set invoicePaid state to true when dispatcher confirms payment
+        // CRITICAL: Set invoicePaid state to true when dispatcher verifies facility payment
         setInvoicePaid(true);
-        setActualBillableAmount(0); // All trips are paid when dispatcher marks as paid
+        setActualBillableAmount(0); // All trips are paid when facility payment is verified
         
         console.log('🔧 Updated states: invoicePaid=true, billableAmount=0');
       } else {
-        // Reset states if not paid
+        // Reset states if payment not verified
         setInvoicePaid(false);
-        console.log('🔧 Payment not confirmed by dispatcher');
+        console.log('🔧 Payment not yet verified by dispatcher');
       }
       
       // Also check facility_invoices table for additional payment records
@@ -1488,7 +1522,7 @@ ${monthlyTrips.map(trip => {
                 ${invoiceStatus.includes('PAID') ? '0.00' : totalAmount.toFixed(2)}
               </p>
               {invoiceStatus.includes('PAID') && (
-                <p className="text-xs text-blue-600 mt-1">✅ Invoice fully paid by dispatcher</p>
+                <p className="text-xs text-blue-600 mt-1">✅ Payment verified by facility</p>
               )}
               {!invoiceStatus.includes('PAID') && totalAmount > 0 && (
                 <p className="text-xs text-red-600 mt-1">Awaiting payment</p>
