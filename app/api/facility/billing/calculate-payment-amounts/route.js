@@ -14,8 +14,20 @@ export async function POST(request) {
     const supabase = await createRouteHandlerClient()
 
     // Verify user authentication and role
+    console.log('Payment amounts API: Checking authentication...')
+    
+    // Try both session and getUser methods for debugging
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    console.log('Payment amounts API: Session check result:', { hasSession: !!session, sessionError, userEmail: session?.user?.email })
+    
     const { data: userData, error: userError } = await supabase.auth.getUser()
-    if (userError || !userData.user) {
+    console.log('Payment amounts API: GetUser check result:', { userData: userData?.user?.email, userError })
+    
+    // Use session if available, otherwise fall back to userData
+    const user = session?.user || userData?.user
+    
+    if (!user) {
+      console.log('Payment amounts API: Authentication failed - no user found in session or getUser')
       return Response.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -26,10 +38,11 @@ export async function POST(request) {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role, facility_id')
-      .eq('id', userData.user.id)
+      .eq('id', user.id)
       .single()
 
     if (profileError || profile.role !== 'facility' || profile.facility_id !== facility_id) {
+      console.log('Payment amounts API: Profile check failed:', { profileError, role: profile?.role, facility_id: profile?.facility_id, requested_facility: facility_id })
       return Response.json(
         { error: 'Access denied' },
         { status: 403 }
