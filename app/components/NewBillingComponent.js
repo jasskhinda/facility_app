@@ -854,6 +854,16 @@ ${monthlyTrips.map(trip => {
   const testAuth = async () => {
     try {
       console.log('Testing basic authentication...');
+      
+      // Check client-side auth state first
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('Client-side session:', { 
+        hasSession: !!session, 
+        sessionError, 
+        userEmail: session?.user?.email,
+        cookies: document.cookie 
+      });
+      
       const response = await fetch('/api/debug/test-simple-auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -866,7 +876,8 @@ ${monthlyTrips.map(trip => {
       if (response.ok) {
         alert('Authentication working! User: ' + result.user.email);
       } else {
-        alert('Authentication failed: ' + result.error);
+        console.log('Full auth error details:', result);
+        alert('Authentication failed: ' + result.error + '\nDebug: ' + JSON.stringify(result.debug, null, 2));
       }
     } catch (error) {
       console.error('Auth test error:', error);
