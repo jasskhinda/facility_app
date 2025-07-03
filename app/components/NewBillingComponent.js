@@ -882,14 +882,9 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       // Set combined trips for backward compatibility with existing code
       setMonthlyTrips(enhancedTrips);
       
-      // Set total amount - if invoice is paid, show actual billable amount for new trips only
-      if (currentInvoicePaid) {
-        console.log('💰 Invoice paid - showing new billable amount:', currentActualBillableAmount);
-        setTotalAmount(currentActualBillableAmount);
-      } else {
-        console.log('💰 Invoice not paid - showing full billable total:', billableTotal);
-        setTotalAmount(billableTotal);
-      }
+      // Set total amount - always show the amount for trips that are due
+      console.log('💰 Setting total amount to current actual billable amount:', currentActualBillableAmount);
+      setTotalAmount(currentActualBillableAmount);
       setError('');
 
     } catch (err) {
@@ -1934,7 +1929,7 @@ ${monthlyTrips.map(trip => {
           {/* Professional Trip Summary */}
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <h4 className="text-lg font-semibold text-gray-900 mb-4">Professional Billing Summary</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
                 <div className="text-3xl font-bold text-red-600">
                   {dueTrips.filter(trip => trip.billable).length}
@@ -1962,6 +1957,16 @@ ${monthlyTrips.map(trip => {
                 <div className="text-gray-700 font-medium">Total Trips</div>
                 <div className="text-sm text-blue-600 font-semibold mt-1">
                   ${(dueTrips.reduce((sum, trip) => sum + (trip.price || 0), 0) + paidTrips.reduce((sum, trip) => sum + (trip.price || 0), 0)).toFixed(2)}
+                </div>
+              </div>
+              
+              <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <div className="text-3xl font-bold text-orange-600">
+                  {dueTrips.filter(trip => trip.status === 'completed').length}
+                </div>
+                <div className="text-gray-700 font-medium">New Completed Trips</div>
+                <div className="text-sm text-orange-600 font-semibold mt-1">
+                  (Billable)
                 </div>
               </div>
             </div>
