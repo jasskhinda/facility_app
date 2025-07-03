@@ -39,8 +39,105 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   // Invoice status management
   const [invoiceStatus, setInvoiceStatus] = useState('UNPAID');
   const [invoiceHistory, setInvoiceHistory] = useState([]);
+  
+  // Professional payment breakdown
+  const [paidAmount, setPaidAmount] = useState(0);
+  const [newBillableAmount, setNewBillableAmount] = useState(0);
+  const [showPaidAmount, setShowPaidAmount] = useState(false);
+  const [showNewBillableAmount, setShowNewBillableAmount] = useState(false);
+  const [paymentBreakdown, setPaymentBreakdown] = useState(null);
+  const [lastPaymentDate, setLastPaymentDate] = useState(null);
 
   const supabase = createClientSupabase();
+
+  // Clean up verbose payment notes to show only relevant information
+  const getCleanPaymentNote = (notes) => {
+    if (!notes) return '';
+    
+    // Split notes by status changes and get the most recent relevant ones
+    const noteEntries = notes.split('Status changed from').filter(entry => entry.trim());
+    
+    // Find the latest meaningful entry (not duplicate check payments)
+    const relevantEntries = noteEntries.filter(entry => 
+      !entry.includes('CHECK PAYMENT - WILL MAIL" to "CHECK PAYMENT - WILL MAIL"') &&
+      !entry.includes('Payment processed via check payment method')
+    );
+    
+    if (relevantEntries.length === 0) return 'Check payment in progress';
+    
+    // Get the most recent entry and extract the meaningful part
+    const latestEntry = relevantEntries[relevantEntries.length - 1];
+    
+    // Extract just the notes part after "Notes: "
+    const notesMatch = latestEntry.match(/Notes: (.*?)(?:Status changed|$)/);
+    if (notesMatch) {
+      let cleanNote = notesMatch[1].trim();
+      
+      // Remove redundant phrases and shorten
+      cleanNote = cleanNote
+        .replace(/Check payment initiated on .+?\. /, '')
+        .replace(/Facility indicated they will mail check for \$[\d,]+\.?\d*\. /, '')
+        .replace(/Awaiting check delivery to our office\. /, '')
+        .replace(/This is a mid-month payment - additional trips completed after this payment will be billed separately\.?/, '(Mid-month payment)')
+        .replace(/Check payment marked as .+ by dispatcher on .+?\. /, '')
+        .replace(/Beginning verification process\.?/, 'Being verified')
+        .replace(/Check is now in transit for verification\.?/, 'In transit for verification')
+        .replace(/Issues: No specific issues noted\.?/, 'Issues reported - contact billing')
+        .trim();
+      
+      return cleanNote || 'Check payment processing';
+    }
+    
+    return 'Check payment in progress';
+  };
+
+  // Fetch professional payment breakdown to separate paid vs new billable amounts
+  const fetchPaymentBreakdown = async (monthToFetch = selectedMonth) => {
+    if (!monthToFetch || !facilityId) return;
+    
+    try {
+      const response = await fetch('/api/facility/billing/calculate-payment-amounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          facility_id: facilityId,
+          month: monthToFetch
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        const { payment_breakdown, payment_status, payment_dates } = data;
+        
+        // Update state with professional payment breakdown
+        setPaidAmount(payment_breakdown.paid_amount);
+        setNewBillableAmount(payment_breakdown.new_billable_amount);
+        setShowPaidAmount(payment_breakdown.show_paid_amount);
+        setShowNewBillableAmount(payment_breakdown.show_new_billable_amount);
+        setTotalAmount(payment_breakdown.new_billable_amount); // Only show new billable in main total
+        setPaymentBreakdown(data);
+        setLastPaymentDate(payment_dates.last_payment_date);
+        
+        // Update invoice status if different
+        if (payment_status.current_status !== invoiceStatus) {
+          setInvoiceStatus(payment_status.current_status);
+        }
+        
+        console.log('💰 Payment breakdown updated:', {
+          paid_amount: payment_breakdown.paid_amount,
+          new_billable_amount: payment_breakdown.new_billable_amount,
+          show_paid: payment_breakdown.show_paid_amount,
+          show_new: payment_breakdown.show_new_billable_amount,
+          payment_status: payment_status.current_status
+        });
+      } else {
+        console.error('Error fetching payment breakdown:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching payment breakdown:', error);
+    }
+  };
 
   // Generate professional invoice number for a given month and facility
   const generateInvoiceNumber = (month, facilityIdShort, facilityName) => {
@@ -110,6 +207,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       fetchMonthlyTrips(selectedMonth);
       fetchSavedPaymentMethods();
       fetchInvoiceStatus();
+      fetchPaymentBreakdown(selectedMonth);
     }
   }, [selectedMonth, facilityId]);
 
@@ -571,6 +669,9 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       setMonthlyTrips(enhancedTrips);
       setTotalAmount(billableTotal);
       setError('');
+      
+      // Fetch professional payment breakdown after trips are loaded
+      await fetchPaymentBreakdown(monthToFetch);
 
     } catch (err) {
       console.error('Error fetching trips:', err);
@@ -1099,17 +1200,50 @@ ${monthlyTrips.map(trip => {
           </div>
         </div>
 
-        {/* Enhanced Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {/* Professional Payment Breakdown */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           <div className="bg-blue-50 rounded-lg p-4">
             <h3 className="text-sm font-medium text-[#60BFC0] mb-1">Total Trips</h3>
             <p className="text-2xl font-bold text-[#60BFC0]">{monthlyTrips.length}</p>
           </div>
           
-          <div className="bg-green-50 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-green-700 mb-1">Billable Amount</h3>
-            <p className="text-2xl font-bold text-green-600">${totalAmount.toFixed(2)}</p>
-          </div>
+          {/* Show Paid Amount if there was a verified payment */}
+          {showPaidAmount && (
+            <div className="bg-green-50 rounded-lg p-4 border-2 border-green-200">
+              <h3 className="text-sm font-medium text-green-700 mb-1">Paid Amount</h3>
+              <p className="text-2xl font-bold text-green-600">${paidAmount.toFixed(2)}</p>
+              {lastPaymentDate && (
+                <p className="text-xs text-green-600 mt-1">
+                  Verified: {new Date(lastPaymentDate).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </p>
+              )}
+            </div>
+          )}
+          
+          {/* Show New Billable Amount */}
+          {showNewBillableAmount && (
+            <div className="bg-orange-50 rounded-lg p-4 border-2 border-orange-200">
+              <h3 className="text-sm font-medium text-orange-700 mb-1">
+                {showPaidAmount ? 'New Billable Amount' : 'Billable Amount'}
+              </h3>
+              <p className="text-2xl font-bold text-orange-600">${newBillableAmount.toFixed(2)}</p>
+              <p className="text-xs text-orange-600 mt-1">
+                {showPaidAmount ? 'New trips after payment' : 'Current month total'}
+              </p>
+            </div>
+          )}
+          
+          {/* Show single billable amount if no payment breakdown needed */}
+          {!showPaidAmount && !showNewBillableAmount && totalAmount > 0 && (
+            <div className="bg-green-50 rounded-lg p-4">
+              <h3 className="text-sm font-medium text-green-700 mb-1">Billable Amount</h3>
+              <p className="text-2xl font-bold text-green-600">${totalAmount.toFixed(2)}</p>
+            </div>
+          )}
           
           <div className="bg-yellow-50 rounded-lg p-4">
             <h3 className="text-sm font-medium text-yellow-700 mb-1">Pending Trips</h3>
@@ -1142,15 +1276,32 @@ ${monthlyTrips.map(trip => {
                 <span className="text-sm text-gray-600">${totalAmount.toFixed(2)}</span>
               )}
             </div>
-            {invoiceStatus === 'PROCESSING PAYMENT' && (
+            {invoiceStatus.includes('CHECK PAYMENT') && (
               <p className="text-xs text-yellow-600 mt-1">
                 Check payment being verified by dispatch team
               </p>
             )}
-            {invoiceHistory.length > 0 && invoiceHistory[0].payment_notes && (
+            {invoiceStatus === 'PAID WITH CHECK - VERIFIED' && lastPaymentDate && (
+              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                <p className="text-green-700 font-medium">Payment Verified:</p>
+                <p className="text-green-600 mt-1">
+                  {new Date(lastPaymentDate).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })} at {new Date(lastPaymentDate).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
+                </p>
+              </div>
+            )}
+            {invoiceHistory.length > 0 && invoiceHistory[0].payment_notes && !invoiceStatus.includes('VERIFIED') && (
               <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
                 <p className="text-blue-700 font-medium">Payment Note:</p>
-                <p className="text-blue-600 mt-1">{invoiceHistory[0].payment_notes}</p>
+                <p className="text-blue-600 mt-1">{getCleanPaymentNote(invoiceHistory[0].payment_notes)}</p>
               </div>
             )}
           </div>
