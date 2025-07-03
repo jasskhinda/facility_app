@@ -24,15 +24,15 @@ export async function GET(request) {
         
         // Check if user has a role, otherwise update profile to ensure role is assigned
         if (!userMetadata.role) {
-          // Update user metadata to include role
+          // Update user metadata to include role - facility app users should have 'facility' role
           await supabase.auth.updateUser({
-            data: { role: 'client' }
+            data: { role: 'facility' }
           });
           
           // Also ensure profile has role set
           await supabase
             .from('profiles')
-            .update({ role: 'client' })
+            .update({ role: 'facility' })
             .eq('id', data.session.user.id);
         }
         

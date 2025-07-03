@@ -53,7 +53,7 @@ export default function SignupForm() {
             last_name: formData.lastName,
             birthdate: formData.birthdate,
             marketing_consent: formData.marketingConsent,
-            role: 'client',
+            role: 'facility',
           },
         },
       });
