@@ -5,6 +5,7 @@ import WheelchairSelectionFlow from './WheelchairSelectionFlow';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import DashboardLayout from './DashboardLayout';
+import { createBrowserClient } from '@/lib/client-supabase';
 
 // Helper function to format date in AM/PM format
 function formatTimeAmPm(dateStr) {
