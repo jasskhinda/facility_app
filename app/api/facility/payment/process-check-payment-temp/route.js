@@ -1,4 +1,4 @@
-import { createRouteHandlerClient } from '@/lib/route-handler-client'
+import { adminSupabase } from '@/lib/admin-supabase'
 
 export async function POST(request) {
   try {
@@ -11,23 +11,43 @@ export async function POST(request) {
       )
     }
 
-    const supabase = await createRouteHandlerClient()
+    const supabase = adminSupabase
 
     // TEMPORARY: Skip authentication check for debugging
     console.log('TEMP API: Processing check payment without auth check')
     console.log('Request data:', { facility_id, invoice_number, month, amount, check_submission_type })
 
     // Get facility information (this should work without auth issues)
+    console.log('TEMP API: Looking for facility with ID:', facility_id)
+    
     const { data: facility, error: facilityError } = await supabase
       .from('facilities')
       .select('name, billing_email')
       .eq('id', facility_id)
       .single()
 
+    console.log('TEMP API: Facility query result:', { facility, facilityError })
+
     if (facilityError) {
       console.error('Facility fetch error:', facilityError)
+      
+      // Let's also try to see what facilities exist
+      const { data: allFacilities, error: allFacilitiesError } = await supabase
+        .from('facilities')
+        .select('id, name')
+        .limit(5)
+      
+      console.log('TEMP API: Available facilities:', { allFacilities, allFacilitiesError })
+      
       return Response.json(
-        { error: 'Facility not found' },
+        { 
+          error: 'Facility not found',
+          debug: {
+            requested_facility_id: facility_id,
+            facility_error: facilityError.message,
+            available_facilities: allFacilities
+          }
+        },
         { status: 404 }
       )
     }
