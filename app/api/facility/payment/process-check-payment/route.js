@@ -185,8 +185,15 @@ export async function POST(request) {
 
       if (updateError) {
         console.error('Error updating existing invoice:', updateError)
+        console.error('Update parameters:', {
+          p_invoice_id: existingInvoice.id,
+          p_new_status: paymentStatus,
+          p_user_id: userData.user.id,
+          p_user_role: 'facility',
+          p_notes: paymentNote
+        })
         return Response.json(
-          { error: 'Failed to update invoice status' },
+          { error: `Failed to update invoice status: ${updateError.message}` },
           { status: 500 }
         )
       }
