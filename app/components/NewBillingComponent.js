@@ -564,47 +564,58 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       let currentInvoicePaid = false;
       let currentActualBillableAmount = 0;
       
-      // Check if there's already a verified payment for this month
+      // Check if dispatcher has marked this month as PAID
       try {
-        const { data: existingPayments, error: paymentError } = await supabase
-          .from('facility_invoice_payments')
-          .select('amount, payment_date, status, trip_ids')
-          .eq('facility_id', facilityId)
-          .eq('month', monthToFetch)
-          .in('status', ['paid', 'PAID', 'PAID WITH CARD', 'PAID WITH CHECK - VERIFIED'])
-          .order('payment_date', { ascending: false });
+        // Parse month to get year and month number
+        const [year, monthStr] = monthToFetch.split('-');
+        const monthNumber = parseInt(monthStr);
+        const yearNumber = parseInt(year);
         
-        if (!paymentError && existingPayments && existingPayments.length > 0) {
-          console.log('💳 Found existing payments for month:', existingPayments);
-          const latestPayment = existingPayments[0];
-          const paidTripIds = latestPayment.trip_ids || [];
+        console.log('🔍 Checking payment status for:', { facilityId, monthNumber, yearNumber });
+        
+        // Check facility_payment_status table (used by dispatcher)
+        const { data: paymentStatus, error: paymentError } = await supabase
+          .from('facility_payment_status')
+          .select('status, payment_date, total_amount, notes')
+          .eq('facility_id', facilityId)
+          .eq('invoice_month', monthNumber)
+          .eq('invoice_year', yearNumber)
+          .single();
+        
+        console.log('💳 Payment status check result:', { paymentStatus, paymentError });
+        
+        if (!paymentError && paymentStatus && paymentStatus.status === 'PAID') {
+          console.log('✅ Invoice marked as PAID by dispatcher!');
+          currentInvoicePaid = true;
           
-          // If there are paid trip IDs, this invoice has been paid
-          if (paidTripIds.length > 0) {
-            currentInvoicePaid = true;
+          // When dispatcher marks as paid, all current trips are considered paid
+          // New trips after this payment would be due
+          const paymentDate = new Date(paymentStatus.payment_date);
+          
+          trips.forEach(trip => {
+            const tripDate = new Date(trip.pickup_time);
             
-            // Separate trips into PAID (included in previous payment) and DUE (new trips after payment)
-            trips.forEach(trip => {
-              if (paidTripIds.includes(trip.id)) {
-                categorizedPaidTrips.push(trip);
-              } else {
-                categorizedDueTrips.push(trip);
-                if (trip.status === 'completed' && trip.price > 0) {
-                  currentActualBillableAmount += (trip.price || 0);
-                }
-              }
-            });
-          } else {
-            // No specific trip IDs, so all trips are due
-            categorizedDueTrips = trips;
-            trips.forEach(trip => {
+            // If trip was completed before or on payment date, it's already paid
+            if (tripDate <= paymentDate) {
+              categorizedPaidTrips.push(trip);
+            } else {
+              // Trip completed after payment, so it's due
+              categorizedDueTrips.push(trip);
               if (trip.status === 'completed' && trip.price > 0) {
                 currentActualBillableAmount += (trip.price || 0);
               }
-            });
-          }
+            }
+          });
+          
+          console.log('📊 Trip categorization:', {
+            paidTrips: categorizedPaidTrips.length,
+            dueTrips: categorizedDueTrips.length,
+            newBillableAmount: currentActualBillableAmount
+          });
+          
         } else {
-          // No payments found, all trips are due
+          // No payment found or not paid, all trips are due
+          console.log('❌ No payment found or invoice not paid');
           categorizedDueTrips = trips;
           trips.forEach(trip => {
             if (trip.status === 'completed' && trip.price > 0) {
@@ -612,8 +623,23 @@ export default function FacilityBillingComponent({ user, facilityId }) {
             }
           });
         }
+        
+        // Also check facility_invoice_payments table for additional payment records
+        const { data: additionalPayments, error: additionalError } = await supabase
+          .from('facility_invoice_payments')
+          .select('amount, payment_date, status, trip_ids')
+          .eq('facility_id', facilityId)
+          .eq('month', monthToFetch)
+          .in('status', ['paid', 'PAID', 'PAID WITH CARD', 'PAID WITH CHECK - VERIFIED'])
+          .order('payment_date', { ascending: false });
+        
+        if (!additionalError && additionalPayments && additionalPayments.length > 0) {
+          console.log('📋 Found additional payment records:', additionalPayments);
+          // This would handle any additional payments beyond the main dispatcher payment
+        }
+        
       } catch (error) {
-        console.error('Error checking existing payments:', error);
+        console.error('Error checking payment status:', error);
         // Fallback: treat all trips as due
         categorizedDueTrips = trips;
         trips.forEach(trip => {
@@ -815,8 +841,10 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       
       // Set total amount - if invoice is paid, show actual billable amount for new trips only
       if (currentInvoicePaid) {
+        console.log('💰 Invoice paid - showing new billable amount:', currentActualBillableAmount);
         setTotalAmount(currentActualBillableAmount);
       } else {
+        console.log('💰 Invoice not paid - showing full billable total:', billableTotal);
         setTotalAmount(billableTotal);
       }
       setError('');
@@ -1091,6 +1119,28 @@ ${monthlyTrips.map(trip => {
     if (!facilityId || !selectedMonth) return;
 
     try {
+      // Parse month to check dispatcher payment status
+      const [year, monthStr] = selectedMonth.split('-');
+      const monthNumber = parseInt(monthStr);
+      const yearNumber = parseInt(year);
+      
+      // First check if dispatcher has marked this month as PAID
+      const { data: dispatcherPaymentStatus, error: dispatcherError } = await supabase
+        .from('facility_payment_status')
+        .select('status, payment_date, total_amount, notes')
+        .eq('facility_id', facilityId)
+        .eq('invoice_month', monthNumber)
+        .eq('invoice_year', yearNumber)
+        .single();
+      
+      let finalStatus = 'UNPAID';
+      
+      if (!dispatcherError && dispatcherPaymentStatus && dispatcherPaymentStatus.status === 'PAID') {
+        finalStatus = '✅ PAID (Verified by Dispatcher)';
+        console.log('✅ Dispatcher confirmed payment for', selectedMonth);
+      }
+      
+      // Also check facility_invoices table for additional payment records
       const { data, error } = await supabase
         .from('facility_invoices')
         .select('*')
@@ -1098,11 +1148,18 @@ ${monthlyTrips.map(trip => {
         .eq('month', selectedMonth)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching facility invoices:', error);
+      }
 
       if (data && data.length > 0) {
         const latestInvoice = data[0];
-        setInvoiceStatus(latestInvoice.payment_status || 'UNPAID');
+        
+        // If dispatcher hasn't marked as paid, use facility invoice status
+        if (finalStatus === 'UNPAID') {
+          finalStatus = latestInvoice.payment_status || 'UNPAID';
+        }
+        
         setInvoiceHistory(data);
         
         // Use existing invoice number or generate one if missing
@@ -1119,16 +1176,19 @@ ${monthlyTrips.map(trip => {
             .eq('id', latestInvoice.id);
         }
       } else {
-        setInvoiceStatus('UNPAID');
         setInvoiceHistory([]);
         
         // Generate invoice number for new invoice
         const newInvoiceNumber = generateInvoiceNumber(selectedMonth, facilityId, facility?.name);
         setInvoiceNumber(newInvoiceNumber);
       }
+      
+      setInvoiceStatus(finalStatus);
+      console.log('📋 Final invoice status:', finalStatus);
 
     } catch (err) {
       console.error('Error fetching invoice status:', err);
+      setInvoiceStatus('UNPAID');
     }
   };
 
@@ -1425,16 +1485,19 @@ ${monthlyTrips.map(trip => {
           
           {/* Show billable amount - professional display based on payment status */}
           {!showPaidAmount && !showNewBillableAmount && (
-            <div className={`rounded-lg p-4 ${invoicePaid && actualBillableAmount === 0 ? 'bg-blue-50 border-2 border-blue-200' : 'bg-green-50'}`}>
-              <h3 className={`text-sm font-medium mb-1 ${invoicePaid && actualBillableAmount === 0 ? 'text-blue-700' : 'text-green-700'}`}>Billable Amount</h3>
-              <p className={`text-2xl font-bold ${invoicePaid && actualBillableAmount === 0 ? 'text-blue-600' : 'text-green-600'}`}>
-                ${invoicePaid && actualBillableAmount === 0 ? '0.00' : (actualBillableAmount || totalAmount).toFixed(2)}
+            <div className={`rounded-lg p-4 ${invoicePaid && totalAmount === 0 ? 'bg-blue-50 border-2 border-blue-200' : totalAmount > 0 ? 'bg-red-50 border-2 border-red-200' : 'bg-gray-50'}`}>
+              <h3 className={`text-sm font-medium mb-1 ${invoicePaid && totalAmount === 0 ? 'text-blue-700' : totalAmount > 0 ? 'text-red-700' : 'text-gray-700'}`}>Billable Amount</h3>
+              <p className={`text-2xl font-bold ${invoicePaid && totalAmount === 0 ? 'text-blue-600' : totalAmount > 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                ${totalAmount.toFixed(2)}
               </p>
-              {invoicePaid && actualBillableAmount === 0 && (
-                <p className="text-xs text-blue-600 mt-1">Invoice fully paid</p>
+              {invoicePaid && totalAmount === 0 && (
+                <p className="text-xs text-blue-600 mt-1">✅ Invoice fully paid by dispatcher</p>
               )}
-              {invoicePaid && actualBillableAmount > 0 && (
-                <p className="text-xs text-green-600 mt-1">New trips after payment</p>
+              {invoicePaid && totalAmount > 0 && (
+                <p className="text-xs text-red-600 mt-1">New trips after dispatcher payment</p>
+              )}
+              {!invoicePaid && totalAmount > 0 && (
+                <p className="text-xs text-red-600 mt-1">Awaiting payment</p>
               )}
             </div>
           )}
@@ -1570,7 +1633,7 @@ ${monthlyTrips.map(trip => {
               setMarkAsPaid(true);
               openInvoiceModal();
             }}
-            disabled={loading || totalAmount <= 0}
+            disabled={loading || (invoicePaid && totalAmount <= 0)}
             className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1593,7 +1656,7 @@ ${monthlyTrips.map(trip => {
           {/* Pay Monthly Invoice Button - Enhanced for Multiple Payments */}
           <button
             onClick={openPaymentModal}
-            disabled={loading || totalAmount <= 0 || (invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED') && !invoiceStatus.includes('ISSUES') && !invoiceStatus.includes('REPLACEMENT'))}
+            disabled={loading || (invoicePaid && totalAmount <= 0) || (invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED') && !invoiceStatus.includes('ISSUES') && !invoiceStatus.includes('REPLACEMENT'))}
             className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
