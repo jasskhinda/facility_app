@@ -84,7 +84,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         .replace(/Check payment initiated on .+?\. /, '')
         .replace(/Facility indicated they will mail check for \$[\d,]+\.?\d*\. /, '')
         .replace(/Awaiting check delivery to our office\. /, '')
-        .replace(/This is a mid-month payment - additional trips completed after this payment will be billed separately\.?/, '(Mid-month payment)')
+        .replace(/This is a mid-month payment - additional trips completed after this payment will be billed separately\.?/, '')
         .replace(/Check payment marked as .+ by dispatcher on .+?\. /, '')
         .replace(/Beginning verification process\.?/, 'Being verified')
         .replace(/Check is now in transit for verification\.?/, 'In transit for verification')
@@ -1640,21 +1640,57 @@ ${monthlyTrips.map(trip => {
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="text-sm font-medium text-gray-700 mb-1">Payment Status</h3>
             <div className="flex items-center space-x-2">
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                invoiceStatus === 'UNPAID' && totalAmount > 0 ? 'bg-red-100 text-red-800' :
-                invoiceStatus === 'PROCESSING PAYMENT' ? 'bg-yellow-100 text-yellow-800' :
-                invoiceStatus === 'PAID WITH CARD' ? 'bg-green-100 text-green-800' :
-                invoiceStatus === 'PAID' ? 'bg-green-100 text-green-800' :
-                invoiceStatus === 'PAID WITH CHECK - VERIFIED' ? 'bg-blue-100 text-blue-800' :
-                invoiceStatus === 'PENDING' ? 'bg-orange-100 text-orange-800' :
-                invoiceStatus === 'NEEDS ATTENTION - RETRY PAYMENT' ? 'bg-red-100 text-red-800' :
-                'bg-gray-100 text-gray-800'
-              }`}>
-                {invoiceStatus}
-              </span>
-              {totalAmount > 0 && (
-                <span className="text-sm text-gray-600">${totalAmount.toFixed(2)}</span>
-              )}
+              {(() => {
+                const now = new Date();
+                const currentMonth = now.toISOString().slice(0, 7);
+                const isCurrentMonth = selectedMonth === currentMonth;
+                const paidStatuses = ['PAID', 'PAID WITH CARD', 'PAID WITH CHECK - VERIFIED'];
+                const isPaid = paidStatuses.includes(invoiceStatus);
+                
+                if (isCurrentMonth) {
+                  // Current month - show as unpaid with running total
+                  return (
+                    <>
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        CURRENT MONTH - BILLING IN PROGRESS
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        ${(monthlyTrips.reduce((sum, trip) => trip.billable ? sum + trip.price : sum, 0)).toFixed(2)}
+                      </span>
+                    </>
+                  );
+                } else if (isPaid && totalAmount === 0) {
+                  // Past month, fully paid
+                  return (
+                    <>
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        {invoiceStatus}
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        ${(monthlyTrips.reduce((sum, trip) => trip.billable ? sum + trip.price : sum, 0)).toFixed(2)}
+                      </span>
+                    </>
+                  );
+                } else {
+                  // Past month, unpaid or partially paid
+                  return (
+                    <>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        invoiceStatus === 'UNPAID' && totalAmount > 0 ? 'bg-red-100 text-red-800' :
+                        invoiceStatus === 'PROCESSING PAYMENT' ? 'bg-yellow-100 text-yellow-800' :
+                        invoiceStatus === 'PENDING' ? 'bg-orange-100 text-orange-800' :
+                        invoiceStatus === 'NEEDS ATTENTION - RETRY PAYMENT' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {invoiceStatus}
+                      </span>
+                      {totalAmount > 0 && (
+                        <span className="text-sm text-gray-600">${totalAmount.toFixed(2)}</span>
+                      )}
+                    </>
+                  );
+                }
+              })()}
             </div>
             {invoiceStatus.includes('CHECK PAYMENT') && (
               <p className="text-xs text-yellow-600 mt-1">
@@ -1764,14 +1800,10 @@ ${monthlyTrips.map(trip => {
             </svg>
             <span className="text-center">
               <div className="text-sm">
-                {invoiceStatus && invoiceStatus.includes('PAID') && totalAmount > 0 
-                  ? 'ADDITIONAL PAID' 
-                  : 'ALREADY PAID'}
+                ALREADY PAID
               </div>
               <div className="text-xs opacity-90">
-                {invoiceStatus && invoiceStatus.includes('PAID') && totalAmount > 0 
-                  ? '(New trips verification)' 
-                  : '(Send Verification)'}
+                (Send Verification)
               </div>
             </span>
           </button>
@@ -1789,15 +1821,10 @@ ${monthlyTrips.map(trip => {
               <div className="text-sm">
                 {invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED')
                   ? 'Check Payment Pending'
-                  : invoiceStatus && invoiceStatus.includes('PAID') && totalAmount > 0 
-                  ? 'Pay Additional Trips' 
-                  : 'Pay Monthly Invoice'}
+                  : 'PAY MONTHLY INVOICE'}
               </div>
               {invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED') && (
                 <div className="text-xs opacity-90">Awaiting verification</div>
-              )}
-              {invoiceStatus && invoiceStatus.includes('PAID') && totalAmount > 0 && (
-                <div className="text-xs opacity-90">New completed trips</div>
               )}
             </span>
           </button>
@@ -2003,7 +2030,7 @@ ${monthlyTrips.map(trip => {
           {/* Professional Trip Summary */}
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <h4 className="text-lg font-semibold text-gray-900 mb-4">Professional Billing Summary</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
                 <div className="text-3xl font-bold text-red-600">
                   {dueTrips.filter(trip => trip.billable).length}
@@ -2014,16 +2041,6 @@ ${monthlyTrips.map(trip => {
                 </div>
               </div>
               
-              <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-                <div className="text-3xl font-bold text-green-600">
-                  {paidTrips.length}
-                </div>
-                <div className="text-gray-700 font-medium">Trips Already Paid</div>
-                <div className="text-sm text-green-600 font-semibold mt-1">
-                  ${paidTrips.reduce((sum, trip) => sum + (trip.price || 0), 0).toFixed(2)}
-                </div>
-              </div>
-              
               <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="text-3xl font-bold text-blue-600">
                   {dueTrips.length + paidTrips.length}
@@ -2031,16 +2048,6 @@ ${monthlyTrips.map(trip => {
                 <div className="text-gray-700 font-medium">Total Trips</div>
                 <div className="text-sm text-blue-600 font-semibold mt-1">
                   ${(dueTrips.reduce((sum, trip) => sum + (trip.price || 0), 0) + paidTrips.reduce((sum, trip) => sum + (trip.price || 0), 0)).toFixed(2)}
-                </div>
-              </div>
-              
-              <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
-                <div className="text-3xl font-bold text-orange-600">
-                  {dueTrips.filter(trip => trip.status === 'completed').length}
-                </div>
-                <div className="text-gray-700 font-medium">New Completed Trips</div>
-                <div className="text-sm text-orange-600 font-semibold mt-1">
-                  (Billable)
                 </div>
               </div>
             </div>
