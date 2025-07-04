@@ -1129,34 +1129,28 @@ ${monthlyTrips.map(trip => {
     }
   };
 
-  // Enhanced payment handlers with mid-month confirmation
+  // Monthly billing cycle - payment only allowed at month-end
   const openPaymentModal = async () => {
     if (totalAmount <= 0) {
       setError('No amount due for payment');
       return;
     }
     
-    // Check if it's mid-month (before the last day of the current month)
+    // STRICT MONTHLY BILLING: Only allow payments for completed months
     const now = new Date();
     const currentMonth = now.toISOString().slice(0, 7); // YYYY-MM format
     const isCurrentMonth = selectedMonth === currentMonth;
-    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const isEndOfMonth = now.getDate() >= lastDayOfMonth - 2; // Last 2 days of month
-
-    // Check if there's already been a payment this month
-    const hasExistingPayment = invoiceStatus && invoiceStatus.includes('PAID');
-
-    // Fetch payment breakdown before opening payment modal
-    await fetchPaymentBreakdown(selectedMonth);
     
-    // If it's current month and not end of month, show confirmation
-    // But if there's already been a payment, show different messaging
-    if (isCurrentMonth && !isEndOfMonth) {
-      setShowMidMonthConfirmation(true);
-    } else {
-      setShowPaymentModal(true);
+    // If it's the current month, BLOCK all payments with clear message
+    if (isCurrentMonth) {
+      setError('');
+      setShowMidMonthConfirmation(true); // Show month-end message
+      return;
     }
     
+    // Only allow payments for past months (completed months)
+    await fetchPaymentBreakdown(selectedMonth);
+    setShowPaymentModal(true);
     setPaymentError('');
     setError('');
   };
@@ -2246,20 +2240,20 @@ ${monthlyTrips.map(trip => {
         </div>
       )}
 
-      {/* Mid-Month Payment Confirmation Dialog */}
+      {/* Monthly Billing Policy Dialog */}
       {showMidMonthConfirmation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-6 rounded-t-lg">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold">Confirm Mid-Month Payment</h2>
-                  <p className="text-amber-100 mt-1">Payment for Current Completed Trips</p>
+                  <h2 className="text-xl font-bold">Monthly Billing Policy</h2>
+                  <p className="text-blue-100 mt-1">Payment Schedule Information</p>
                 </div>
                 <button
                   onClick={() => setShowMidMonthConfirmation(false)}
-                  className="text-amber-200 hover:text-white transition-colors"
+                  className="text-blue-200 hover:text-white transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -2270,126 +2264,77 @@ ${monthlyTrips.map(trip => {
 
             {/* Modal Content */}
             <div className="p-6 space-y-6">
-              {/* Payment Confirmation */}
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+              {/* Policy Notice */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
-                    <svg className="h-8 w-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                   <div className="ml-4">
-                    <h3 className="text-lg font-bold text-amber-900 mb-2">
-                      {invoiceStatus && invoiceStatus.includes('PAID') 
-                        ? 'Pay for Additional Completed Trips?' 
-                        : 'Are you sure you want to pay now?'}
+                    <h3 className="text-xl font-bold text-blue-900 mb-3">
+                      YOU WILL BE BILLED AT THE END OF THE MONTH FOR COMPLETED TRIPS
                     </h3>
-                    <div className="space-y-3 text-sm text-amber-800">
-                      {invoiceStatus && invoiceStatus.includes('PAID') ? (
-                        <div>
-                          <p className="font-medium">
-                            <strong>You've already made a payment this month, but there are new completed trips to pay for.</strong>
-                          </p>
-                          <div className="bg-white p-4 rounded border border-amber-300">
-                            <h4 className="font-semibold text-amber-900 mb-2">Additional Payment Details:</h4>
-                            <ul className="space-y-2">
-                              <li className="flex items-start">
-                                <span className="text-green-600 mr-2 mt-0.5">✓</span>
-                                <span>You'll pay <strong>${totalAmount.toFixed(2)}</strong> for {monthlyTrips.filter(trip => trip.billable).length} newly completed trips</span>
-                              </li>
-                              <li className="flex items-start">
-                                <span className="text-blue-600 mr-2 mt-0.5">ℹ</span>
-                                <span>This is in addition to your previous payment this month</span>
-                              </li>
-                              <li className="flex items-start">
-                                <span className="text-purple-600 mr-2 mt-0.5">🔄</span>
-                                <span>Any trips completed <strong>after this payment</strong> will require another payment</span>
-                              </li>
-                            </ul>
-                          </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <p className="font-medium">
-                            <strong>Facility bills are typically paid at the end of the month, but you can choose to pay now for currently completed trips.</strong>
-                          </p>
-                          <div className="bg-white p-4 rounded border border-amber-300">
-                            <h4 className="font-semibold text-amber-900 mb-2">What this means:</h4>
-                            <ul className="space-y-2">
-                              <li className="flex items-start">
-                                <span className="text-green-600 mr-2 mt-0.5">✓</span>
-                                <span>You'll pay <strong>${totalAmount.toFixed(2)}</strong> for {monthlyTrips.filter(trip => trip.billable).length} completed trips</span>
-                              </li>
-                              <li className="flex items-start">
-                                <span className="text-blue-600 mr-2 mt-0.5">ℹ</span>
-                                <span>Any trips completed <strong>after this payment</strong> will be added to your next bill</span>
-                              </li>
-                              <li className="flex items-start">
-                                <span className="text-amber-600 mr-2 mt-0.5">⚠</span>
-                                <span>This is a <strong>partial month payment</strong> - additional charges may apply for future trips this month</span>
-                              </li>
-                            </ul>
-                          </div>
-                        </div>
-                      )}
+                    <div className="space-y-3 text-sm text-blue-800">
+                      <p className="font-medium">
+                        Our billing system operates on a <strong>monthly cycle</strong>. Payments are only processed at the end of each month.
+                      </p>
+                      <div className="bg-white p-4 rounded border border-blue-300">
+                        <h4 className="font-semibold text-blue-900 mb-2">How Monthly Billing Works:</h4>
+                        <ul className="space-y-2">
+                          <li className="flex items-start">
+                            <span className="text-green-600 mr-2 mt-0.5">📅</span>
+                            <span>All trips completed during the month accumulate on your account</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="text-blue-600 mr-2 mt-0.5">💰</span>
+                            <span>At month-end, you&apos;ll receive one consolidated invoice for all completed trips</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="text-purple-600 mr-2 mt-0.5">⏰</span>
+                            <span>Payments are processed only after the month is completely finished</span>
+                          </li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Payment Summary */}
+              {/* Current Status */}
               <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Payment Summary</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Current Status</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-gray-600">Current Month:</span>
                     <p className="font-medium text-gray-900">{displayMonth}</p>
                   </div>
                   <div>
-                    <span className="text-gray-600">Payment Date:</span>
-                    <p className="font-medium text-gray-900">{new Date().toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric', 
-                      year: 'numeric'
-                    })}</p>
-                  </div>
-                  <div>
                     <span className="text-gray-600">Completed Trips:</span>
                     <p className="font-medium text-gray-900">{monthlyTrips.filter(trip => trip.billable).length}</p>
                   </div>
                   <div>
-                    <span className="text-gray-600">Amount Due:</span>
-                    <p className="font-bold text-green-600 text-lg">${totalAmount.toFixed(2)}</p>
+                    <span className="text-gray-600">Running Total:</span>
+                    <p className="font-bold text-blue-600 text-lg">${totalAmount.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Payment Due:</span>
+                    <p className="font-medium text-gray-900">At Month-End</p>
                   </div>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+              {/* Action Button */}
+              <div className="pt-4 border-t border-gray-200">
                 <button
                   onClick={() => setShowMidMonthConfirmation(false)}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center justify-center gap-2"
+                  className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  {invoiceStatus && invoiceStatus.includes('PAID') 
-                    ? 'Cancel - Pay Later' 
-                    : 'Cancel - I\'ll Pay at End of Month'}
-                </button>
-                <button
-                  onClick={() => {
-                    setShowMidMonthConfirmation(false);
-                    setShowPaymentModal(true);
-                  }}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                  </svg>
-                  {invoiceStatus && invoiceStatus.includes('PAID') 
-                    ? 'Yes, Pay for Additional Trips' 
-                    : 'Yes, Pay Now for Completed Trips'}
+                  Got It - I&apos;ll Pay at Month-End
                 </button>
               </div>
             </div>
