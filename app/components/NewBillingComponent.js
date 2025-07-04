@@ -653,26 +653,46 @@ export default function FacilityBillingComponent({ user, facilityId }) {
             .eq('invoice_year', yearNumber)
             .single();
           
-          // Check facility_invoices for any PAID status
+          // Check facility_invoices for any PAID status (including check payments)
           const { data: invoiceStatus, error: invoiceStatusError } = await supabase
             .from('facility_invoices')
             .select('payment_status, total_amount')
             .eq('facility_id', facilityId)
             .eq('month', monthToFetch)
-            .in('payment_status', ['PAID', 'PAID WITH CARD', 'PAID WITH CHECK - VERIFIED'])
+            .in('payment_status', [
+              'PAID', 
+              'PAID WITH CARD', 
+              'PAID WITH CHECK - VERIFIED',
+              'CHECK PAYMENT - WILL MAIL',
+              'CHECK PAYMENT - IN TRANSIT', 
+              'CHECK PAYMENT - BEING VERIFIED',
+              'PAID WITH CHECK'
+            ])
             .limit(1)
             .single();
+          
+          // DISPATCHER VERIFICATION: Define PAID statuses array
+          const paidStatuses = [
+            'PAID', 
+            'PAID WITH CARD', 
+            'PAID WITH CHECK - VERIFIED',
+            'PAID WITH CHECK',
+            'PAID WITH BANK TRANSFER'
+          ];
           
           console.log('🔍 Fallback payment verification:', {
             paymentStatus: paymentStatus?.status,
             invoiceStatus: invoiceStatus?.payment_status,
             paymentStatusError: paymentStatusError?.message,
-            invoiceStatusError: invoiceStatusError?.message
+            invoiceStatusError: invoiceStatusError?.message,
+            isPaymentStatusPaid: paymentStatus && paymentStatus.status === 'PAID',
+            isInvoiceStatusPaid: invoiceStatus && paidStatuses.includes(invoiceStatus.payment_status)
           });
           
           // DISPATCHER VERIFICATION: If dispatcher marked as PAID, move ALL trips to PAID section
+          
           if ((!paymentStatusError && paymentStatus && paymentStatus.status === 'PAID') ||
-              (!invoiceStatusError && invoiceStatus && invoiceStatus.payment_status)) {
+              (!invoiceStatusError && invoiceStatus && paidStatuses.includes(invoiceStatus.payment_status))) {
             
             console.log('✅ DISPATCHER VERIFIED PAYMENT - Moving all trips to PAID section');
             
