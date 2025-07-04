@@ -4,15 +4,13 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { PaymentTransactionManager } from '@/lib/billing-audit';
+import { createRouteHandlerClient } from '@/lib/route-handler-client';
+import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 export async function POST(request) {
-  let paymentManager;
-  
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = await createRouteHandlerClient();
     
     const requestData = await request.json();
     const { 
@@ -34,13 +32,20 @@ export async function POST(request) {
     }
 
     // Get current user for audit logging
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    console.log('🔍 Attempting to get user...');
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    console.log('🔍 Session result:', { hasSession: !!session, error: sessionError?.message });
+    
+    if (sessionError || !session) {
+      console.error('❌ Authentication failed:', { sessionError, hasSession: !!session });
       return NextResponse.json({ 
         success: false, 
         error: 'Authentication required' 
       }, { status: 401 });
     }
+    
+    const user = session.user;
+    console.log('✅ User authenticated:', user.id);
 
     // Verify user has access to this facility
     const { data: profile, error: profileError } = await supabase
@@ -63,27 +68,42 @@ export async function POST(request) {
       }, { status: 403 });
     }
 
-    // Initialize payment transaction manager with full audit trail
-    paymentManager = new PaymentTransactionManager(user.id, user.id);
-
-    // Process payment with enterprise-grade integrity checks
-    const paymentResult = await paymentManager.processPayment(
-      facility_id,
-      trip_ids,
-      parseFloat(amount),
-      payment_method,
-      {
-        ...payment_data,
-        month,
-        notes,
-        facility_name: payment_data.facility_name || 'Unknown Facility',
-        user_agent: request.headers.get('user-agent'),
-        ip_address: request.headers.get('x-forwarded-for') || 'unknown'
-      }
+    // Simplified payment processing for check payments
+    const paymentId = crypto.randomUUID();
+    
+    // Create payment record using service role for database operations
+    const adminSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
+    const { data: payment, error: paymentError } = await adminSupabase
+      .from('facility_invoice_payments')
+      .insert({
+        id: paymentId,
+        facility_id,
+        amount: parseFloat(amount),
+        payment_method,
+        status: 'PROCESSING',
+        trip_ids,
+        month: month || new Date().toISOString().slice(0, 7),
+        notes: `${notes}\n\nProcessed by user: ${user.email}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (paymentError) {
+      console.error('Payment creation failed:', paymentError);
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to create payment record'
+      }, { status: 500 });
+    }
+
     // For check payments, create the traditional invoice record for backward compatibility
-    if (payment_method === 'CHECK_PAYMENT' && paymentResult.success) {
+    if (payment_method === 'CHECK_PAYMENT') {
       try {
         const invoiceData = {
           facility_id,
@@ -92,12 +112,12 @@ export async function POST(request) {
           trip_ids,
           payment_status: 'CHECK PAYMENT - WILL MAIL',
           payment_date: new Date().toISOString(),
-          notes: `${notes}\n\nProcessed via enterprise audit system. Payment ID: ${paymentResult.payment_id}`,
+          notes: `${notes}\n\nProcessed by user: ${user.email}. Payment ID: ${paymentId}`,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
 
-        const { error: invoiceError } = await supabase
+        const { error: invoiceError } = await adminSupabase
           .from('facility_invoices')
           .upsert(invoiceData, { 
             onConflict: 'facility_id,month',
@@ -107,10 +127,6 @@ export async function POST(request) {
         if (invoiceError) {
           console.error('Legacy invoice creation failed:', invoiceError);
           // Don't fail the payment, just log the issue
-          await paymentManager.auditLogger.log('LEGACY_INVOICE_CREATION_FAILED', 'facility_invoice', facility_id, {
-            error: invoiceError.message,
-            payment_id: paymentResult.payment_id
-          });
         }
       } catch (legacyError) {
         console.error('Legacy invoice process failed:', legacyError);
@@ -120,24 +136,14 @@ export async function POST(request) {
 
     return NextResponse.json({
       success: true,
-      payment_id: paymentResult.payment_id,
-      amount: paymentResult.amount,
-      message: 'Payment processed successfully with full audit trail',
-      verification_status: 'PROCESSING',
-      audit_trail_id: paymentManager.auditLogger.correlationId
+      payment_id: paymentId,
+      amount: parseFloat(amount),
+      message: 'Payment processed successfully',
+      verification_status: 'PROCESSING'
     });
 
   } catch (error) {
     console.error('Payment processing failed:', error);
-
-    // Comprehensive error logging
-    if (paymentManager) {
-      await paymentManager.auditLogger.log('PAYMENT_PROCESSING_ERROR', 'payment_error', null, {
-        error: error.message,
-        stack: error.stack,
-        request_data: requestData
-      });
-    }
 
     return NextResponse.json({
       success: false,
@@ -162,12 +168,18 @@ export async function GET(request) {
       }, { status: 400 });
     }
 
-    // Get payment status from new audit system
-    const { data: payment, error } = await supabase
+    // Use service role client for status checks
+    const adminSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    // Get payment status
+    const { data: payment, error } = await adminSupabase
       .from('facility_invoice_payments')
       .select(`
         id, amount, status, verification_status, payment_method,
-        created_at, payment_hash, audit_trail, reconciled_at
+        created_at, reconciled_at
       `)
       .eq('id', paymentId)
       .single();
@@ -179,42 +191,18 @@ export async function GET(request) {
       }, { status: 404 });
     }
 
-    // Verify payment integrity
-    try {
-      const paymentManager = new PaymentTransactionManager('system');
-      const integrityCheck = await paymentManager.integrityManager.verifyPaymentIntegrity(paymentId);
-      
-      return NextResponse.json({
-        success: true,
-        payment: {
-          id: payment.id,
-          amount: payment.amount,
-          status: payment.status,
-          verification_status: payment.verification_status,
-          payment_method: payment.payment_method,
-          created_at: payment.created_at,
-          reconciled_at: payment.reconciled_at,
-          integrity_verified: integrityCheck.verified
-        }
-      });
-    } catch (integrityError) {
-      console.error('Payment integrity check failed:', integrityError);
-      
-      return NextResponse.json({
-        success: true,
-        payment: {
-          id: payment.id,
-          amount: payment.amount,
-          status: payment.status,
-          verification_status: payment.verification_status,
-          payment_method: payment.payment_method,
-          created_at: payment.created_at,
-          reconciled_at: payment.reconciled_at,
-          integrity_verified: false,
-          integrity_error: integrityError.message
-        }
-      });
-    }
+    return NextResponse.json({
+      success: true,
+      payment: {
+        id: payment.id,
+        amount: payment.amount,
+        status: payment.status,
+        verification_status: payment.verification_status,
+        payment_method: payment.payment_method,
+        created_at: payment.created_at,
+        reconciled_at: payment.reconciled_at
+      }
+    });
 
   } catch (error) {
     console.error('Payment status check failed:', error);
