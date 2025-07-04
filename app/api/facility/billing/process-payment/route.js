@@ -4,18 +4,16 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 import { PaymentTransactionManager } from '@/lib/billing-audit';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
 
 export async function POST(request) {
   let paymentManager;
   
   try {
+    const supabase = createRouteHandlerClient({ cookies });
+    
     const requestData = await request.json();
     const { 
       facility_id, 
@@ -35,9 +33,9 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // Get current session for audit logging
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    if (authError || !session) {
+    // Get current user for audit logging
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
       return NextResponse.json({ 
         success: false, 
         error: 'Authentication required' 
@@ -48,7 +46,7 @@ export async function POST(request) {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role, facility_id')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single();
 
     if (profileError) {
@@ -66,7 +64,7 @@ export async function POST(request) {
     }
 
     // Initialize payment transaction manager with full audit trail
-    paymentManager = new PaymentTransactionManager(session.user.id, session.id);
+    paymentManager = new PaymentTransactionManager(user.id, user.id);
 
     // Process payment with enterprise-grade integrity checks
     const paymentResult = await paymentManager.processPayment(
