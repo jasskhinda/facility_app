@@ -68,9 +68,6 @@ export async function POST(request) {
       }, { status: 403 });
     }
 
-    // Simplified payment processing for check payments
-    const paymentId = crypto.randomUUID();
-    
     // Create payment record using service role for database operations
     const adminSupabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -80,25 +77,32 @@ export async function POST(request) {
     const { data: payment, error: paymentError } = await adminSupabase
       .from('facility_invoice_payments')
       .insert({
-        id: paymentId,
         facility_id,
         amount: parseFloat(amount),
-        payment_method,
-        status: 'PROCESSING',
-        trip_ids,
+        payment_method: 'check_submit',
+        status: 'pending_verification',
         month: month || new Date().toISOString().slice(0, 7),
-        notes: `${notes}\n\nProcessed by user: ${user.email}`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        payment_date: new Date().toISOString(),
+        payment_note: `${notes}\n\nProcessed by user: ${user.email}`,
+        check_submission_type: payment_data.check_submission_type || 'will_mail'
       })
       .select()
       .single();
 
     if (paymentError) {
       console.error('Payment creation failed:', paymentError);
+      console.error('Payment data attempted:', {
+        facility_id,
+        amount: parseFloat(amount),
+        payment_method: 'check_submit',
+        status: 'pending_verification',
+        month: month || new Date().toISOString().slice(0, 7)
+      });
       return NextResponse.json({
         success: false,
-        error: 'Failed to create payment record'
+        error: 'Failed to create payment record',
+        details: paymentError.message,
+        code: paymentError.code
       }, { status: 500 });
     }
 
@@ -112,7 +116,7 @@ export async function POST(request) {
           trip_ids,
           payment_status: 'CHECK PAYMENT - WILL MAIL',
           payment_date: new Date().toISOString(),
-          notes: `${notes}\n\nProcessed by user: ${user.email}. Payment ID: ${paymentId}`,
+          notes: `${notes}\n\nProcessed by user: ${user.email}. Payment ID: ${payment.id}`,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
@@ -136,7 +140,7 @@ export async function POST(request) {
 
     return NextResponse.json({
       success: true,
-      payment_id: paymentId,
+      payment_id: payment.id,
       amount: parseFloat(amount),
       message: 'Payment processed successfully',
       verification_status: 'PROCESSING'
