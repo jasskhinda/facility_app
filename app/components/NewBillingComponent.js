@@ -568,48 +568,58 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       try {
         console.log('🔍 Checking payment status with trip ID tracking for:', { facilityId, monthToFetch });
         
-        // Get all paid invoices/payments for this month
-        const { data: paidInvoices, error: invoiceError } = await supabase
-          .from('facility_invoices')
-          .select('trip_ids, payment_status, total_amount')
-          .eq('facility_id', facilityId)
-          .eq('month', monthToFetch)
-          .in('payment_status', ['PAID', 'PAID WITH CARD', 'PAID WITH CHECK - VERIFIED']);
+        // MONTHLY BILLING RULE: Check if this is the current month
+        const now = new Date();
+        const currentMonth = now.toISOString().slice(0, 7); // YYYY-MM format
+        const isCurrentMonth = monthToFetch === currentMonth;
         
-        console.log('💳 Invoice check result:', { paidInvoices: paidInvoices?.length || 0, invoiceError });
-        
-        // Get all payment records with trip IDs
-        const { data: paymentRecords, error: paymentError } = await supabase
-          .from('facility_invoice_payments')
-          .select('trip_ids, amount, payment_date, status')
-          .eq('facility_id', facilityId)
-          .eq('month', monthToFetch)
-          .in('status', ['paid', 'PAID', 'PAID WITH CARD', 'PAID WITH CHECK - VERIFIED', 'completed'])
-          .order('payment_date', { ascending: false });
-        
-        console.log('💳 Payment records check result:', { paymentRecords: paymentRecords?.length || 0, paymentError });
-        
-        // Collect all trip IDs that have been paid for
+        // Initialize paid trip IDs set
         const paidTripIds = new Set();
         
-        // Add trip IDs from paid invoices
-        if (!invoiceError && paidInvoices && paidInvoices.length > 0) {
-          paidInvoices.forEach(invoice => {
-            if (invoice.trip_ids && Array.isArray(invoice.trip_ids)) {
-              invoice.trip_ids.forEach(tripId => paidTripIds.add(tripId));
-            }
-          });
-          console.log('📋 Found trip IDs from paid invoices:', Array.from(paidTripIds));
-        }
-        
-        // Add trip IDs from payment records
-        if (!paymentError && paymentRecords && paymentRecords.length > 0) {
-          paymentRecords.forEach(payment => {
-            if (payment.trip_ids && Array.isArray(payment.trip_ids)) {
-              payment.trip_ids.forEach(tripId => paidTripIds.add(tripId));
-            }
-          });
-          console.log('📋 Added trip IDs from payment records, total paid:', Array.from(paidTripIds));
+        // Only check for paid trips if this is NOT the current month
+        if (!isCurrentMonth) {
+          // Get all paid invoices/payments for this month
+          const { data: paidInvoices, error: invoiceError } = await supabase
+            .from('facility_invoices')
+            .select('trip_ids, payment_status, total_amount')
+            .eq('facility_id', facilityId)
+            .eq('month', monthToFetch)
+            .in('payment_status', ['PAID', 'PAID WITH CARD', 'PAID WITH CHECK - VERIFIED']);
+          
+          console.log('💳 Invoice check result:', { paidInvoices: paidInvoices?.length || 0, invoiceError });
+          
+          // Get all payment records with trip IDs
+          const { data: paymentRecords, error: paymentError } = await supabase
+            .from('facility_invoice_payments')
+            .select('trip_ids, amount, payment_date, status')
+            .eq('facility_id', facilityId)
+            .eq('month', monthToFetch)
+            .in('status', ['paid', 'PAID', 'PAID WITH CARD', 'PAID WITH CHECK - VERIFIED', 'completed'])
+            .order('payment_date', { ascending: false });
+          
+          console.log('💳 Payment records check result:', { paymentRecords: paymentRecords?.length || 0, paymentError });
+          
+          // Add trip IDs from paid invoices
+          if (!invoiceError && paidInvoices && paidInvoices.length > 0) {
+            paidInvoices.forEach(invoice => {
+              if (invoice.trip_ids && Array.isArray(invoice.trip_ids)) {
+                invoice.trip_ids.forEach(tripId => paidTripIds.add(tripId));
+              }
+            });
+            console.log('📋 Found trip IDs from paid invoices:', Array.from(paidTripIds));
+          }
+          
+          // Add trip IDs from payment records
+          if (!paymentError && paymentRecords && paymentRecords.length > 0) {
+            paymentRecords.forEach(payment => {
+              if (payment.trip_ids && Array.isArray(payment.trip_ids)) {
+                payment.trip_ids.forEach(tripId => paidTripIds.add(tripId));
+              }
+            });
+            console.log('📋 Added trip IDs from payment records, total paid:', Array.from(paidTripIds));
+          }
+        } else {
+          console.log('📅 CURRENT MONTH - All trips remain as DUE until month ends');
         }
         
         // Categorize trips based on whether their ID is in the paid set
@@ -689,12 +699,16 @@ export default function FacilityBillingComponent({ user, facilityId }) {
             isInvoiceStatusPaid: invoiceStatus && paidStatuses.includes(invoiceStatus.payment_status)
           });
           
-          // DISPATCHER VERIFICATION: If dispatcher marked as PAID, move ALL trips to PAID section
+          // MONTHLY BILLING RULE: Check if this is the current month
+          const now = new Date();
+          const currentMonth = now.toISOString().slice(0, 7); // YYYY-MM format
+          const isCurrentMonth = monthToFetch === currentMonth;
           
-          if ((!paymentStatusError && paymentStatus && paymentStatus.status === 'PAID') ||
-              (!invoiceStatusError && invoiceStatus && paidStatuses.includes(invoiceStatus.payment_status))) {
+          // DISPATCHER VERIFICATION: If dispatcher marked as PAID AND month has ended, move ALL trips to PAID section
+          if (!isCurrentMonth && ((!paymentStatusError && paymentStatus && paymentStatus.status === 'PAID') ||
+              (!invoiceStatusError && invoiceStatus && paidStatuses.includes(invoiceStatus.payment_status)))) {
             
-            console.log('✅ DISPATCHER VERIFIED PAYMENT - Moving all trips to PAID section');
+            console.log('✅ DISPATCHER VERIFIED PAYMENT (Past Month) - Moving all trips to PAID section');
             
             // Reset categorization arrays
             categorizedDueTrips = [];
@@ -715,6 +729,10 @@ export default function FacilityBillingComponent({ user, facilityId }) {
               dueTrips: categorizedDueTrips.length,
               billableAmount: currentActualBillableAmount
             });
+          } else if (isCurrentMonth && ((!paymentStatusError && paymentStatus && paymentStatus.status === 'PAID') ||
+              (!invoiceStatusError && invoiceStatus && paidStatuses.includes(invoiceStatus.payment_status)))) {
+            console.log('📅 CURRENT MONTH - Cannot mark trips as paid until month ends (even though dispatcher marked as paid)');
+            // Keep all trips as DUE for current month
           } else {
             console.log('⚠️ No payment verification found - keeping current categorization');
           }
