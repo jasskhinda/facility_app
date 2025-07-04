@@ -109,12 +109,20 @@ export async function POST(request) {
     // For check payments, create the traditional invoice record for backward compatibility
     if (payment_method === 'CHECK_PAYMENT') {
       try {
+        // Determine correct payment status based on check submission type
+        let paymentStatus = 'CHECK PAYMENT - WILL MAIL';
+        if (payment_data.check_submission_type === 'already_mailed') {
+          paymentStatus = 'CHECK PAYMENT - ALREADY SENT';
+        } else if (payment_data.check_submission_type === 'hand_delivered') {
+          paymentStatus = 'CHECK PAYMENT - BEING VERIFIED';
+        }
+
         const invoiceData = {
           facility_id,
           month: month || new Date().toISOString().slice(0, 7),
           total_amount: parseFloat(amount),
           trip_ids,
-          payment_status: 'CHECK PAYMENT - WILL MAIL',
+          payment_status: paymentStatus,
           payment_date: new Date().toISOString(),
           notes: `${notes}\n\nProcessed by user: ${user.email}. Payment ID: ${payment.id}`,
           created_at: new Date().toISOString(),

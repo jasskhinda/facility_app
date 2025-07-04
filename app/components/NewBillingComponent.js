@@ -1723,6 +1723,7 @@ ${monthlyTrips.map(trip => {
           <div className={`mb-4 p-4 rounded-lg border-2 ${
             invoiceStatus.includes('WILL MAIL') ? 'bg-blue-50 border-blue-300' :
             invoiceStatus.includes('ALREADY SENT') ? 'bg-green-50 border-green-300' :
+            invoiceStatus.includes('RECEIVED') ? 'bg-cyan-50 border-cyan-300' :
             invoiceStatus.includes('IN TRANSIT') ? 'bg-indigo-50 border-indigo-300' :
             invoiceStatus.includes('BEING VERIFIED') ? 'bg-purple-50 border-purple-300' :
             invoiceStatus.includes('HAS ISSUES') ? 'bg-red-50 border-red-300' :
@@ -1733,6 +1734,7 @@ ${monthlyTrips.map(trip => {
               <svg className={`w-6 h-6 flex-shrink-0 mt-0.5 ${
                 invoiceStatus.includes('WILL MAIL') ? 'text-blue-600' :
                 invoiceStatus.includes('ALREADY SENT') ? 'text-green-600' :
+                invoiceStatus.includes('RECEIVED') ? 'text-cyan-600' :
                 invoiceStatus.includes('IN TRANSIT') ? 'text-indigo-600' :
                 invoiceStatus.includes('BEING VERIFIED') ? 'text-purple-600' :
                 invoiceStatus.includes('HAS ISSUES') ? 'text-red-600' :
@@ -1745,6 +1747,7 @@ ${monthlyTrips.map(trip => {
                 <h3 className={`font-semibold ${
                   invoiceStatus.includes('WILL MAIL') ? 'text-blue-800' :
                   invoiceStatus.includes('ALREADY SENT') ? 'text-green-800' :
+                  invoiceStatus.includes('RECEIVED') ? 'text-cyan-800' :
                   invoiceStatus.includes('IN TRANSIT') ? 'text-indigo-800' :
                   invoiceStatus.includes('BEING VERIFIED') ? 'text-purple-800' :
                   invoiceStatus.includes('HAS ISSUES') ? 'text-red-800' :
@@ -1756,6 +1759,7 @@ ${monthlyTrips.map(trip => {
                 <p className={`text-sm mt-1 ${
                   invoiceStatus.includes('WILL MAIL') ? 'text-blue-700' :
                   invoiceStatus.includes('ALREADY SENT') ? 'text-green-700' :
+                  invoiceStatus.includes('RECEIVED') ? 'text-cyan-700' :
                   invoiceStatus.includes('IN TRANSIT') ? 'text-indigo-700' :
                   invoiceStatus.includes('BEING VERIFIED') ? 'text-purple-700' :
                   invoiceStatus.includes('HAS ISSUES') ? 'text-red-700' :
@@ -1766,6 +1770,8 @@ ${monthlyTrips.map(trip => {
                     'Your check payment request has been submitted. Please mail your check to our office within 5 business days.'}
                   {invoiceStatus === 'CHECK PAYMENT - ALREADY SENT' && 
                     'Your check has been sent and is being verified by our dispatchers. You will be notified once the verification is complete.'}
+                  {invoiceStatus === 'CHECK PAYMENT - RECEIVED' && 
+                    'Great! Your check has been received by our office and is ready for verification processing.'}
                   {invoiceStatus === 'CHECK PAYMENT - IN TRANSIT' && 
                     'Your check is in transit to our office. Our dispatcher will verify and process it upon receipt.'}
                   {invoiceStatus === 'CHECK PAYMENT - BEING VERIFIED' && 
@@ -1780,6 +1786,30 @@ ${monthlyTrips.map(trip => {
                     <strong>Mail to:</strong> 5050 Blazer Pkwy Suite 100-B, Dublin, OH 43017
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Invoice Paid Status Alert */}
+        {(invoiceStatus === 'PAID WITH CHECK - VERIFIED' || invoiceStatus === 'PAID' || invoiceStatus === 'PAID WITH CARD') && (
+          <div className="mb-4 p-4 rounded-lg border-2 bg-green-50 border-green-300">
+            <div className="flex items-start space-x-3">
+              <svg className="w-6 h-6 flex-shrink-0 mt-0.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="flex-1">
+                <h3 className="font-semibold text-green-800">
+                  ✅ INVOICE PAID
+                </h3>
+                <p className="text-sm mt-1 text-green-700">
+                  {invoiceStatus === 'PAID WITH CHECK - VERIFIED' && 
+                    'Your check payment has been verified and processed successfully. All trips in this invoice are now paid.'}
+                  {invoiceStatus === 'PAID WITH CARD' && 
+                    'Your credit card payment has been processed successfully. All trips in this invoice are now paid.'}
+                  {invoiceStatus === 'PAID' && 
+                    'Your payment has been processed successfully. All trips in this invoice are now paid.'}
+                </p>
               </div>
             </div>
           </div>
