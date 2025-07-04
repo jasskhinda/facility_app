@@ -1273,6 +1273,14 @@ ${monthlyTrips.map(trip => {
       
       setInvoiceStatus(finalStatus);
       console.log('📋 Final invoice status:', finalStatus);
+      console.log('📋 Invoice status debugging:', {
+        facilityId,
+        selectedMonth,
+        latestInvoiceStatus: data?.[0]?.payment_status,
+        dispatcherStatus: dispatcherPaymentStatus?.status,
+        finalStatus,
+        invoiceData: data?.[0]
+      });
 
     } catch (err) {
       console.error('Error fetching invoice status:', err);
@@ -1792,7 +1800,7 @@ ${monthlyTrips.map(trip => {
         )}
 
         {/* Check Being Verified Status Alert */}
-        {invoiceStatus === 'PAID WITH CHECK (BEING VERIFIED)' && (
+        {(invoiceStatus === 'PAID WITH CHECK (BEING VERIFIED)' || invoiceStatus === 'CHECK PAYMENT - BEING VERIFIED') && (
           <div className="mb-4 p-4 rounded-lg border-2 bg-yellow-50 border-yellow-300">
             <div className="flex items-start space-x-3">
               <svg className="w-6 h-6 flex-shrink-0 mt-0.5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1805,13 +1813,16 @@ ${monthlyTrips.map(trip => {
                 <p className="text-sm mt-1 text-yellow-700">
                   Your check has been received and is being verified by our dispatchers. Payment processing is nearly complete.
                 </p>
+                <p className="text-xs mt-2 text-yellow-600">
+                  Debug Status: {invoiceStatus}
+                </p>
               </div>
             </div>
           </div>
         )}
 
         {/* Invoice Paid Status Alert */}
-        {(invoiceStatus === 'PAID WITH CHECK - VERIFIED' || invoiceStatus === 'PAID' || invoiceStatus === 'PAID WITH CARD') && (
+        {(invoiceStatus === 'PAID WITH CHECK - VERIFIED' || invoiceStatus === 'PAID' || invoiceStatus === 'PAID WITH CARD' || invoiceStatus === 'PAID WITH BANK TRANSFER') && (
           <div className="mb-4 p-4 rounded-lg border-2 bg-green-50 border-green-300">
             <div className="flex items-start space-x-3">
               <svg className="w-6 h-6 flex-shrink-0 mt-0.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1826,6 +1837,8 @@ ${monthlyTrips.map(trip => {
                     'Your check payment has been verified and processed successfully. All trips in this invoice are now paid.'}
                   {invoiceStatus === 'PAID WITH CARD' && 
                     'Your credit card payment has been processed successfully. All trips in this invoice are now paid.'}
+                  {invoiceStatus === 'PAID WITH BANK TRANSFER' && 
+                    'Your bank transfer payment has been processed successfully. All trips in this invoice are now paid.'}
                   {invoiceStatus === 'PAID' && 
                     'Your payment has been processed successfully. All trips in this invoice are now paid.'}
                 </p>
