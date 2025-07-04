@@ -213,23 +213,42 @@ function PaymentForm({
     setProcessingPayment(true)
 
     try {
+      // Get trip IDs from the billing context (we'll need to pass these from parent)
+      const { data: tripsData, error: tripsError } = await supabase
+        .from('trips')
+        .select('id')
+        .eq('facility_id', facilityId)
+        .eq('status', 'completed')
+        .gte('pickup_time', `${selectedMonth}-01`)
+        .lt('pickup_time', `${selectedMonth.split('-')[0]}-${String(parseInt(selectedMonth.split('-')[1]) + 1).padStart(2, '0')}-01`);
+
+      if (tripsError) throw tripsError;
+
+      const tripIds = tripsData?.map(trip => trip.id) || [];
+
       const checkDetails = {
         date_mailed: checkSubmissionType === 'already_mailed' ? document.getElementById('check_date_mailed')?.value : null,
-        tracking_number: checkSubmissionType === 'already_mailed' ? document.getElementById('check_tracking')?.value : null
+        tracking_number: checkSubmissionType === 'already_mailed' ? document.getElementById('check_tracking')?.value : null,
+        submission_type: checkSubmissionType,
+        facility_name: 'John\'s Facility' // Get from context if available
       }
 
-      const response = await fetch('/api/facility/payment/process-check-payment-temp', {
+      // Use the new enterprise payment processing API
+      const response = await fetch('/api/facility/billing/process-payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           facility_id: facilityId,
-          invoice_number: invoiceNumber,
-          month: selectedMonth,
+          trip_ids: tripIds,
           amount: totalAmount,
-          check_submission_type: checkSubmissionType,
-          check_details: checkDetails
+          payment_method: 'CHECK_PAYMENT',
+          payment_data: checkDetails,
+          month: selectedMonth,
+          notes: `Check payment - ${checkSubmissionType === 'will_mail' ? 'Will mail check' : 
+                                    checkSubmissionType === 'already_mailed' ? 'Check already mailed' : 
+                                    'Check hand delivered'}`
         }),
       })
 
@@ -239,27 +258,47 @@ function PaymentForm({
         throw new Error(result.error || 'Check payment submission failed')
       }
 
-      await updateInvoiceStatus(result.payment_status)
-
       // Create detailed success message with office address
-      const addressInfo = result.office_address.formatted
-      const checkInfo = result.check_instructions
-      
-      let successMessage = `${result.message}\n\n`
+      let successMessage = '✅ Check payment processed with enterprise-grade audit trail!\n\n'
       
       if (checkSubmissionType === 'will_mail') {
-        successMessage += `📬 MAIL YOUR CHECK TO:\n${addressInfo}\n\n`
-        successMessage += `💰 CHECK DETAILS:\n`
-        successMessage += `• Make payable to: ${checkInfo.payable_to}\n`
-        successMessage += `• Amount: ${checkInfo.amount}\n`
-        successMessage += `• Write in memo line: ${checkInfo.memo}\n`
-        successMessage += `• Mail within: ${checkInfo.mail_within_days} business days\n\n`
-        successMessage += `📞 QUESTIONS? Call us at 614-967-9887\n\n`
-        successMessage += `📋 WHAT HAPPENS NEXT:\n${result.next_steps}`
+        successMessage += '📬 MAIL YOUR CHECK TO:\n'
+        successMessage += '5050 Blazer Pkwy Suite 100-B, Dublin, OH 43017\n\n'
+        successMessage += '💰 CHECK DETAILS:\n'
+        successMessage += `• Make payable to: Compassionate Care Transportation\n`
+        successMessage += `• Amount: $${totalAmount.toFixed(2)}\n`
+        successMessage += `• Write in memo line: Invoice ${invoiceNumber}\n`
+        successMessage += `• Mail within: 5 business days\n\n`
+        successMessage += '📞 QUESTIONS? Call us at 614-967-9887\n\n'
+        successMessage += '📋 WHAT HAPPENS NEXT:\n'
+        successMessage += '• Your payment has been logged with full audit trail\n'
+        successMessage += '• Status will update when check is received\n'
+        successMessage += '• Verification typically takes 1-2 business days'
+      } else if (checkSubmissionType === 'already_mailed') {
+        successMessage += '📮 CHECK MARKED AS MAILED\n\n'
+        if (checkDetails.date_mailed) {
+          successMessage += `📅 Date Mailed: ${checkDetails.date_mailed}\n`
+        }
+        if (checkDetails.tracking_number) {
+          successMessage += `📦 Tracking: ${checkDetails.tracking_number}\n`
+        }
+        successMessage += '\n📋 WHAT HAPPENS NEXT:\n'
+        successMessage += '• Our team will watch for your check\n'
+        successMessage += '• Status will update when received and verified\n'
+        successMessage += '• You\'ll be notified once payment is processed'
       } else {
-        successMessage += `📞 QUESTIONS? Call us at 614-967-9887\n\n`
-        successMessage += `📋 WHAT HAPPENS NEXT:\n${result.next_steps}`
+        successMessage += '🤝 CHECK MARKED AS DELIVERED\n\n'
+        successMessage += '📋 WHAT HAPPENS NEXT:\n'
+        successMessage += '• Our team will verify and deposit your check\n'
+        successMessage += '• Verification typically completes within 1-2 business days\n'
+        successMessage += '• Status will update to "PAID WITH CHECK - VERIFIED"'
       }
+
+      successMessage += `\n\n🔐 Payment ID: ${result.payment_id}\n`
+      successMessage += `📊 Audit Trail ID: ${result.audit_trail_id}`
+
+      // Update legacy invoice status for backward compatibility
+      await updateInvoiceStatus('CHECK PAYMENT - WILL MAIL')
 
       onPaymentSuccess(successMessage)
 
