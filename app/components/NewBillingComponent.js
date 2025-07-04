@@ -674,12 +674,13 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           if ((!paymentStatusError && paymentStatus && paymentStatus.status === 'PAID' && paymentStatus.payment_date) ||
               (!invoiceStatusError && invoiceStatus && invoiceStatus.payment_status)) {
             
-            // Use payment date from dispatcher verification or default to early in month
-            const paymentDate = paymentStatus?.payment_date || `${year}-${monthStr.padStart(2, '0')}-03`;
-            const paymentDateTime = new Date(paymentDate);
+            // Use a conservative cutoff approach for billing cycles
+            // If payment exists in the month, assume it covered trips in the first week
+            const cutoffDate = `${year}-${monthStr.padStart(2, '0')}-06`; // 6th of the month
+            const paymentDateTime = new Date(cutoffDate);
             
-            console.log('🧠 Smart fallback: Using payment date to categorize trips:', {
-              paymentDate,
+            console.log('🧠 Smart fallback: Using cutoff date to categorize trips:', {
+              cutoffDate: cutoffDate,
               totalTrips: trips.length
             });
             
@@ -692,17 +693,17 @@ export default function FacilityBillingComponent({ user, facilityId }) {
             trips.forEach(trip => {
               const tripDate = new Date(trip.pickup_time || trip.created_at);
               
-              // If trip occurred before or on payment date, it's likely paid
+              // If trip occurred before or on cutoff date, it's covered by previous payment
               if (tripDate <= paymentDateTime) {
                 categorizedPaidTrips.push(trip);
-                console.log(`📅 Trip ${trip.id} (${tripDate.toDateString()}) marked as PAID (before/on ${paymentDateTime.toDateString()})`);
+                console.log(`📅 Trip ${trip.id} (${tripDate.toDateString()}) marked as PAID (before/on cutoff ${paymentDateTime.toDateString()})`);
               } else {
                 categorizedDueTrips.push(trip);
                 // Only count completed trips with valid prices as billable
                 if (trip.status === 'completed' && trip.price > 0) {
                   currentActualBillableAmount += (trip.price || 0);
                 }
-                console.log(`📅 Trip ${trip.id} (${tripDate.toDateString()}) marked as DUE (after ${paymentDateTime.toDateString()})`);
+                console.log(`📅 Trip ${trip.id} (${tripDate.toDateString()}) marked as DUE (after cutoff ${paymentDateTime.toDateString()})`);
               }
             });
             
@@ -1742,7 +1743,7 @@ ${monthlyTrips.map(trip => {
           {/* Pay Monthly Invoice Button - Enhanced for Multiple Payments */}
           <button
             onClick={openPaymentModal}
-            disabled={loading || invoiceStatus.includes('PAID') || (invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED') && !invoiceStatus.includes('ISSUES') && !invoiceStatus.includes('REPLACEMENT'))}
+            disabled={loading || (totalAmount === 0) || (invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED') && !invoiceStatus.includes('ISSUES') && !invoiceStatus.includes('REPLACEMENT'))}
             className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
