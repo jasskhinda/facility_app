@@ -1147,26 +1147,14 @@ ${monthlyTrips.map(trip => {
     }
   };
 
-  // Monthly billing cycle - payment only allowed at month-end
+  // Open payment modal - allow payments for all months
   const openPaymentModal = async () => {
     if (totalAmount <= 0) {
       setError('No amount due for payment');
       return;
     }
     
-    // STRICT MONTHLY BILLING: Only allow payments for completed months
-    const now = new Date();
-    const currentMonth = now.toISOString().slice(0, 7); // YYYY-MM format
-    const isCurrentMonth = selectedMonth === currentMonth;
-    
-    // If it's the current month, BLOCK all payments with clear message
-    if (isCurrentMonth) {
-      setError('');
-      setShowMidMonthConfirmation(true); // Show month-end message
-      return;
-    }
-    
-    // Only allow payments for past months (completed months)
+    // Fetch payment breakdown and show payment modal
     await fetchPaymentBreakdown(selectedMonth);
     setShowPaymentModal(true);
     setPaymentError('');
@@ -1644,15 +1632,15 @@ ${monthlyTrips.map(trip => {
                 const now = new Date();
                 const currentMonth = now.toISOString().slice(0, 7);
                 const isCurrentMonth = selectedMonth === currentMonth;
-                const paidStatuses = ['PAID', 'PAID WITH CARD', 'PAID WITH CHECK - VERIFIED'];
+                const paidStatuses = ['PAID', 'PAID WITH CARD', 'PAID WITH CHECK - VERIFIED', 'PAID WITH BANK TRANSFER'];
                 const isPaid = paidStatuses.includes(invoiceStatus);
                 
                 if (isCurrentMonth) {
-                  // Current month - show as unpaid with running total
+                  // Current month - show as upcoming invoice
                   return (
                     <>
                       <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        CURRENT MONTH - BILLING IN PROGRESS
+                        UPCOMING INVOICE
                       </span>
                       <span className="text-sm text-gray-600">
                         ${(monthlyTrips.reduce((sum, trip) => trip.billable ? sum + trip.price : sum, 0)).toFixed(2)}
@@ -1661,10 +1649,17 @@ ${monthlyTrips.map(trip => {
                   );
                 } else if (isPaid && totalAmount === 0) {
                   // Past month, fully paid
+                  const displayStatus = 
+                    invoiceStatus === 'PAID WITH CHECK - VERIFIED' ? 'PAID AND VERIFIED' :
+                    invoiceStatus === 'PAID WITH CARD' ? 'PAID AND VERIFIED' :
+                    invoiceStatus === 'PAID WITH BANK TRANSFER' ? 'PAID AND VERIFIED' :
+                    invoiceStatus === 'PAID' ? 'PAID (Pending Verification)' : 
+                    invoiceStatus;
+                  
                   return (
                     <>
                       <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        {invoiceStatus}
+                        {displayStatus}
                       </span>
                       <span className="text-sm text-gray-600">
                         ${(monthlyTrips.reduce((sum, trip) => trip.billable ? sum + trip.price : sum, 0)).toFixed(2)}
