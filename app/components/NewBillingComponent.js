@@ -670,46 +670,27 @@ export default function FacilityBillingComponent({ user, facilityId }) {
             invoiceStatusError: invoiceStatusError?.message
           });
           
-          // SMART FALLBACK: Use payment date to categorize trips when specific trip IDs are missing
-          if ((!paymentStatusError && paymentStatus && paymentStatus.status === 'PAID' && paymentStatus.payment_date) ||
+          // DISPATCHER VERIFICATION: If dispatcher marked as PAID, move ALL trips to PAID section
+          if ((!paymentStatusError && paymentStatus && paymentStatus.status === 'PAID') ||
               (!invoiceStatusError && invoiceStatus && invoiceStatus.payment_status)) {
             
-            // Use a conservative cutoff approach for billing cycles
-            // If payment exists in the month, assume it covered trips in the first week
-            const cutoffDate = `${year}-${monthStr.padStart(2, '0')}-06`; // 6th of the month
-            const paymentDateTime = new Date(cutoffDate);
-            
-            console.log('🧠 Smart fallback: Using cutoff date to categorize trips:', {
-              cutoffDate: cutoffDate,
-              totalTrips: trips.length
-            });
+            console.log('✅ DISPATCHER VERIFIED PAYMENT - Moving all trips to PAID section');
             
             // Reset categorization arrays
             categorizedDueTrips = [];
             categorizedPaidTrips = [];
             currentActualBillableAmount = 0;
             
-            // Categorize trips based on payment date
+            // Move ALL trips to paid section since dispatcher verified payment
             trips.forEach(trip => {
-              const tripDate = new Date(trip.pickup_time || trip.created_at);
-              
-              // If trip occurred before or on cutoff date, it's covered by previous payment
-              if (tripDate <= paymentDateTime) {
-                categorizedPaidTrips.push(trip);
-                console.log(`📅 Trip ${trip.id} (${tripDate.toDateString()}) marked as PAID (before/on cutoff ${paymentDateTime.toDateString()})`);
-              } else {
-                categorizedDueTrips.push(trip);
-                // Only count completed trips with valid prices as billable
-                if (trip.status === 'completed' && trip.price > 0) {
-                  currentActualBillableAmount += (trip.price || 0);
-                }
-                console.log(`📅 Trip ${trip.id} (${tripDate.toDateString()}) marked as DUE (after cutoff ${paymentDateTime.toDateString()})`);
-              }
+              categorizedPaidTrips.push(trip);
+              console.log(`✅ Trip ${trip.id} marked as PAID (dispatcher verified)`);
             });
             
-            currentInvoicePaid = categorizedPaidTrips.length > 0;
+            currentInvoicePaid = true;
+            currentActualBillableAmount = 0; // Set billable amount to 0 since all trips are paid
             
-            console.log('✅ Smart categorization completed:', {
+            console.log('✅ Dispatcher verification completed:', {
               paidTrips: categorizedPaidTrips.length,
               dueTrips: categorizedDueTrips.length,
               billableAmount: currentActualBillableAmount
