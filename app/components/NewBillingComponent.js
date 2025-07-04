@@ -1290,8 +1290,8 @@ ${monthlyTrips.map(trip => {
     setPaymentError('');
 
     try {
-      // Get current completed trips for payment
-      const billableTrips = monthlyTrips.filter(trip => trip.billable);
+      // Get only DUE trips for payment (not already paid trips)
+      const billableTrips = dueTrips.filter(trip => trip.billable);
       const now = new Date();
       const isCurrentMonth = selectedMonth === now.toISOString().slice(0, 7);
       const hasExistingPayment = invoiceStatus && invoiceStatus.includes('PAID');
@@ -1318,7 +1318,7 @@ ${monthlyTrips.map(trip => {
       let paymentData = {
         facility_id: facilityId,
         month: selectedMonth,
-        amount: totalAmount,
+        amount: billableTrips.reduce((sum, trip) => sum + (trip.price || 0), 0),
         payment_method: paymentMethod,
         payment_date: new Date().toISOString(),
         trip_ids: billableTrips.map(trip => trip.id),
@@ -1393,12 +1393,13 @@ ${monthlyTrips.map(trip => {
         .upsert({
           facility_id: facilityId,
           month: selectedMonth,
-          total_amount: totalAmount,
+          total_amount: paymentData.amount,
           payment_status: paymentData.status,
           payment_notes: paymentNote,
           last_updated: new Date().toISOString(),
           paid_trip_count: billableTrips.length,
-          payment_date: paymentData.status.includes('PAID') ? new Date().toISOString() : null
+          payment_date: paymentData.status.includes('PAID') ? new Date().toISOString() : null,
+          trip_ids: billableTrips.map(trip => trip.id)
         });
 
       if (updateError) throw updateError;
