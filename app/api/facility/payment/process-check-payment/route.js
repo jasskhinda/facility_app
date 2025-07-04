@@ -86,12 +86,12 @@ export async function POST(request) {
         break
         
       case 'already_mailed':
-        paymentStatus = 'CHECK PAYMENT - IN TRANSIT'
-        paymentNote = `Check payment marked as already mailed on ${now.toLocaleDateString('en-US', { 
+        paymentStatus = 'CHECK PAYMENT - ALREADY SENT'
+        paymentNote = `Check payment marked as already sent on ${now.toLocaleDateString('en-US', { 
           month: 'long', 
           day: 'numeric', 
           year: 'numeric' 
-        })}. Check for $${amount} is in transit to our office.`
+        })}. Check for $${amount} has been sent and is being verified by our dispatchers.`
         
         if (check_details?.date_mailed) {
           paymentNote += ` Mailed on: ${check_details.date_mailed}.`
@@ -100,8 +100,8 @@ export async function POST(request) {
           paymentNote += ` Tracking: ${check_details.tracking_number}.`
         }
         
-        nextSteps = 'Your check is in transit. We will update the payment status once received and verified by our dispatch team.'
-        facilityMessage = 'Your check is in transit to our office. It may take 3-7 business days for us to receive and verify your payment.'
+        nextSteps = 'Your check has been sent and is being verified by our dispatchers. You will be notified once the verification is complete.'
+        facilityMessage = 'Your check has been sent and is being verified by our dispatchers. You will be notified once verification is complete.'
         break
         
       case 'hand_delivered':
