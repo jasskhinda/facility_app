@@ -376,7 +376,7 @@ CREATE POLICY "Facilities can manage their payment methods" ON facility_payment_
             WHERE id = auth.uid() AND role = 'facility'
         )
     );
-
+ 
 -- Dispatchers and admins can view all payment methods
 CREATE POLICY "Dispatchers and admins can view all payment methods" ON facility_payment_methods
     FOR SELECT USING (
@@ -602,4 +602,4 @@ COMMENT ON TABLE payment_verification_audit_log IS 'Audit trail for all payment 
 COMMENT ON TABLE payment_settings IS 'System-wide payment processing configuration';
 COMMENT ON FUNCTION update_payment_status_with_audit(UUID, VARCHAR, UUID, VARCHAR, TEXT, TEXT) IS 'Updates payment status with automatic audit logging';
 COMMENT ON FUNCTION set_default_payment_method(UUID, UUID) IS 'Sets default payment method for a facility';
-COMMENT ON VIEW dispatcher_payment_verification_view IS 'Comprehensive view for dispatcher payment verification dashboard';
+COMMENT ON VIEW dispatcher_payment_verification_view IS 'Comprehensive view for dispatcher payment verification dashboard';11
