@@ -176,7 +176,20 @@ export async function POST(request) {
 
         if (invoiceError) {
           console.error('❌ Legacy invoice creation failed:', invoiceError);
-          // Don't fail the payment, just log the issue
+          console.error('❌ Invoice error details:', {
+            message: invoiceError.message,
+            details: invoiceError.details,
+            hint: invoiceError.hint,
+            code: invoiceError.code
+          });
+          // Return error to frontend so we can see what's happening
+          return NextResponse.json({
+            success: false,
+            error: 'Invoice update failed',
+            details: invoiceError.message,
+            code: invoiceError.code,
+            payment_id: payment.id
+          }, { status: 400 });
         } else {
           console.log('✅ Invoice upsert successful:', upsertResult);
         }
