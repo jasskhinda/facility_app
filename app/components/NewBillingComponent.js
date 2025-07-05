@@ -583,7 +583,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
             .select('trip_ids, payment_status, total_amount')
             .eq('facility_id', facilityId)
             .eq('month', monthToFetch)
-            .in('payment_status', ['PAID', 'PAID WITH CARD', 'PAID WITH CHECK - VERIFIED']);
+            .in('payment_status', ['PAID', 'PAID WITH CARD', 'PAID WITH CHECK - VERIFIED', 'CHECK PAYMENT - ALREADY SENT', 'CHECK PAYMENT - BEING VERIFIED', 'CHECK PAYMENT - WILL MAIL']);
           
           console.log('💳 Invoice check result:', { paidInvoices: paidInvoices?.length || 0, invoiceError });
           
@@ -673,7 +673,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
               'PAID WITH CARD', 
               'PAID WITH CHECK - VERIFIED',
               'CHECK PAYMENT - WILL MAIL',
-              'CHECK PAYMENT - IN TRANSIT', 
+              'CHECK PAYMENT - ALREADY SENT',
               'CHECK PAYMENT - BEING VERIFIED',
               'PAID WITH CHECK'
             ])
@@ -1227,6 +1227,7 @@ ${monthlyTrips.map(trip => {
       }
       
       // Also check facility_invoices table for additional payment records
+      console.log('🔍 Fetching invoice status for:', { facilityId, selectedMonth });
       const { data, error } = await supabase
         .from('facility_invoices')
         .select('*')
@@ -1238,12 +1239,16 @@ ${monthlyTrips.map(trip => {
         console.error('Error fetching facility invoices:', error);
       }
 
+      console.log('🔍 Facility invoices query result:', { data, error });
+
       if (data && data.length > 0) {
         const latestInvoice = data[0];
+        console.log('🔍 Latest invoice found:', latestInvoice);
         
         // If dispatcher hasn't marked as paid, use facility invoice status
         if (finalStatus === 'UNPAID') {
           finalStatus = latestInvoice.payment_status || 'UNPAID';
+          console.log('🔍 Updated finalStatus from invoice:', finalStatus);
         }
         
         setInvoiceHistory(data);
@@ -2136,16 +2141,23 @@ ${monthlyTrips.map(trip => {
         invoiceNumber={invoiceNumber}
         selectedMonth={selectedMonth}
         onPaymentSuccess={async (message) => {
+          console.log('🔄 Payment success callback triggered')
           setSuccessMessage(message)
           setShowPaymentModal(false) // Close the payment modal immediately
           
           // Add small delay to ensure database has time to update
+          console.log('⏳ Waiting 1 second for database to update...')
           await new Promise(resolve => setTimeout(resolve, 1000))
           
           // Refresh the invoice status from the database
+          console.log('🔄 Refreshing invoice status...')
           await fetchInvoiceStatus()
+          
           // Also refresh the monthly trips to update any billing-related data
+          console.log('🔄 Refreshing monthly trips...')
           await fetchMonthlyTrips(selectedMonth)
+          
+          console.log('✅ All data refreshed successfully')
           setTimeout(() => setSuccessMessage(''), 8000)
         }}
       />

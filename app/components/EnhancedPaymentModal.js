@@ -347,28 +347,41 @@ function PaymentForm({
         facility_name: 'John\'s Facility' // Get from context if available
       }
 
+      const requestPayload = {
+        facility_id: facilityId,
+        trip_ids: tripIds,
+        amount: totalAmount,
+        payment_method: 'CHECK_PAYMENT',
+        payment_data: checkDetails,
+        month: selectedMonth,
+        notes: await generateProfessionalCheckNote(checkSubmissionType, checkDetails, facilityId)
+      }
+      
+      console.log('🔍 Sending payment request:', requestPayload)
+
       // Use the new enterprise payment processing API
       const response = await fetch('/api/facility/billing/process-payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          facility_id: facilityId,
-          trip_ids: tripIds,
-          amount: totalAmount,
-          payment_method: 'CHECK_PAYMENT',
-          payment_data: checkDetails,
-          month: selectedMonth,
-          notes: await generateProfessionalCheckNote(checkSubmissionType, checkDetails, facilityId)
-        }),
+        body: JSON.stringify(requestPayload),
       })
 
       const result = await response.json()
+      
+      console.log('🔍 API Response:', {
+        status: response.status,
+        ok: response.ok,
+        result: result
+      })
 
       if (!response.ok) {
+        console.error('❌ API Error Response:', result)
         throw new Error(result.error || 'Check payment submission failed')
       }
+      
+      console.log('✅ Payment processing successful:', result)
 
       // Create detailed success message with office address
       let successMessage = '✅ Check payment processed with enterprise-grade audit trail!\n\n'
