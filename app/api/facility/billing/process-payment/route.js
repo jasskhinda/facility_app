@@ -136,8 +136,22 @@ export async function POST(request) {
 
         console.log('🔍 New payment status will be:', paymentStatus);
 
+        // Generate invoice number if updating existing invoice or create new one
+        let invoiceNumber;
+        if (existingInvoice && existingInvoice.length > 0) {
+          invoiceNumber = existingInvoice[0].invoice_number;
+          console.log('🔍 Using existing invoice number:', invoiceNumber);
+        } else {
+          // Generate new invoice number
+          const monthYear = (month || new Date().toISOString().slice(0, 7)).replace('-', '');
+          const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+          invoiceNumber = `CCT-${monthYear}-${randomSuffix}`;
+          console.log('🔍 Generated new invoice number:', invoiceNumber);
+        }
+
         const invoiceData = {
           facility_id,
+          invoice_number: invoiceNumber,
           month: month || new Date().toISOString().slice(0, 7),
           total_amount: parseFloat(amount),
           trip_ids,
