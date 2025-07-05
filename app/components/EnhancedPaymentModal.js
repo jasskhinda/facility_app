@@ -50,6 +50,120 @@ const X = ({ className }) => (
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
 
+// Generate professional notes for dispatcher notifications
+const generateProfessionalCheckNote = async (checkSubmissionType, checkDetails, facilityId) => {
+  const supabase = createClientSupabase()
+  
+  // Get facility information for contact details
+  let facilityInfo = null
+  try {
+    const { data: facility, error } = await supabase
+      .from('facilities')
+      .select('name, billing_email, contact_email, phone_number, address')
+      .eq('id', facilityId)
+      .single()
+    
+    if (!error && facility) {
+      facilityInfo = facility
+    }
+  } catch (err) {
+    console.log('Could not fetch facility info for notes')
+  }
+  
+  const currentDate = new Date().toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+  
+  const facilityName = facilityInfo?.name || 'Facility'
+  const facilityEmail = facilityInfo?.billing_email || facilityInfo?.contact_email || 'Not available'
+  const facilityPhone = facilityInfo?.phone_number || 'Not available'
+  
+  let note = `=====================================\n`
+  note += `PROFESSIONAL CHECK PAYMENT NOTIFICATION\n`
+  note += `=====================================\n\n`
+  
+  if (checkSubmissionType === 'already_mailed') {
+    note += `📮 CHECK PAYMENT STATUS: ALREADY MAILED\n\n`
+    note += `🏢 FACILITY: ${facilityName}\n`
+    note += `📧 Contact Email: ${facilityEmail}\n`
+    note += `📞 Phone: ${facilityPhone}\n`
+    note += `📅 Reported Date: ${currentDate}\n\n`
+    
+    if (checkDetails.date_mailed) {
+      note += `📬 Date Mailed by Facility: ${checkDetails.date_mailed}\n`
+    }
+    if (checkDetails.tracking_number) {
+      note += `📦 Tracking Number: ${checkDetails.tracking_number}\n`
+    }
+    
+    note += `\n📋 DISPATCHER ACTION REQUIRED:\n`
+    note += `• Check is in transit to our office\n`
+    note += `• Monitor for incoming mail delivery\n`
+    note += `• Contact facility if check not received within 5-7 business days\n`
+    note += `• Verify check details upon receipt\n`
+    note += `• Update payment status to "VERIFIED" after deposit\n\n`
+    
+    note += `⚠️ IMPORTANT NOTES:\n`
+    note += `• Facility has confirmed check was already mailed\n`
+    note += `• Reach out to facility team to confirm details if needed\n`
+    note += `• Check payment processing may take 3-5 business days\n\n`
+    
+    note += `📞 For verification or issues, contact:\n`
+    note += `• Facility: ${facilityEmail} | ${facilityPhone}\n`
+    note += `• If issues persist, escalate to billing department`
+    
+  } else if (checkSubmissionType === 'hand_delivered') {
+    note += `🤝 CHECK PAYMENT STATUS: HAND DELIVERED\n\n`
+    note += `🏢 FACILITY: ${facilityName}\n`
+    note += `📧 Contact Email: ${facilityEmail}\n`
+    note += `📞 Phone: ${facilityPhone}\n`
+    note += `📅 Delivery Reported: ${currentDate}\n\n`
+    
+    note += `📋 DISPATCHER ACTION REQUIRED:\n`
+    note += `• Check was delivered directly to our office\n`
+    note += `• Locate and verify the physical check\n`
+    note += `• Confirm check details match invoice amount\n`
+    note += `• Process deposit and update payment status\n`
+    note += `• Update status to "VERIFIED" after successful deposit\n\n`
+    
+    note += `⚠️ IMPORTANT NOTES:\n`
+    note += `• Facility representative delivered check in person\n`
+    note += `• Check should be in office mail/payment processing area\n`
+    note += `• Priority verification recommended for hand-delivered payments\n\n`
+    
+    note += `📞 For verification or questions, contact:\n`
+    note += `• Facility: ${facilityEmail} | ${facilityPhone}\n`
+    note += `• Check accounting department if check not located`
+    
+  } else {
+    // will_mail case
+    note += `📬 CHECK PAYMENT STATUS: WILL MAIL\n\n`
+    note += `🏢 FACILITY: ${facilityName}\n`
+    note += `📧 Contact Email: ${facilityEmail}\n`
+    note += `📞 Phone: ${facilityPhone}\n`
+    note += `📅 Request Date: ${currentDate}\n\n`
+    
+    note += `📋 DISPATCHER INFORMATION:\n`
+    note += `• Facility has requested mailing instructions\n`
+    note += `• Payment instructions have been provided\n`
+    note += `• Expect check delivery within 5-10 business days\n`
+    note += `• Update status when check is received and processed\n\n`
+    
+    note += `📞 For follow-up contact:\n`
+    note += `• Facility: ${facilityEmail} | ${facilityPhone}`
+  }
+  
+  note += `\n\n=====================================\n`
+  note += `Auto-generated: ${currentDate}\n`
+  note += `=====================================`
+  
+  return note
+}
+
 function PaymentForm({ 
   totalAmount, 
   facilityId, 
@@ -246,9 +360,7 @@ function PaymentForm({
           payment_method: 'CHECK_PAYMENT',
           payment_data: checkDetails,
           month: selectedMonth,
-          notes: `Check payment - ${checkSubmissionType === 'will_mail' ? 'Will mail check' : 
-                                    checkSubmissionType === 'already_mailed' ? 'Check already mailed' : 
-                                    'Check hand delivered'}`
+          notes: await generateProfessionalCheckNote(checkSubmissionType, checkDetails, facilityId)
         }),
       })
 
