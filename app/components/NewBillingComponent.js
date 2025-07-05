@@ -19,7 +19,6 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   const [useAlternateEmail, setUseAlternateEmail] = useState(false);
   const [alternateEmail, setAlternateEmail] = useState('');
   const [invoiceSending, setInvoiceSending] = useState(false);
-  const [markAsPaid, setMarkAsPaid] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   
@@ -1058,8 +1057,8 @@ ${monthlyTrips.map(trip => {
           total_amount: totalAmount,
           total_trips: monthlyTrips.length,
           billing_email: emailToSend,
-          status: markAsPaid ? 'pending_approval' : 'sent',
-          payment_status: markAsPaid ? 'paid' : 'pending',
+          status: 'sent',
+          payment_status: 'pending',
           due_date: invoiceData.dueDate,
           created_at: new Date().toISOString(),
           trip_ids: monthlyTrips.map(trip => trip.id)
@@ -1081,13 +1080,12 @@ ${monthlyTrips.map(trip => {
       // Simulate email sending delay
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      setSuccessMessage(`Invoice ${invoiceData.invoiceNumber} sent successfully to ${emailToSend}${markAsPaid ? ' and marked as paid (pending dispatcher approval)' : ''}`);
+      setSuccessMessage(`Invoice ${invoiceData.invoiceNumber} sent successfully to ${emailToSend}`);
       setShowInvoiceModal(false);
       
       // Reset form
       setUseAlternateEmail(false);
       setAlternateEmail('');
-      setMarkAsPaid(false);
       
       // Generate new invoice number for future use
       const newInvoiceNum = `CCT-${selectedMonth}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
@@ -2249,36 +2247,6 @@ ${monthlyTrips.map(trip => {
               </div>
 
               {/* Payment Status */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">Payment Status</h3>
-                
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <label className="flex items-start space-x-3">
-                    <input
-                      type="checkbox"
-                      checked={markAsPaid}
-                      onChange={(e) => setMarkAsPaid(e.target.checked)}
-                      className="w-4 h-4 text-[#7CCFD0] border-gray-300 focus:ring-blue-500 mt-0.5"
-                    />
-                    <div>
-                      <span className="text-gray-900 font-medium">Already Paid?</span>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Check this if the client has already paid this invoice
-                      </p>
-                      {markAsPaid && (
-                        <div className="mt-2 p-2 bg-blue-100 rounded border-l-4 border-blue-500">
-                          <p className="text-sm text-blue-800 font-medium">
-                            Status: Pending Approval from Dispatcher
-                          </p>
-                          <p className="text-xs text-[#7CCFD0] mt-1">
-                            This invoice will be marked as paid but require dispatcher approval
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </label>
-                </div>
-              </div>
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
