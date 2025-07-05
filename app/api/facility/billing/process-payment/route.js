@@ -149,6 +149,13 @@ export async function POST(request) {
           console.log('🔍 Generated new invoice number:', invoiceNumber);
         }
 
+        // Prepare professional invoice update data
+        const currentTimestamp = new Date().toISOString();
+        const previousStatus = existingInvoice && existingInvoice.length > 0 ? existingInvoice[0].payment_status : 'UNPAID';
+        const previousNotes = existingInvoice && existingInvoice.length > 0 ? existingInvoice[0].payment_notes : '';
+        
+        const statusChangeNote = `\n\nStatus changed from "${previousStatus}" to "${paymentStatus}" by ${profile.role} user on ${currentTimestamp}. Notes: ${notes}\n\nProcessed by user: ${user.email}. Payment ID: ${payment.id}`;
+        
         const invoiceData = {
           facility_id,
           invoice_number: invoiceNumber,
@@ -156,10 +163,10 @@ export async function POST(request) {
           total_amount: parseFloat(amount),
           trip_ids,
           payment_status: paymentStatus,
-          payment_date: new Date().toISOString(),
-          payment_notes: `${notes}\n\nProcessed by user: ${user.email}. Payment ID: ${payment.id}`,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          last_updated: currentTimestamp,
+          payment_notes: previousNotes ? previousNotes + statusChangeNote : statusChangeNote,
+          check_submission_type: submissionType,
+          check_details: payment_data
         };
 
         console.log('🔍 Invoice data to upsert:', invoiceData);
