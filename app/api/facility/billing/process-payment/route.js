@@ -157,7 +157,7 @@ export async function POST(request) {
           trip_ids,
           payment_status: paymentStatus,
           payment_date: new Date().toISOString(),
-          notes: `${notes}\n\nProcessed by user: ${user.email}. Payment ID: ${payment.id}`,
+          payment_notes: `${notes}\n\nProcessed by user: ${user.email}. Payment ID: ${payment.id}`,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
