@@ -1236,10 +1236,23 @@ ${monthlyTrips.map(trip => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching facility invoices:', error);
+        console.error('❌ Error fetching facility invoices:', error);
       }
 
-      console.log('🔍 Facility invoices query result:', { data, error });
+      console.log('🔍 Facility invoices query result:', { 
+        dataCount: data?.length || 0, 
+        data: data, 
+        error: error?.message || 'none' 
+      });
+
+      if (data && data.length > 0) {
+        console.log('📊 Invoice status details:', {
+          latestInvoice: data[0],
+          paymentStatus: data[0].payment_status,
+          updatedAt: data[0].updated_at,
+          paymentDate: data[0].payment_date
+        });
+      }
 
       if (data && data.length > 0) {
         const latestInvoice = data[0];
@@ -2145,9 +2158,9 @@ ${monthlyTrips.map(trip => {
           setSuccessMessage(message)
           setShowPaymentModal(false) // Close the payment modal immediately
           
-          // Add small delay to ensure database has time to update
-          console.log('⏳ Waiting 1 second for database to update...')
-          await new Promise(resolve => setTimeout(resolve, 1000))
+          // Add delay to ensure database has time to update
+          console.log('⏳ Waiting 2 seconds for database to update...')
+          await new Promise(resolve => setTimeout(resolve, 2000))
           
           // Refresh the invoice status from the database
           console.log('🔄 Refreshing invoice status...')
@@ -2157,7 +2170,12 @@ ${monthlyTrips.map(trip => {
           console.log('🔄 Refreshing monthly trips...')
           await fetchMonthlyTrips(selectedMonth)
           
-          console.log('✅ All data refreshed successfully')
+          // Add another delay and try refreshing again if needed
+          console.log('⏳ Waiting another 2 seconds and refreshing again...')
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          await fetchInvoiceStatus()
+          
+          console.log('✅ Payment refresh cycle completed')
           setTimeout(() => setSuccessMessage(''), 8000)
         }}
       />

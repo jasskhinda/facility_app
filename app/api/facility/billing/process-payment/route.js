@@ -109,15 +109,32 @@ export async function POST(request) {
     // For check payments, create the traditional invoice record for backward compatibility
     if (payment_method === 'CHECK_PAYMENT') {
       try {
+        console.log('🔍 Processing check payment for facility_id:', facility_id, 'month:', month);
+        
+        // Check if there's an existing invoice first
+        const { data: existingInvoice, error: existingError } = await adminSupabase
+          .from('facility_invoices')
+          .select('*')
+          .eq('facility_id', facility_id)
+          .eq('month', month || new Date().toISOString().slice(0, 7))
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        console.log('🔍 Existing invoice check:', { existingInvoice, existingError });
+
         // Determine correct payment status based on check submission type
         let paymentStatus = 'CHECK PAYMENT - WILL MAIL';
         const submissionType = payment_data.submission_type || payment_data.check_submission_type;
+        
+        console.log('🔍 Submission type:', submissionType);
         
         if (submissionType === 'already_mailed') {
           paymentStatus = 'CHECK PAYMENT - ALREADY SENT';
         } else if (submissionType === 'hand_delivered') {
           paymentStatus = 'CHECK PAYMENT - BEING VERIFIED';
         }
+
+        console.log('🔍 New payment status will be:', paymentStatus);
 
         const invoiceData = {
           facility_id,
@@ -131,19 +148,26 @@ export async function POST(request) {
           updated_at: new Date().toISOString()
         };
 
-        const { error: invoiceError } = await adminSupabase
+        console.log('🔍 Invoice data to upsert:', invoiceData);
+
+        const { data: upsertResult, error: invoiceError } = await adminSupabase
           .from('facility_invoices')
           .upsert(invoiceData, { 
             onConflict: 'facility_id,month',
             ignoreDuplicates: false 
-          });
+          })
+          .select();
+
+        console.log('🔍 Upsert result:', { upsertResult, invoiceError });
 
         if (invoiceError) {
-          console.error('Legacy invoice creation failed:', invoiceError);
+          console.error('❌ Legacy invoice creation failed:', invoiceError);
           // Don't fail the payment, just log the issue
+        } else {
+          console.log('✅ Invoice upsert successful:', upsertResult);
         }
       } catch (legacyError) {
-        console.error('Legacy invoice process failed:', legacyError);
+        console.error('❌ Legacy invoice process failed:', legacyError);
         // Continue - don't fail the payment for legacy compatibility issues
       }
     }
