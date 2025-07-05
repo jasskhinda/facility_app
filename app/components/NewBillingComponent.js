@@ -2137,11 +2137,16 @@ ${monthlyTrips.map(trip => {
         selectedMonth={selectedMonth}
         onPaymentSuccess={async (message) => {
           setSuccessMessage(message)
-          // Immediately refresh the invoice status from the database
+          setShowPaymentModal(false) // Close the payment modal immediately
+          
+          // Add small delay to ensure database has time to update
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          
+          // Refresh the invoice status from the database
           await fetchInvoiceStatus()
           // Also refresh the monthly trips to update any billing-related data
           await fetchMonthlyTrips(selectedMonth)
-          setTimeout(() => setSuccessMessage(''), 5000)
+          setTimeout(() => setSuccessMessage(''), 8000)
         }}
       />
       

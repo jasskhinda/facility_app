@@ -409,15 +409,9 @@ function PaymentForm({
       successMessage += `\n\n🔐 Payment ID: ${result.payment_id}\n`
       successMessage += `📊 Audit Trail ID: ${result.audit_trail_id}`
 
-      // Update legacy invoice status for backward compatibility based on submission type
-      let statusToUpdate = 'CHECK PAYMENT - WILL MAIL';
-      if (checkSubmissionType === 'already_mailed') {
-        statusToUpdate = 'CHECK PAYMENT - ALREADY SENT';
-      } else if (checkSubmissionType === 'hand_delivered') {
-        statusToUpdate = 'CHECK PAYMENT - BEING VERIFIED';
-      }
-      await updateInvoiceStatus(statusToUpdate)
-
+      // The API call above already handles updating the invoice status
+      // No need for additional status update here
+      
       onPaymentSuccess(successMessage)
 
     } catch (error) {

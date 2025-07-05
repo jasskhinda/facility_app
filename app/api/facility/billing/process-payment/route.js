@@ -111,9 +111,11 @@ export async function POST(request) {
       try {
         // Determine correct payment status based on check submission type
         let paymentStatus = 'CHECK PAYMENT - WILL MAIL';
-        if (payment_data.check_submission_type === 'already_mailed') {
+        const submissionType = payment_data.submission_type || payment_data.check_submission_type;
+        
+        if (submissionType === 'already_mailed') {
           paymentStatus = 'CHECK PAYMENT - ALREADY SENT';
-        } else if (payment_data.check_submission_type === 'hand_delivered') {
+        } else if (submissionType === 'hand_delivered') {
           paymentStatus = 'CHECK PAYMENT - BEING VERIFIED';
         }
 
