@@ -129,7 +129,7 @@ export async function POST(request) {
         console.log('🔍 Submission type:', submissionType);
         
         if (submissionType === 'already_mailed') {
-          paymentStatus = 'CHECK PAYMENT - IN TRANSIT';  // Use allowed status value
+          paymentStatus = 'CHECK PAYMENT - ALREADY SENT';  // Fixed: Use correct status for already mailed checks
         } else if (submissionType === 'hand_delivered') {
           paymentStatus = 'CHECK PAYMENT - BEING VERIFIED';
         }
