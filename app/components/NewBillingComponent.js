@@ -52,6 +52,10 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   const [paidTrips, setPaidTrips] = useState([]);
   const [invoicePaid, setInvoicePaid] = useState(false);
   const [actualBillableAmount, setActualBillableAmount] = useState(0);
+  
+  // Testing functionality
+  const [resettingPayment, setResettingPayment] = useState(false);
+  const [resetMessage, setResetMessage] = useState('');
 
   const supabase = createClientSupabase();
 
@@ -1449,7 +1453,47 @@ ${monthlyTrips.map(trip => {
     }
   };
 
+  // Testing function to reset payment status
+  const resetPaymentStatus = async () => {
+    if (!confirm('🧪 TESTING: Are you sure you want to reset the payment status? This will clear all payment records for this month and allow you to test payments again.')) {
+      return;
+    }
 
+    setResettingPayment(true);
+    setResetMessage('');
+
+    try {
+      const response = await fetch('/api/facility/billing/reset-payment-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          facility_id: facilityId,
+          month: selectedMonth
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Reset failed');
+      }
+
+      setResetMessage('✅ Payment status reset successfully! Page will refresh in 2 seconds...');
+      
+      // Refresh the page after a short delay to show updated state
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+
+    } catch (error) {
+      console.error('Reset error:', error);
+      setResetMessage(`❌ Reset failed: ${error.message}`);
+    } finally {
+      setResettingPayment(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -1945,6 +1989,56 @@ ${monthlyTrips.map(trip => {
             </svg>
             Payment Settings
           </a>
+        </div>
+      </div>
+
+      {/* Testing Controls - DEVELOPMENT ONLY */}
+      <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-2">
+            <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 7.586V5L8 4z" />
+            </svg>
+            <h3 className="text-sm font-semibold text-orange-800">🧪 Testing Controls</h3>
+          </div>
+          <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded">Development Only</span>
+        </div>
+        
+        <p className="text-xs text-orange-700 mb-3">
+          Use this button to reset payment status and test the payment flow again. This will clear all payment records for the current month.
+        </p>
+        
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={resetPaymentStatus}
+            disabled={resettingPayment || loading}
+            className="bg-orange-600 hover:bg-orange-700 disabled:bg-orange-300 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center space-x-2 text-sm"
+          >
+            {resettingPayment ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Resetting...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Reset Payment Status
+              </>
+            )}
+          </button>
+          
+          {resetMessage && (
+            <div className={`text-sm font-medium ${
+              resetMessage.includes('✅') ? 'text-green-700' : 'text-red-700'
+            }`}>
+              {resetMessage}
+            </div>
+          )}
         </div>
       </div>
 
