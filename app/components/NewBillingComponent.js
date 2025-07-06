@@ -1869,9 +1869,9 @@ ${monthlyTrips.map(trip => {
           {/* Pay Monthly Invoice Button - Enhanced for Multiple Payments */}
           <button
             onClick={openPaymentModal}
-            disabled={loading || (totalAmount === 0) || (invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED') && !invoiceStatus.includes('ISSUES') && !invoiceStatus.includes('REPLACEMENT'))}
+            disabled={loading || (totalAmount === 0) || (invoiceStatus && (invoiceStatus.includes('PAID WITH CARD') || invoiceStatus.includes('PAID WITH BANK TRANSFER') || invoiceStatus.includes('PAID WITH CHECK - VERIFIED'))) || (invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED') && !invoiceStatus.includes('ISSUES') && !invoiceStatus.includes('REPLACEMENT'))}
             className={`${
-              invoiceStatus && invoiceStatus.includes('HAS ISSUES') 
+              invoiceStatus && (invoiceStatus.includes('HAS ISSUES') || invoiceStatus.includes('PAYMENT FAILED'))
                 ? 'bg-orange-600 hover:bg-orange-700' 
                 : 'bg-green-600 hover:bg-green-700'
             } disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2`}
@@ -1881,13 +1881,15 @@ ${monthlyTrips.map(trip => {
             </svg>
             <span className="text-center">
               <div className="text-sm">
-                {invoiceStatus && invoiceStatus.includes('HAS ISSUES')
+                {invoiceStatus && (invoiceStatus.includes('HAS ISSUES') || invoiceStatus.includes('PAYMENT FAILED'))
                   ? 'RETRY PAYMENT'
+                  : invoiceStatus && (invoiceStatus.includes('PAID WITH CARD') || invoiceStatus.includes('PAID WITH BANK TRANSFER') || invoiceStatus.includes('PAID WITH CHECK - VERIFIED'))
+                  ? 'PAYMENT COMPLETED'
                   : invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED')
                   ? 'Check Payment Pending'
                   : 'PAY MONTHLY INVOICE'}
               </div>
-              {invoiceStatus && invoiceStatus.includes('HAS ISSUES') && (
+              {invoiceStatus && (invoiceStatus.includes('HAS ISSUES') || invoiceStatus.includes('PAYMENT FAILED')) && (
                 <div className="text-xs opacity-90">Payment Failed</div>
               )}
               {invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED') && !invoiceStatus.includes('HAS ISSUES') && (
