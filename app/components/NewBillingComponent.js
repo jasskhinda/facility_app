@@ -682,7 +682,8 @@ export default function FacilityBillingComponent({ user, facilityId }) {
               'CHECK PAYMENT - WILL MAIL',
               'CHECK PAYMENT - ALREADY SENT',
               'CHECK PAYMENT - BEING VERIFIED',
-              'PAID WITH CHECK'
+              'PAID WITH CHECK',
+              'PAID WITH CHECK (BEING VERIFIED)'
             ])
             .limit(1)
             .single();
@@ -695,7 +696,8 @@ export default function FacilityBillingComponent({ user, facilityId }) {
             'PAID WITH BANK TRANSFER',
             'PAID WITH BANK TRANSFER - VERIFIED',
             'PAID WITH CHECK - VERIFIED',
-            'PAID WITH CHECK'
+            'PAID WITH CHECK',
+            'PAID WITH CHECK (BEING VERIFIED)'
           ];
           
           console.log('🔍 Fallback payment verification:', {
@@ -1703,7 +1705,7 @@ ${monthlyTrips.map(trip => {
                 const now = new Date();
                 const currentMonth = now.toISOString().slice(0, 7);
                 const isCurrentMonth = selectedMonth === currentMonth;
-                const paidStatuses = ['PAID', 'PAID WITH CARD', 'PAID WITH CARD - VERIFIED', 'PAID WITH CHECK - VERIFIED', 'PAID WITH BANK TRANSFER', 'PAID WITH BANK TRANSFER - VERIFIED'];
+                const paidStatuses = ['PAID', 'PAID WITH CARD', 'PAID WITH CARD - VERIFIED', 'PAID WITH CHECK - VERIFIED', 'PAID WITH BANK TRANSFER', 'PAID WITH BANK TRANSFER - VERIFIED', 'PAID WITH CHECK', 'PAID WITH CHECK (BEING VERIFIED)'];
                 const isPaid = paidStatuses.includes(invoiceStatus) || (invoiceStatus && invoiceStatus.includes('- VERIFIED'));
                 
                 if (isPaid && (totalAmount === 0 || actualBillableAmount === 0)) {
@@ -1712,6 +1714,9 @@ ${monthlyTrips.map(trip => {
                     invoiceStatus && invoiceStatus.includes('CARD - VERIFIED') ? 'CARD PAYMENT VERIFIED' :
                     invoiceStatus && invoiceStatus.includes('BANK TRANSFER - VERIFIED') ? 'BANK TRANSFER VERIFIED' :
                     invoiceStatus === 'PAID WITH CHECK - VERIFIED' ? 'CHECK PAYMENT VERIFIED' :
+                    invoiceStatus === 'PAID WITH CHECK (BEING VERIFIED)' ? 'CHECK BEING VERIFIED' :
+                    invoiceStatus === 'PAID WITH CHECK - VERIFIED' ? 'CHECK PAYMENT VERIFIED' :
+                    invoiceStatus === 'PAID WITH CHECK' ? 'CHECK PAYMENT VERIFIED' :
                     invoiceStatus === 'PAID WITH CARD' ? 'CARD PAYMENT VERIFIED' :
                     invoiceStatus === 'PAID WITH BANK TRANSFER' ? 'BANK TRANSFER VERIFIED' :
                     invoiceStatus === 'PAID' ? 'PAYMENT VERIFIED' : 
@@ -1951,7 +1956,7 @@ ${monthlyTrips.map(trip => {
               <div className="text-sm">
                 {invoiceStatus && (invoiceStatus.includes('HAS ISSUES') || invoiceStatus.includes('PAYMENT FAILED'))
                   ? 'RETRY PAYMENT'
-                  : invoiceStatus && (invoiceStatus.includes('PAID WITH CARD') || invoiceStatus.includes('PAID WITH BANK TRANSFER') || invoiceStatus.includes('PAID WITH CHECK - VERIFIED') || invoiceStatus.includes('- VERIFIED'))
+                  : invoiceStatus && (invoiceStatus.includes('PAID WITH CARD') || invoiceStatus.includes('PAID WITH BANK TRANSFER') || invoiceStatus.includes('PAID WITH CHECK') || invoiceStatus.includes('- VERIFIED'))
                   ? 'PAYMENT COMPLETED'
                   : invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED')
                   ? 'Check Payment Pending'
