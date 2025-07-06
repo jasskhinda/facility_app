@@ -671,6 +671,9 @@ export default function FacilityBillingComponent({ user, facilityId }) {
             .in('payment_status', [
               'PAID', 
               'PAID WITH CARD', 
+              'PAID WITH CARD - VERIFIED',
+              'PAID WITH BANK TRANSFER',
+              'PAID WITH BANK TRANSFER - VERIFIED',
               'PAID WITH CHECK - VERIFIED',
               'CHECK PAYMENT - WILL MAIL',
               'CHECK PAYMENT - ALREADY SENT',
@@ -684,9 +687,11 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           const paidStatuses = [
             'PAID', 
             'PAID WITH CARD', 
+            'PAID WITH CARD - VERIFIED',
+            'PAID WITH BANK TRANSFER',
+            'PAID WITH BANK TRANSFER - VERIFIED',
             'PAID WITH CHECK - VERIFIED',
-            'PAID WITH CHECK',
-            'PAID WITH BANK TRANSFER'
+            'PAID WITH CHECK'
           ];
           
           console.log('🔍 Fallback payment verification:', {
@@ -1883,7 +1888,7 @@ ${monthlyTrips.map(trip => {
               <div className="text-sm">
                 {invoiceStatus && (invoiceStatus.includes('HAS ISSUES') || invoiceStatus.includes('PAYMENT FAILED'))
                   ? 'RETRY PAYMENT'
-                  : invoiceStatus && (invoiceStatus.includes('PAID WITH CARD') || invoiceStatus.includes('PAID WITH BANK TRANSFER') || invoiceStatus.includes('PAID WITH CHECK - VERIFIED'))
+                  : invoiceStatus && (invoiceStatus.includes('PAID WITH CARD') || invoiceStatus.includes('PAID WITH BANK TRANSFER') || invoiceStatus.includes('PAID WITH CHECK - VERIFIED') || invoiceStatus.includes('- VERIFIED'))
                   ? 'PAYMENT COMPLETED'
                   : invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED')
                   ? 'Check Payment Pending'
