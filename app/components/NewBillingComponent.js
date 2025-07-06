@@ -708,11 +708,12 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           const currentMonth = now.toISOString().slice(0, 7); // YYYY-MM format
           const isCurrentMonth = monthToFetch === currentMonth;
           
-          // DISPATCHER VERIFICATION: If dispatcher marked as PAID AND month has ended, move ALL trips to PAID section
-          if (!isCurrentMonth && ((!paymentStatusError && paymentStatus && paymentStatus.status === 'PAID') ||
-              (!invoiceStatusError && invoiceStatus && paidStatuses.includes(invoiceStatus.payment_status)))) {
+          // DISPATCHER VERIFICATION: If dispatcher marked as PAID, move ALL trips to PAID section regardless of month
+          if ((!paymentStatusError && paymentStatus && paymentStatus.status === 'PAID') ||
+              (!invoiceStatusError && invoiceStatus && paidStatuses.includes(invoiceStatus.payment_status))) {
             
-            console.log('✅ DISPATCHER VERIFIED PAYMENT (Past Month) - Moving all trips to PAID section');
+            const monthType = isCurrentMonth ? 'Current Month' : 'Past Month';
+            console.log(`✅ DISPATCHER VERIFIED PAYMENT (${monthType}) - Moving all trips to PAID section`);
             
             // Reset categorization arrays
             categorizedDueTrips = [];
@@ -731,12 +732,9 @@ export default function FacilityBillingComponent({ user, facilityId }) {
             console.log('✅ Dispatcher verification completed:', {
               paidTrips: categorizedPaidTrips.length,
               dueTrips: categorizedDueTrips.length,
-              billableAmount: currentActualBillableAmount
+              billableAmount: currentActualBillableAmount,
+              monthType: monthType
             });
-          } else if (isCurrentMonth && ((!paymentStatusError && paymentStatus && paymentStatus.status === 'PAID') ||
-              (!invoiceStatusError && invoiceStatus && paidStatuses.includes(invoiceStatus.payment_status)))) {
-            console.log('📅 CURRENT MONTH - Cannot mark trips as paid until month ends (even though dispatcher marked as paid)');
-            // Keep all trips as DUE for current month
           } else {
             console.log('⚠️ No payment verification found - keeping current categorization');
           }
@@ -1661,11 +1659,32 @@ ${monthlyTrips.map(trip => {
                 const now = new Date();
                 const currentMonth = now.toISOString().slice(0, 7);
                 const isCurrentMonth = selectedMonth === currentMonth;
-                const paidStatuses = ['PAID', 'PAID WITH CARD', 'PAID WITH CHECK - VERIFIED', 'PAID WITH BANK TRANSFER'];
-                const isPaid = paidStatuses.includes(invoiceStatus);
+                const paidStatuses = ['PAID', 'PAID WITH CARD', 'PAID WITH CARD - VERIFIED', 'PAID WITH CHECK - VERIFIED', 'PAID WITH BANK TRANSFER', 'PAID WITH BANK TRANSFER - VERIFIED'];
+                const isPaid = paidStatuses.includes(invoiceStatus) || (invoiceStatus && invoiceStatus.includes('- VERIFIED'));
                 
-                if (isCurrentMonth) {
-                  // Current month - show as upcoming invoice
+                if (isPaid && (totalAmount === 0 || actualBillableAmount === 0)) {
+                  // Payment verified by dispatcher - show as paid regardless of month
+                  const displayStatus = 
+                    invoiceStatus && invoiceStatus.includes('CARD - VERIFIED') ? 'CARD PAYMENT VERIFIED' :
+                    invoiceStatus && invoiceStatus.includes('BANK TRANSFER - VERIFIED') ? 'BANK TRANSFER VERIFIED' :
+                    invoiceStatus === 'PAID WITH CHECK - VERIFIED' ? 'CHECK PAYMENT VERIFIED' :
+                    invoiceStatus === 'PAID WITH CARD' ? 'CARD PAYMENT VERIFIED' :
+                    invoiceStatus === 'PAID WITH BANK TRANSFER' ? 'BANK TRANSFER VERIFIED' :
+                    invoiceStatus === 'PAID' ? 'PAYMENT VERIFIED' : 
+                    'PAYMENT VERIFIED';
+                  
+                  return (
+                    <>
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        {displayStatus}
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        $0.00 (Paid)
+                      </span>
+                    </>
+                  );
+                } else if (isCurrentMonth) {
+                  // Current month - show as upcoming invoice only if not paid
                   return (
                     <>
                       <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
