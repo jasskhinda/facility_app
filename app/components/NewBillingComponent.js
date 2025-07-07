@@ -1803,7 +1803,19 @@ ${monthlyTrips.map(trip => {
                         {displayStatus}
                       </span>
                       <span className="text-sm text-gray-600">
-                        $0.00 (Paid)
+                        ${(() => {
+                          // Get the actual paid amount
+                          if (paidTrips.length > 0) {
+                            return paidTrips.reduce((sum, trip) => sum + (trip.price || 0), 0).toFixed(2);
+                          } else if (window.originalPaidAmount) {
+                            return window.originalPaidAmount.toFixed(2);
+                          } else if (invoiceHistory[0]?.total_amount) {
+                            return invoiceHistory[0].total_amount.toFixed(2);
+                          } else {
+                            // Calculate from all trips since they're paid
+                            return monthlyTrips.reduce((sum, trip) => sum + (trip.price || 0), 0).toFixed(2);
+                          }
+                        })()} (Paid)
                       </span>
                     </>
                   );
