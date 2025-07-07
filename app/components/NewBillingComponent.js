@@ -2014,7 +2014,17 @@ ${monthlyTrips.map(trip => {
                 <div className="mt-3 p-3 bg-green-100 rounded border border-green-200">
                   <p className="text-xs text-green-800 font-medium">Payment Confirmation:</p>
                   <div className="text-xs text-green-700 mt-1 grid grid-cols-2 gap-2">
-                    <div>• Invoice Amount: ${actualBillableAmount?.toFixed(2) || '0.00'}</div>
+                    <div>• Invoice Amount: ${(() => {
+                      // Get the actual paid amount
+                      if (paidTrips.length > 0) {
+                        return paidTrips.reduce((sum, trip) => sum + (trip.price || 0), 0).toFixed(2);
+                      } else if (window.originalPaidAmount) {
+                        return window.originalPaidAmount.toFixed(2);
+                      } else if (invoiceHistory[0]?.total_amount) {
+                        return invoiceHistory[0].total_amount.toFixed(2);
+                      }
+                      return actualBillableAmount?.toFixed(2) || '0.00';
+                    })()}</div>
                     <div>• Payment Method: {invoiceStatus?.includes('CHECK') ? 'Business Check' : invoiceStatus?.includes('CARD') ? 'Credit Card' : invoiceStatus?.includes('BANK') ? 'Bank Transfer' : 'Electronic Payment'}</div>
                     <div>• Status: Fully Verified</div>
                     <div>• All trips: Paid in full</div>
