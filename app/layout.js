@@ -51,20 +51,23 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {/* Google Maps Script - Load globally for all pages */}
+        {/* Define callback function BEFORE loading the API */}
+        <Script id="google-maps-init" strategy="beforeInteractive">
+          {`
+            window.initGoogleMapsGlobal = function() {
+              console.log('🗺️ Google Maps global callback fired');
+              window.googleMapsLoaded = true;
+              window.dispatchEvent(new CustomEvent('googleMapsReady'));
+            };
+            window.googleMapsLoaded = false;
+          `}
+        </Script>
+        
         <Script
           id="google-maps"
           src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&callback=initGoogleMapsGlobal`}
           strategy="lazyOnload"
         />
-        
-        <Script id="google-maps-init" strategy="lazyOnload">
-          {`
-            window.initGoogleMapsGlobal = function() {
-              console.log('🗺️ Google Maps global callback fired');
-              window.dispatchEvent(new CustomEvent('googleMapsReady'));
-            };
-          `}
-        </Script>
         
         <LoadingProvider>
           {children}

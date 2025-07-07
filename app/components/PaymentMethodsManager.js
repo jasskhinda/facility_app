@@ -180,7 +180,7 @@ export default function PaymentMethodsManager({ user, facilityId }) {
       // Save to database with real Stripe payment method ID
       const isFirstMethod = paymentMethods.length === 0;
       
-      const { error: dbError } = await supabase
+      const { data: insertedMethod, error: dbError } = await supabase
         .from('facility_payment_methods')
         .insert({
           facility_id: facilityId,
@@ -192,12 +192,19 @@ export default function PaymentMethodsManager({ user, facilityId }) {
           expiry_year: paymentMethod.card.exp_year,
           cardholder_name: cardholderName,
           nickname: `${paymentMethod.card.brand.toUpperCase()} ****${paymentMethod.card.last4}`,
-          is_default: isFirstMethod
-        });
+          is_default: false // Let the trigger handle setting default if needed
+        })
+        .select()
+        .single();
 
       if (dbError) {
         console.error('Database error:', dbError);
         throw dbError;
+      }
+
+      // If this is the first payment method, set it as default
+      if (isFirstMethod && insertedMethod) {
+        await handleSetDefault(insertedMethod.id);
       }
 
       setSuccessMessage('Credit card added successfully!');
@@ -297,7 +304,7 @@ export default function PaymentMethodsManager({ user, facilityId }) {
 
       // Save bank account to database
       const isFirstMethod = paymentMethods.length === 0;
-      const { error: dbError } = await supabase
+      const { data: insertedMethod, error: dbError } = await supabase
         .from('facility_payment_methods')
         .insert({
           facility_id: facilityId,
@@ -308,11 +315,18 @@ export default function PaymentMethodsManager({ user, facilityId }) {
           bank_account_holder_name: bankForm.accountHolderName,
           bank_account_type: bankForm.accountType,
           nickname: bankForm.nickname || 'Bank Account',
-          is_default: isFirstMethod,
+          is_default: false, // Let the trigger handle setting default if needed
           verification_status: setupIntent.status === 'succeeded' ? 'verified' : 'pending'
-        });
+        })
+        .select()
+        .single();
 
       if (dbError) throw dbError;
+
+      // If this is the first payment method, set it as default
+      if (isFirstMethod && insertedMethod) {
+        await handleSetDefault(insertedMethod.id);
+      }
 
       setSuccessMessage('Bank account added successfully! Verification may be required before use.');
       setShowAddBankModal(false);
