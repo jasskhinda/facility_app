@@ -2322,14 +2322,26 @@ ${monthlyTrips.map(trip => {
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <h4 className="text-lg font-semibold text-gray-900 mb-4">Professional Billing Summary</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
-                <div className="text-3xl font-bold text-red-600">
-                  {dueTrips.filter(trip => trip.billable).length}
-                </div>
-                <div className="text-gray-700 font-medium">Billable Trips Due</div>
-                <div className="text-sm text-red-600 font-semibold mt-1">
-                  ${dueTrips.filter(trip => trip.billable).reduce((sum, trip) => sum + (trip.price || 0), 0).toFixed(2)}
-                </div>
+              <div className={`text-center p-4 rounded-lg border ${
+                dueTrips.filter(trip => trip.billable).length === 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+              }`}>
+                {dueTrips.filter(trip => trip.billable).length === 0 ? (
+                  <>
+                    <div className="text-2xl font-bold text-green-600">
+                      ✅ All Trips Paid
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-3xl font-bold text-red-600">
+                      {dueTrips.filter(trip => trip.billable).length}
+                    </div>
+                    <div className="text-gray-700 font-medium">Billable Trips Due</div>
+                    <div className="text-sm text-red-600 font-semibold mt-1">
+                      ${dueTrips.filter(trip => trip.billable).reduce((sum, trip) => sum + (trip.price || 0), 0).toFixed(2)}
+                    </div>
+                  </>
+                )}
               </div>
               
               <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
