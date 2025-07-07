@@ -1000,10 +1000,31 @@ export default function FacilityBillingComponent({ user, facilityId }) {
 
   const downloadRideSummary = () => {
     try {
+      // Determine the correct amount to show
+      const paidStatuses = ['PAID', 'PAID WITH CARD', 'PAID WITH CARD - VERIFIED', 'PAID WITH BANK TRANSFER', 'PAID WITH BANK TRANSFER - VERIFIED', 'PAID WITH CHECK - VERIFIED', 'PAID WITH CHECK', 'PAID WITH CHECK (BEING VERIFIED)'];
+      const isPaid = paidStatuses.includes(invoiceStatus) || (invoiceStatus && invoiceStatus.includes('- VERIFIED'));
+      
+      let displayAmount = totalAmount;
+      if (isPaid) {
+        if (paidTrips.length > 0) {
+          // Calculate total from paid trips
+          displayAmount = paidTrips.reduce((sum, trip) => sum + (trip.price || 0), 0);
+        } else if (window.originalPaidAmount) {
+          // Use stored original amount
+          displayAmount = window.originalPaidAmount;
+        } else if (invoiceHistory[0]?.total_amount) {
+          // Use amount from invoice history
+          displayAmount = invoiceHistory[0].total_amount;
+        }
+      }
+      
+      const paymentStatusText = isPaid ? 'PAID' : 'UNPAID';
+      
       const csvContent = `Compassionate Care Transportation - Monthly Invoice
 Facility: ${facility?.name || 'Unknown Facility'}
 Month: ${displayMonth}
-Total Amount: $${totalAmount.toFixed(2)}
+Total Amount: $${displayAmount.toFixed(2)}
+Payment Status: ${paymentStatusText}
 Total Trips: ${monthlyTrips.length}
 
 Date,Client,Pickup Address,Destination,Price,Status
@@ -1038,16 +1059,35 @@ ${monthlyTrips.map(trip => {
       month: 'long', year: 'numeric' 
     });
 
+    // Determine the correct amount to show
+    const paidStatuses = ['PAID', 'PAID WITH CARD', 'PAID WITH CARD - VERIFIED', 'PAID WITH BANK TRANSFER', 'PAID WITH BANK TRANSFER - VERIFIED', 'PAID WITH CHECK - VERIFIED', 'PAID WITH CHECK', 'PAID WITH CHECK (BEING VERIFIED)'];
+    const isPaid = paidStatuses.includes(invoiceStatus) || (invoiceStatus && invoiceStatus.includes('- VERIFIED'));
+    
+    let displayAmount = totalAmount;
+    if (isPaid) {
+      if (paidTrips.length > 0) {
+        // Calculate total from paid trips
+        displayAmount = paidTrips.reduce((sum, trip) => sum + (trip.price || 0), 0);
+      } else if (window.originalPaidAmount) {
+        // Use stored original amount
+        displayAmount = window.originalPaidAmount;
+      } else if (invoiceHistory[0]?.total_amount) {
+        // Use amount from invoice history
+        displayAmount = invoiceHistory[0].total_amount;
+      }
+    }
+
     return {
       invoiceNumber: invoiceNumber,
       facilityName: facility?.name || 'Unknown Facility',
       billingEmail: facility?.billing_email || 'billing@compassionatecaretransportation.com',
       month: monthName,
-      totalAmount: totalAmount,
+      totalAmount: displayAmount,
       totalTrips: monthlyTrips.length,
       trips: monthlyTrips,
       generatedDate: new Date().toLocaleDateString(),
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString() // 30 days from now
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(), // 30 days from now
+      paymentStatus: isPaid ? 'PAID' : 'UNPAID'
     };
   };
 
