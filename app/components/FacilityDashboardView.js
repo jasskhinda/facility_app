@@ -298,10 +298,10 @@ export default function FacilityDashboardView({ user }) {
                     </div>
                     <div className="text-right">
                       <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        trip.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                        trip.status === 'cancelled' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                        trip.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                        'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                        trip.status === 'completed' ? 'bg-blue-50 text-[#2E4F54]' :
+                        trip.status === 'cancelled' ? 'bg-red-50 text-[#2E4F54]' :
+                        trip.status === 'in_progress' ? 'bg-yellow-50 text-[#2E4F54]' :
+                        'bg-gray-50 text-[#2E4F54]'
                       }`}>
                         {trip.status}
                       </span>
@@ -329,7 +329,7 @@ export default function FacilityDashboardView({ user }) {
             )}
           </div>
           {recentTrips.length > 0 && (
-            <div className="p-4 bg-gray-50 dark:bg-[#1A2A2D] border-t border-[#DDE5E7] dark:border-[#E0E0E0]">
+            <div className="p-4 bg-[#F8F9FA] border-t border-[#DDE5E7]">
               <Link
                 href="/dashboard/trips"
                 className="text-sm text-[#7CCFD0] hover:text-[#60BFC0] font-medium"
