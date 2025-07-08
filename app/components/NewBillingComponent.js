@@ -1749,10 +1749,21 @@ ${monthlyTrips.map(trip => {
                   }
                 })()}
               </p>
-              {(invoiceStatus.includes('PAID') || invoiceStatus.includes('VERIFIED')) && (
+              {(() => {
+                const hasDispatcherVerification = invoiceStatus.includes('PAID') || invoiceStatus.includes('VERIFIED');
+                const hasFacilityPayment = lastPaymentDate || invoiceStatus.includes('CHECK') || invoiceStatus.includes('CARD') || invoiceStatus.includes('BANK');
+                
+                return hasDispatcherVerification && hasFacilityPayment;
+              })() && (
                 <p className="text-xs text-green-600 mt-1">✅ PAID - Payment verified by dispatchers</p>
               )}
-              {totalAmount > 0 && !invoiceStatus.includes('PAID') && !invoiceStatus.includes('VERIFIED') && (
+              {(() => {
+                const hasDispatcherVerification = invoiceStatus.includes('PAID') || invoiceStatus.includes('VERIFIED');
+                const hasFacilityPayment = lastPaymentDate || invoiceStatus.includes('CHECK') || invoiceStatus.includes('CARD') || invoiceStatus.includes('BANK');
+                
+                // Show awaiting payment if: (no verification) OR (has verification but no facility payment)
+                return totalAmount > 0 && (!hasDispatcherVerification || (hasDispatcherVerification && !hasFacilityPayment));
+              })() && (
                 <p className="text-xs text-red-600 mt-1">Awaiting payment</p>
               )}
               {totalAmount === 0 && !invoiceStatus.includes('PAID') && !invoiceStatus.includes('VERIFIED') && (
