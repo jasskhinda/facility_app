@@ -12,7 +12,8 @@ export default function FacilityClientManagement({ user }) {
   const [clients, setClients] = useState([]);
   const [facilityId, setFacilityId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState('all'); // all, active, inactive
+  const [selectedFilter, setSelectedFilter] = useState('all'); // all, active, with_trips, no_trips
+  const [clientTrips, setClientTrips] = useState({}); // Store trip counts for each client
 
   useEffect(() => {
     loadFacilityAndClients();
@@ -53,6 +54,9 @@ export default function FacilityClientManagement({ user }) {
       
       const { clients } = await response.json();
       setClients(clients || []);
+      
+      // Load trip counts for each client
+      await loadClientTripCounts(clients || [], supabase);
     } catch (err) {
       console.error('Error loading clients:', err);
     } finally {
@@ -60,6 +64,32 @@ export default function FacilityClientManagement({ user }) {
     }
   };
 
+  // Load trip counts for clients
+  const loadClientTripCounts = async (clientList, supabase) => {
+    try {
+      const tripCounts = {};
+      
+      for (const client of clientList) {
+        // Count trips for this client (both user_id and managed_client_id)
+        const userTripsQuery = client.user_id 
+          ? supabase.from('trips').select('*', { count: 'exact', head: true }).eq('user_id', client.user_id)
+          : Promise.resolve({ count: 0 });
+          
+        const managedTripsQuery = client.id 
+          ? supabase.from('trips').select('*', { count: 'exact', head: true }).eq('managed_client_id', client.id)
+          : Promise.resolve({ count: 0 });
+          
+        const [userResult, managedResult] = await Promise.all([userTripsQuery, managedTripsQuery]);
+        
+        tripCounts[client.id] = (userResult.count || 0) + (managedResult.count || 0);
+      }
+      
+      setClientTrips(tripCounts);
+    } catch (error) {
+      console.error('Error loading trip counts:', error);
+    }
+  };
+  
   // Filter clients based on search and status
   const filteredClients = clients.filter(client => {
     const matchesSearch = !searchTerm || 
@@ -67,10 +97,14 @@ export default function FacilityClientManagement({ user }) {
       client.phone_number?.includes(searchTerm) ||
       client.email?.toLowerCase().includes(searchTerm.toLowerCase());
       
+    const tripCount = clientTrips[client.id] || 0;
+    const isActive = client.status === 'active' || client.status === undefined || client.status === null; // Default to active if no status
+    
     const matchesFilter = 
       selectedFilter === 'all' || 
-      (selectedFilter === 'active' && client.status === 'active') ||
-      (selectedFilter === 'inactive' && client.status !== 'active');
+      (selectedFilter === 'active' && isActive) ||
+      (selectedFilter === 'with_trips' && tripCount > 0) ||
+      (selectedFilter === 'no_trips' && tripCount === 0);
       
     return matchesSearch && matchesFilter;
   });
@@ -126,8 +160,9 @@ export default function FacilityClientManagement({ user }) {
               onChange={(e) => setSelectedFilter(e.target.value)}
             >
               <option value="all">All Clients</option>
-              <option value="active">Active Only</option>
-              <option value="inactive">Inactive</option>
+              <option value="active">Active Clients</option>
+              <option value="with_trips">Clients with Trips</option>
+              <option value="no_trips">New Clients (No Trips)</option>
             </select>
           </div>
         </div>
@@ -166,6 +201,9 @@ export default function FacilityClientManagement({ user }) {
                           </h3>
                           <div className="text-sm text-[#2E4F54]/60 text-gray-900/60">
                             {client.email} • {client.phone_number}
+                          </div>
+                          <div className="text-xs text-[#7CCFD0] font-medium mt-1">
+                            {clientTrips[client.id] ? `${clientTrips[client.id]} trips completed` : 'New client'}
                           </div>
                         </div>
                       </div>

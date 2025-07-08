@@ -97,10 +97,12 @@ export async function GET(request, { params }) {
       clientType = 'managed';
     }
     
-    // Get client's trips (only for authenticated clients with user accounts)
+    // Get client's trips (both authenticated and managed clients)
     let trips = [];
+    console.log('🔍 Loading trips for client...');
+    
     if (clientType === 'authenticated') {
-      console.log('🔍 Loading trips for authenticated client...');
+      // For authenticated clients, search by user_id
       const { data: tripsData, error: tripsError } = await supabase
         .from('trips')
         .select('*')
@@ -109,12 +111,24 @@ export async function GET(request, { params }) {
         
       if (!tripsError) {
         trips = tripsData || [];
-        console.log('✅ Loaded', trips.length, 'trips');
+        console.log('✅ Loaded', trips.length, 'trips for authenticated client');
       } else {
-        console.log('⚠️ Trip loading error (non-fatal):', tripsError.message);
+        console.log('⚠️ Trip loading error for authenticated client:', tripsError.message);
       }
-    } else {
-      console.log('ℹ️ Skipping trip loading for managed client');
+    } else if (clientType === 'managed') {
+      // For managed clients, search by managed_client_id
+      const { data: tripsData, error: tripsError } = await supabase
+        .from('trips')
+        .select('*')
+        .eq('managed_client_id', id)
+        .order('pickup_time', { ascending: false });
+        
+      if (!tripsError) {
+        trips = tripsData || [];
+        console.log('✅ Loaded', trips.length, 'trips for managed client');
+      } else {
+        console.log('⚠️ Trip loading error for managed client:', tripsError.message);
+      }
     }
     
     console.log('✅ Returning client data. Type:', clientType);

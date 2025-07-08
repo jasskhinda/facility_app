@@ -75,17 +75,17 @@ export default function ClientDetailPage() {
   const getTripStatusClass = (status) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+        return 'bg-green-500 text-white font-bold';
       case 'upcoming':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+        return 'bg-blue-500 text-white font-bold';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+        return 'bg-yellow-500 text-white font-bold';
       case 'cancelled':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+        return 'bg-red-500 text-white font-bold';
       case 'in_progress':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
+        return 'bg-[#7CCFD0] text-white font-bold';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+        return 'bg-gray-500 text-white font-bold';
     }
   };
 
@@ -129,136 +129,198 @@ export default function ClientDetailPage() {
     <DashboardLayout user={user} activeTab="clients">
       <div className="py-6 max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
         {/* Client Details Card */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-              {client.full_name || `${client.first_name} ${client.last_name}`}
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Client Profile</p>
-          </div>
-          
-          <div className="mt-4 md:mt-0 flex space-x-3">
-            <Link 
-              href={`/dashboard/book?client=${client.id}`}
-              className="px-4 py-2 bg-secondary text-onSecondary rounded-md font-medium"
-            >
-              Book Trip
-            </Link>
-            <Link 
-              href={`/dashboard/clients/${client.id}/edit`}
-              className="px-4 py-2 bg-primary text-onPrimary rounded-md font-medium"
-            >
-              Edit Client
-            </Link>
+        <div className="bg-white rounded-lg shadow-sm border border-[#DDE5E7] p-6 mb-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-[#2E4F54]">
+                {client.full_name || `${client.first_name} ${client.last_name}`}
+              </h1>
+              <p className="text-lg text-[#2E4F54]/70 mt-2">Client Profile</p>
+            </div>
+            
+            <div className="mt-4 md:mt-0 flex gap-3">
+              <Link 
+                href={`/dashboard/book?client=${client.id}`}
+                className="inline-flex items-center px-6 py-3 bg-[#7CCFD0] hover:bg-[#60BFC0] text-white font-semibold rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Book Trip
+              </Link>
+              <Link 
+                href={`/dashboard/clients/${client.id}/edit`}
+                className="inline-flex items-center px-6 py-3 bg-white border-2 border-[#7CCFD0] text-[#7CCFD0] hover:bg-[#7CCFD0] hover:text-white font-semibold rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit Client
+              </Link>
+            </div>
           </div>
         </div>
         
-        <div className="bg-white dark:bg-surface rounded-lg shadow overflow-hidden mb-8">
-          <div className="px-4 py-5 sm:px-6 bg-[#F8F9FA]  border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Client Information</h3>
+        <div className="bg-white rounded-lg shadow-sm border border-[#DDE5E7] overflow-hidden mb-8">
+          <div className="px-6 py-4 bg-[#F8F9FA] border-b border-[#DDE5E7]">
+            <h3 className="text-xl font-bold text-[#2E4F54]">Client Information</h3>
           </div>
-          <div className="px-4 py-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6">
-            <div>
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Contact Information</h4>
-              <div className="mt-2 space-y-2">
-                <p className="text-gray-900 dark:text-white">{client.phone_number || 'No phone number'}</p>
-                <p className="text-gray-600 dark:text-gray-300">{client.address || 'No address'}</p>
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-lg font-semibold text-[#2E4F54] mb-3 flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-[#7CCFD0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  Contact Information
+                </h4>
+                <div className="space-y-3 pl-7">
+                  <div className="flex items-center">
+                    <span className="font-medium text-[#2E4F54] w-20">Phone:</span>
+                    <span className="text-[#2E4F54] font-semibold">{client.phone_number || 'No phone number'}</span>
+                  </div>
+                  <div className="flex items-start">
+                    <span className="font-medium text-[#2E4F54] w-20 mt-1">Address:</span>
+                    <span className="text-[#2E4F54]">{client.address || 'No address provided'}</span>
+                  </div>
+                </div>
               </div>
             </div>
             
-            <div>
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Medical & Accessibility</h4>
-              <div className="mt-2 space-y-2">
-                <p className="text-gray-900 dark:text-white">
-                  <span className="font-medium">Accessibility Needs:</span> {client.accessibility_needs || 'None specified'}
-                </p>
-                <p className="text-gray-900 dark:text-white">
-                  <span className="font-medium">Medical Requirements:</span> {client.medical_requirements || 'None specified'}
-                </p>
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-lg font-semibold text-[#2E4F54] mb-3 flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-[#7CCFD0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                  Medical & Accessibility
+                </h4>
+                <div className="space-y-3 pl-7">
+                  <div>
+                    <span className="font-semibold text-[#2E4F54] block">Accessibility Needs:</span>
+                    <span className="text-[#2E4F54] mt-1 block">{client.accessibility_needs || 'None specified'}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-[#2E4F54] block">Medical Requirements:</span>
+                    <span className="text-[#2E4F54] mt-1 block">{client.medical_requirements || 'None specified'}</span>
+                  </div>
+                </div>
               </div>
             </div>
             
             {client.emergency_contact && (
-              <div className="col-span-1 md:col-span-2">
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Emergency Contact</h4>
-                <p className="mt-2 text-gray-900 dark:text-white">{client.emergency_contact}</p>
+              <div className="col-span-1 md:col-span-2 pt-4 border-t border-[#DDE5E7]">
+                <h4 className="text-lg font-semibold text-[#2E4F54] mb-3 flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-[#7CCFD0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  Emergency Contact
+                </h4>
+                <p className="text-[#2E4F54] font-semibold pl-7">{client.emergency_contact}</p>
               </div>
             )}
           </div>
         </div>
         
         {/* Client Trips */}
-        <div className="bg-white dark:bg-surface rounded-lg shadow overflow-hidden">
-          <div className="px-4 py-5 sm:px-6 bg-[#F8F9FA]  border-b border-[#DDE5E7] dark:border-[#E0E0E0] flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Trip History</h3>
+        <div className="bg-white rounded-lg shadow-sm border border-[#DDE5E7] overflow-hidden">
+          <div className="px-6 py-4 bg-[#F8F9FA] border-b border-[#DDE5E7] flex justify-between items-center">
+            <h3 className="text-xl font-bold text-[#2E4F54] flex items-center">
+              <svg className="w-6 h-6 mr-2 text-[#7CCFD0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Trip History
+            </h3>
             <Link 
               href={`/dashboard/book?client=${client.id}`}
-              className="text-primary dark:text-secondary text-sm hover:underline"
+              className="inline-flex items-center px-4 py-2 bg-[#7CCFD0] hover:bg-[#60BFC0] text-white font-medium rounded-lg transition-colors"
             >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
               Book New Trip
             </Link>
           </div>
           
           {trips.length === 0 ? (
-            <div className="px-4 py-10 sm:p-6 text-center">
-              <p className="text-gray-500 dark:text-gray-400">No trips found for this client</p>
+            <div className="p-12 text-center">
+              <svg className="w-16 h-16 mx-auto text-[#DDE5E7] mb-4" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">
+                <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth=\"1\" d=\"M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2\" />
+              </svg>
+              <p className="text-lg text-[#2E4F54]/60 mb-4">No trips found for this client</p>
+              <p className="text-[#2E4F54]/50 mb-6">This client hasn't booked any transportation services yet.</p>
               <Link 
                 href={`/dashboard/book?client=${client.id}`}
-                className="mt-4 inline-block px-4 py-2 bg-primary text-onPrimary rounded-md font-medium"
+                className="inline-flex items-center px-6 py-3 bg-[#7CCFD0] hover:bg-[#60BFC0] text-white font-semibold rounded-lg transition-colors"
               >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
                 Book Their First Trip
               </Link>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-[#DDE5E7] dark:divide-[#E0E0E0]">
-                <thead className="bg-[#F8F9FA] ">
+              <table className="min-w-full divide-y divide-[#DDE5E7]">
+                <thead className="bg-[#F8F9FA]">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Date
+                    <th className="px-6 py-4 text-left text-sm font-bold text-[#2E4F54] uppercase tracking-wider">
+                      Date & Time
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Pickup
+                    <th className="px-6 py-4 text-left text-sm font-bold text-[#2E4F54] uppercase tracking-wider">
+                      Pickup Location
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-sm font-bold text-[#2E4F54] uppercase tracking-wider">
                       Destination
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-sm font-bold text-[#2E4F54] uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Price
+                    <th className="px-6 py-4 text-left text-sm font-bold text-[#2E4F54] uppercase tracking-wider">
+                      Amount
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right text-sm font-bold text-[#2E4F54] uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-surface divide-y divide-[#DDE5E7] dark:divide-[#E0E0E0]">
+                <tbody className="bg-white divide-y divide-[#DDE5E7]">
                   {trips.map((trip) => (
-                    <tr key={trip.id} className="hover:bg-[#F8F9FA] dark:hover:bg-[#24393C]/50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {formatDate(trip.pickup_time)}
+                    <tr key={trip.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-[#2E4F54]">
+                          {formatDate(trip.pickup_time)}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-white max-w-[180px] truncate">
-                        {trip.pickup_address}
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-[#2E4F54] max-w-[200px]">
+                          {trip.pickup_address}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-white max-w-[180px] truncate">
-                        {trip.destination_address}
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-[#2E4F54] max-w-[200px]">
+                          {trip.destination_address}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${getTripStatusClass(trip.status)}`}>
+                        <span className={`inline-flex px-3 py-1 text-xs rounded-full ${getTripStatusClass(trip.status)}`}>
                           {trip.status.charAt(0).toUpperCase() + trip.status.slice(1)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {trip.price ? `$${trip.price}` : 'N/A'}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-semibold text-[#2E4F54]">
+                          {trip.price ? `$${parseFloat(trip.price).toFixed(2)}` : 'Pending'}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
                         <Link 
                           href={`/dashboard/trips/${trip.id}`}
-                          className="text-primary dark:text-secondary hover:underline"
+                          className="inline-flex items-center px-3 py-1 bg-[#7CCFD0] hover:bg-[#60BFC0] text-white text-sm font-medium rounded-lg transition-colors"
                         >
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
                           View
                         </Link>
                       </td>
