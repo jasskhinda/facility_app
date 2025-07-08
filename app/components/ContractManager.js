@@ -9,6 +9,7 @@ export default function ContractManager({ facilityId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [dragActive, setDragActive] = useState(false);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -61,13 +62,12 @@ export default function ContractManager({ facilityId }) {
     }
   };
 
-  const handleFileUpload = async (event) => {
+  const processFile = async (file) => {
     try {
       setUploading(true);
       setError(null);
       setSuccess(null);
 
-      const file = event.target.files?.[0];
       if (!file) return;
 
       // Validate file type
@@ -120,14 +120,52 @@ export default function ContractManager({ facilityId }) {
 
       setSuccess('Contract uploaded successfully!');
       
-      // Clear the file input
-      event.target.value = '';
-      
     } catch (err) {
       console.error('Upload error:', err);
       setError(err.message);
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      await processFile(file);
+      // Clear the file input
+      event.target.value = '';
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (uploading) return;
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      await processFile(file);
     }
   };
 
@@ -289,17 +327,27 @@ export default function ContractManager({ facilityId }) {
       ) : (
         /* Upload Area */
         <div className="text-center">
-          <div className="border-2 border-dashed border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg p-8">
+          <div 
+            className={`border-2 border-dashed rounded-lg p-8 transition-colors ${
+              dragActive 
+                ? 'border-[#7CCFD0] bg-[#7CCFD0]/10' 
+                : 'border-[#DDE5E7] dark:border-[#E0E0E0] hover:border-[#7CCFD0] hover:bg-[#7CCFD0]/5'
+            }`}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
             <svg className="mx-auto h-12 w-12 text-[#2E4F54]/40 text-gray-900/40" stroke="currentColor" fill="none" viewBox="0 0 48 48">
               <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <div className="mt-4">
               <label htmlFor="contract-upload" className="cursor-pointer">
                 <span className="mt-2 block text-sm font-medium text-[#2E4F54] text-gray-900">
-                  Upload facility contract
+                  {dragActive ? 'Drop PDF file here' : 'Upload facility contract'}
                 </span>
                 <span className="mt-1 block text-sm text-[#2E4F54]/70 text-gray-900/70">
-                  PDF files only, up to 10MB
+                  {dragActive ? 'Release to upload' : 'Drag & drop or click to upload • PDF files only, up to 10MB'}
                 </span>
               </label>
               <input
@@ -331,7 +379,7 @@ export default function ContractManager({ facilityId }) {
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
-                    Choose PDF File
+                    {dragActive ? 'Drop Here' : 'Choose PDF File'}
                   </>
                 )}
               </button>
