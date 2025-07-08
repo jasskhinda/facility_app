@@ -26,12 +26,22 @@ export default function LoadingProvider({ children }) {
       setIsLoading(false);
     }, 2000); // Show loader for 2 seconds on initial load
 
-    return () => clearTimeout(timer);
+    // Global timeout protection for initial load - force hide after 15 seconds maximum
+    const globalTimeout = setTimeout(() => {
+      console.warn('🚨 Global initial load timeout reached, forcing hide');
+      setIsLoading(false);
+    }, 15000);
+
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(globalTimeout);
+    };
   }, []);
 
   // Route change loading
   useEffect(() => {
     let timeoutId;
+    let globalTimeoutId;
     
     const handleStart = () => {
       setLoadingMessage('Navigating...');
@@ -41,11 +51,20 @@ export default function LoadingProvider({ children }) {
       timeoutId = setTimeout(() => {
         setIsLoading(false);
       }, 1000);
+      
+      // Global timeout protection - force hide after 10 seconds maximum
+      globalTimeoutId = setTimeout(() => {
+        console.warn('🚨 Global navigation timeout reached, forcing hide');
+        setIsLoading(false);
+      }, 10000);
     };
 
     const handleComplete = () => {
       if (timeoutId) {
         clearTimeout(timeoutId);
+      }
+      if (globalTimeoutId) {
+        clearTimeout(globalTimeoutId);
       }
       setIsLoading(false);
     };
@@ -79,6 +98,9 @@ export default function LoadingProvider({ children }) {
       window.removeEventListener('popstate', handlePopState);
       if (timeoutId) {
         clearTimeout(timeoutId);
+      }
+      if (globalTimeoutId) {
+        clearTimeout(globalTimeoutId);
       }
       // Restore original methods
       if (originalPush) {
