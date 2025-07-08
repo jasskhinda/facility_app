@@ -143,14 +143,13 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
                   <Link 
                     key={item.id}
                     href={item.href}
-                    className={`px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1 ${
+                    className={`px-3 py-2 rounded-md text-sm font-bold uppercase ${
                       activeTab === item.id 
                         ? 'bg-[#7CCFD0] text-white' 
                         : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
                     }`}
                   >
-                    {item.icon}
-                    <span>{item.label}</span>
+                    {item.label}
                   </Link>
                 ))}
               </div>
@@ -204,15 +203,14 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
                 <Link 
                   key={item.id}
                   href={item.href}
-                  className={`block px-3 py-2 rounded-md text-base font-medium flex items-center space-x-2 ${
+                  className={`block px-3 py-2 rounded-md text-base font-bold uppercase ${
                     activeTab === item.id 
                       ? 'bg-[#7CCFD0] text-white' 
                       : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  {item.icon}
-                  <span>{item.label}</span>
+                  {item.label}
                 </Link>
               ))}
               
