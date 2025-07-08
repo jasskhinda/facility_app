@@ -268,9 +268,10 @@ export default function StreamlinedBookingForm({ user }) {
       
       setSuccess(true);
       
-      // Reset form or redirect
+      // Reset form or redirect with preloader protection
       setTimeout(() => {
-        router.push('/dashboard/trips');
+        // Use window.location for more reliable navigation after form submission
+        window.location.href = '/dashboard/trips';
       }, 2000);
       
     } catch (err) {

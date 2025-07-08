@@ -276,7 +276,7 @@ export default function WheelchairSelectionFlow({
               value={customWheelchairType}
               onChange={(e) => setCustomWheelchairType(e.target.value)}
               placeholder="e.g., Standard manual wheelchair, Lightweight transport chair..."
-              className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 placeholder-[#2E4F54]/50 dark:placeholder-[#E0F4F5]/50 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0]"
+              className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white text-[#2E4F54] text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0]"
             />
             <p className="text-xs text-[#2E4F54]/70 text-gray-900/70 mt-1">
               This helps us ensure we provide the most suitable wheelchair for your needs.
