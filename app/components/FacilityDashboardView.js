@@ -45,72 +45,49 @@ export default function FacilityDashboardView({ user }) {
         
         setFacilityName(facility?.name || 'Your Facility');
 
-        // Get client stats
+        // Get client stats from facility_managed_clients table
         const { count: totalClients } = await supabase
-          .from('profiles')
+          .from('facility_managed_clients')
           .select('*', { count: 'exact', head: true })
-          .eq('facility_id', profile.facility_id)
-          .eq('role', 'facility');
-
-        const { count: activeClients } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('facility_id', profile.facility_id)
-          .eq('role', 'facility')
-          .eq('status', 'active');
-
-        // Get all facility users for trip filtering
-        const { data: facilityUsers } = await supabase
-          .from('profiles')
-          .select('id')
           .eq('facility_id', profile.facility_id);
 
-        const facilityUserIds = facilityUsers?.map(user => user.id) || [];
-        console.log('Facility user IDs for dashboard:', facilityUserIds.length, 'users found');
+        const { count: activeClients } = await supabase
+          .from('facility_managed_clients')
+          .select('*', { count: 'exact', head: true })
+          .eq('facility_id', profile.facility_id)
+          .eq('status', 'active');
 
-        // Get trip stats - filter by user_id instead of facility_id
+        console.log('📊 Client stats:', { totalClients, activeClients });
+
+        // Get trip stats - filter by facility_id directly
         const today = new Date().toISOString().split('T')[0];
-        let todayTripsQuery = supabase
+        const { count: todayTrips } = await supabase
           .from('trips')
           .select('*', { count: 'exact', head: true })
+          .eq('facility_id', profile.facility_id)
           .gte('pickup_time', today + 'T00:00:00')
           .lte('pickup_time', today + 'T23:59:59');
-        
-        if (facilityUserIds.length > 0) {
-          todayTripsQuery = todayTripsQuery.in('user_id', facilityUserIds);
-        }
-        
-        const { count: todayTrips } = await todayTripsQuery;
 
         // Get weekly trips
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
-        let weeklyTripsQuery = supabase
+        const { count: weeklyTrips } = await supabase
           .from('trips')
           .select('*', { count: 'exact', head: true })
+          .eq('facility_id', profile.facility_id)
           .gte('pickup_time', weekAgo.toISOString());
-        
-        if (facilityUserIds.length > 0) {
-          weeklyTripsQuery = weeklyTripsQuery.in('user_id', facilityUserIds);
-        }
-        
-        const { count: weeklyTrips } = await weeklyTripsQuery;
 
-        // Get recent trips with client info
-        let recentTripsQuery = supabase
+        // Get recent trips with enhanced client info
+        const { data: trips, error: tripsError } = await supabase
           .from('trips')
           .select(`
             *,
-            user:profiles!trips_user_id_fkey(first_name, last_name)
+            user:profiles!trips_user_id_fkey(first_name, last_name),
+            managed_client:facility_managed_clients!trips_managed_client_id_fkey(first_name, last_name)
           `)
+          .eq('facility_id', profile.facility_id)
           .order('pickup_time', { ascending: false })
           .limit(10);
-        
-        if (facilityUserIds.length > 0) {
-          recentTripsQuery = recentTripsQuery.in('user_id', facilityUserIds);
-        }
-        
-        const { data: trips, error: tripsError } = await recentTripsQuery;
         
         if (tripsError) {
           console.error('Recent trips query error:', tripsError);
@@ -121,17 +98,12 @@ export default function FacilityDashboardView({ user }) {
 
         // Calculate monthly spend from completed trips
         const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-        let monthlyTripsQuery = supabase
+        const { data: monthlyCompletedTrips } = await supabase
           .from('trips')
           .select('price')
+          .eq('facility_id', profile.facility_id)
           .eq('status', 'completed')
           .gte('pickup_time', firstOfMonth.toISOString());
-        
-        if (facilityUserIds.length > 0) {
-          monthlyTripsQuery = monthlyTripsQuery.in('user_id', facilityUserIds);
-        }
-        
-        const { data: monthlyCompletedTrips } = await monthlyTripsQuery;
         const monthlySpend = monthlyCompletedTrips?.reduce((sum, trip) => sum + (parseFloat(trip.price) || 0), 0) || 0;
 
         // For now, set pending invoices to 0 since we don't have invoice system yet
@@ -244,11 +216,11 @@ export default function FacilityDashboardView({ user }) {
           <div className="bg-white  rounded-lg border border-[#DDE5E7] dark:border-[#E0E0E0] p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[#2E4F54]/60 text-gray-900/60">Monthly Spend</p>
+                <p className="text-sm font-medium text-[#2E4F54]/60 text-gray-900/60">Current Month Transportation Costs</p>
                 <p className="text-2xl font-semibold text-[#2E4F54] text-gray-900 mt-1">
                   ${stats.monthlySpend.toFixed(2)}
                 </p>
-                <p className="text-sm text-orange-500 mt-1">{stats.pendingInvoices} pending invoices</p>
+                <p className="text-sm text-blue-600 mt-1">Billing cycle: {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
               </div>
               <span className="text-4xl opacity-20">💰</span>
             </div>
@@ -273,6 +245,8 @@ export default function FacilityDashboardView({ user }) {
                         <p className="font-medium text-[#2E4F54] text-gray-900">
                           {trip.user?.first_name && trip.user?.last_name ? 
                             `${trip.user.first_name} ${trip.user.last_name}` : 
+                            trip.managed_client?.first_name && trip.managed_client?.last_name ?
+                            `${trip.managed_client.first_name} ${trip.managed_client.last_name}` :
                             'Unknown Client'
                           }
                         </p>
@@ -302,13 +276,13 @@ export default function FacilityDashboardView({ user }) {
               ))
             ) : (
               <div className="p-8 text-center">
-                <p className="text-[#2E4F54]/60 text-gray-900/60">No recent trips</p>
+                <p className="text-[#2E4F54]/60 text-gray-900/60">No transportation activity yet</p>
                 <Link
                   href="/dashboard/book"
                   className="inline-flex items-center mt-4 text-[#7CCFD0] hover:text-[#60BFC0]"
                 >
                   <span className="mr-1">➕</span>
-                  Book your first trip
+                  Schedule your first ride
                 </Link>
               </div>
             )}
