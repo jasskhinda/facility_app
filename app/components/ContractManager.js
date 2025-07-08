@@ -243,7 +243,7 @@ export default function ContractManager({ facilityId }) {
 
       {/* Success Message */}
       {success && (
-        <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-md">
+        <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/30 text-black font-bold rounded-md">
           {success}
         </div>
       )}
