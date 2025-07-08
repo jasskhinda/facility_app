@@ -80,7 +80,7 @@ ${trip.additional_passengers && trip.additional_passengers > 0 ? `Additional Pas
 ${trip.is_round_trip ? `Round Trip Fee: $${trip.round_trip_fee?.toFixed(2) || (trip.price ? (trip.price * 0.1).toFixed(2) : '0.00')}` : ''}
 ------------------------------------------------
 TOTAL AMOUNT: $${trip.price?.toFixed(2) || '0.00'}
-${trip.status === 'completed' ? 'Payment Status: PAID' : ''}
+${trip.status === 'completed' ? 'Payment Status: AWAITING PAYMENT' : ''}
 ${trip.status === 'cancelled' && trip.refund_status ? `Refund Status: ${trip.refund_status}` : ''}
 
 ================================================
@@ -655,7 +655,7 @@ Website: https://compassionatecaretransportation.com
             {trip.status === 'completed' && (
               <div className="flex justify-between items-center py-2 text-sm">
                 <span className="text-[#2E4F54]/70 text-gray-900/70">Payment Status</span>
-                <span className="font-medium text-green-600 dark:text-green-400">Paid</span>
+                <span className="font-medium text-blue-600 dark:text-blue-400">Awaiting Payment</span>
               </div>
             )}
             
