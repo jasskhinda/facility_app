@@ -77,20 +77,61 @@ export default function FacilityDashboardView({ user }) {
           .eq('facility_id', profile.facility_id)
           .gte('pickup_time', weekAgo.toISOString());
 
-        // Get recent trips with enhanced client info
-        const { data: trips, error: tripsError } = await supabase
+        // Get recent trips (simple query first, then enhance with client info)
+        const { data: rawTrips, error: tripsError } = await supabase
           .from('trips')
-          .select(`
-            *,
-            user:profiles!trips_user_id_fkey(first_name, last_name),
-            managed_client:facility_managed_clients!trips_managed_client_id_fkey(first_name, last_name)
-          `)
+          .select('*')
           .eq('facility_id', profile.facility_id)
           .order('pickup_time', { ascending: false })
           .limit(10);
         
         if (tripsError) {
           console.error('Recent trips query error:', tripsError);
+        }
+        
+        // Enhance trips with client information (matching trips page pattern)
+        let trips = [];
+        if (!tripsError && rawTrips && rawTrips.length > 0) {
+          console.log('📝 Enhancing trips with client information...');
+          
+          // Get unique user IDs and managed client IDs
+          const userIds = [...new Set(rawTrips.filter(trip => trip.user_id).map(trip => trip.user_id))];
+          const managedClientIds = [...new Set(rawTrips.filter(trip => trip.managed_client_id).map(trip => trip.managed_client_id))];
+          
+          // Fetch user profiles
+          let userProfiles = [];
+          if (userIds.length > 0) {
+            const { data: profiles, error: profilesError } = await supabase
+              .from('profiles')
+              .select('id, first_name, last_name, phone_number')
+              .in('id', userIds);
+            
+            if (!profilesError) {
+              userProfiles = profiles || [];
+            }
+          }
+          
+          // Fetch managed clients
+          let managedClients = [];
+          if (managedClientIds.length > 0) {
+            const { data: facilityManaged, error: facilityManagedError } = await supabase
+              .from('facility_managed_clients')
+              .select('id, first_name, last_name, phone_number')
+              .in('id', managedClientIds);
+            
+            if (!facilityManagedError && facilityManaged) {
+              managedClients = facilityManaged;
+            }
+          }
+          
+          // Combine trip data with client information
+          trips = rawTrips.map(trip => ({
+            ...trip,
+            user: trip.user_id ? userProfiles.find(profile => profile.id === trip.user_id) : null,
+            managed_client: trip.managed_client_id ? managedClients.find(client => client.id === trip.managed_client_id) : null
+          }));
+        } else {
+          trips = rawTrips || [];
         }
         
         console.log('Recent trips data:', trips?.length || 0, 'trips found');
