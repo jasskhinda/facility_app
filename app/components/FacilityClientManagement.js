@@ -151,7 +151,7 @@ export default function FacilityClientManagement({ user }) {
           ) : (
             <div className="divide-y divide-[#DDE5E7] dark:divide-[#E0E0E0]">
               {filteredClients.map((client) => (
-                <div key={client.id} className="p-4 hover:bg-gray-50 dark:hover:bg-[#24393C] transition-colors">
+                <div key={client.id} className="p-4 hover:bg-gray-100 transition-colors">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
@@ -198,13 +198,13 @@ export default function FacilityClientManagement({ user }) {
                         </Link>
                         <Link
                           href={`/dashboard/clients/${client.id}`}
-                          className="px-3 py-1 border border-[#DDE5E7] dark:border-[#E0E0E0] hover:bg-gray-50 dark:hover:bg-[#24393C] text-[#2E4F54] text-gray-900 text-sm rounded-lg transition-colors"
+                          className="px-3 py-1 border border-[#DDE5E7] dark:border-[#E0E0E0] hover:bg-gray-100 text-[#2E4F54] text-gray-900 text-sm rounded-lg transition-colors"
                         >
                           View
                         </Link>
                         <Link
                           href={`/dashboard/clients/${client.id}/edit`}
-                          className="px-3 py-1 border border-[#DDE5E7] dark:border-[#E0E0E0] hover:bg-gray-50 dark:hover:bg-[#24393C] text-[#2E4F54] text-gray-900 text-sm rounded-lg transition-colors"
+                          className="px-3 py-1 border border-[#DDE5E7] dark:border-[#E0E0E0] hover:bg-gray-100 text-[#2E4F54] text-gray-900 text-sm rounded-lg transition-colors"
                         >
                           Edit
                         </Link>

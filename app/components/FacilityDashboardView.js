@@ -276,7 +276,7 @@ export default function FacilityDashboardView({ user }) {
           <div className="divide-y divide-[#DDE5E7] dark:divide-[#E0E0E0]">
             {recentTrips.length > 0 ? (
               recentTrips.map((trip) => (
-                <div key={trip.id} className="p-4 hover:bg-gray-50 dark:hover:bg-[#24393C] transition-colors">
+                <div key={trip.id} className="p-4 hover:bg-gray-100 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <div className="bg-[#7CCFD0]/10 rounded-full p-2">
