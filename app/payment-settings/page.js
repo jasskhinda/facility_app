@@ -136,6 +136,21 @@ export default function PaymentSettingsPage() {
         facilityId: profile.facility_id
       })
 
+      // Test direct database update first
+      console.log('🧪 Testing direct database update...')
+      
+      const testResponse = await fetch('/api/debug/test-payment-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          facilityId: profile.facility_id,
+          paymentMethodId: paymentMethodId
+        })
+      })
+      
+      const testResult = await testResponse.json()
+      console.log('🧪 Test result:', testResult)
+      
       // Use the API endpoint instead of direct RPC call
       const response = await fetch('/api/stripe/facility-payment-methods/set-default', {
         method: 'POST',

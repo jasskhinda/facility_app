@@ -5,6 +5,7 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const facilityId = searchParams.get('facilityId');
+    const paymentMethodId = searchParams.get('paymentMethodId');
     
     if (!facilityId) {
       return NextResponse.json({ error: 'Facility ID is required' }, { status: 400 });
@@ -27,12 +28,54 @@ export async function GET(request) {
     const defaultCount = methods?.filter(m => m.is_default).length || 0;
     const defaultMethod = methods?.find(m => m.is_default) || null;
 
+    let testResult = null;
+    
+    // If paymentMethodId is provided, test updating it
+    if (paymentMethodId) {
+      console.log('🧪 Testing direct update for payment method:', paymentMethodId);
+      
+      try {
+        // Try direct update
+        const { data: updateResult, error: updateError } = await supabase
+          .from('facility_payment_methods')
+          .update({ is_default: true })
+          .eq('id', paymentMethodId)
+          .eq('facility_id', facilityId)
+          .select();
+        
+        console.log('Update result:', updateResult);
+        console.log('Update error:', updateError);
+        
+        // Check state after update
+        const { data: afterUpdate, error: afterError } = await supabase
+          .from('facility_payment_methods')
+          .select('*')
+          .eq('facility_id', facilityId);
+        
+        testResult = {
+          updateResult,
+          updateError: updateError ? updateError.message : null,
+          afterUpdate,
+          afterError: afterError ? afterError.message : null,
+          testStatus: 'completed'
+        };
+      } catch (testError) {
+        console.error('Test failed with exception:', testError);
+        testResult = {
+          testStatus: 'failed',
+          testError: testError.message,
+          stack: testError.stack
+        };
+      }
+    }
+
     return NextResponse.json({
       facilityId,
       totalMethods: methods?.length || 0,
       defaultCount,
       defaultMethod,
-      allMethods: methods || []
+      allMethods: methods || [],
+      testResult
     });
 
   } catch (error) {
