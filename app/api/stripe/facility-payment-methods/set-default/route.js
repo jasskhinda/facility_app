@@ -61,27 +61,43 @@ export async function POST(request) {
       for (const method of allMethods) {
         const shouldBeDefault = method.id === paymentMethodId;
         
+        console.log(`🔍 Processing method ${method.id}: current=${method.is_default}, should=${shouldBeDefault}`);
+        
         // Skip if it's already in the correct state
         if (method.is_default === shouldBeDefault) {
+          console.log(`⏭️ Skipping method ${method.id} - already in correct state`);
           continue;
         }
 
         // Update this specific method
-        const { error: updateError } = await supabase
+        const { data: updateData, error: updateError } = await supabase
           .from('facility_payment_methods')
           .update({ 
             is_default: shouldBeDefault,
             updated_at: new Date().toISOString()
           })
           .eq('id', method.id)
-          .eq('facility_id', facilityId);
+          .eq('facility_id', facilityId)
+          .select();
 
         if (updateError) {
           console.error(`❌ Error updating method ${method.id}:`, updateError);
           // Continue with other methods even if one fails
         } else {
-          console.log(`✅ Updated method ${method.id} to default=${shouldBeDefault}`);
+          console.log(`✅ Updated method ${method.id} to default=${shouldBeDefault}`, updateData);
         }
+      }
+
+      // Verify the update by fetching the records again
+      const { data: verifyMethods, error: verifyError } = await supabase
+        .from('facility_payment_methods')
+        .select('id, is_default, nickname')
+        .eq('facility_id', facilityId);
+
+      if (verifyError) {
+        console.error('❌ Error verifying update:', verifyError);
+      } else {
+        console.log('🔍 Final verification - methods after update:', verifyMethods);
       }
 
       console.log('✅ Successfully updated all payment methods');

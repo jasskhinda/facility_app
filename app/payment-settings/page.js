@@ -99,6 +99,18 @@ export default function PaymentSettingsPage() {
       if (error) throw error
 
       console.log('📊 Payment methods fetched:', data)
+      
+      // Log each payment method and its is_default status
+      data?.forEach((method, index) => {
+        console.log(`📋 Payment method ${index + 1}:`, {
+          id: method.id,
+          nickname: method.nickname,
+          is_default: method.is_default,
+          is_default_type: typeof method.is_default,
+          payment_method_type: method.payment_method_type
+        })
+      })
+      
       setPaymentMethods(data || [])
       
       // Find default payment method
