@@ -351,14 +351,13 @@ export default function PaymentMethodsManager({ user, facilityId }) {
     try {
       setError('');
       
-      // Use API endpoint to update default payment method
-      const response = await fetch('/api/stripe/facility-payment-methods', {
-        method: 'PUT',
+      // Use dedicated endpoint to set default payment method
+      const response = await fetch('/api/stripe/facility-payment-methods/set-default', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           paymentMethodId: methodId,
-          facilityId: facilityId,
-          action: 'set_default'
+          facilityId: facilityId
         })
       });
 
@@ -373,7 +372,7 @@ export default function PaymentMethodsManager({ user, facilityId }) {
 
     } catch (err) {
       console.error('Error setting default method:', err);
-      setError('Failed to update default payment method');
+      setError('Failed to update default payment method: ' + err.message);
     }
   };
 
