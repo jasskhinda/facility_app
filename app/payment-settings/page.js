@@ -130,7 +130,11 @@ export default function PaymentSettingsPage() {
         throw new Error(error || 'Failed to update default payment method')
       }
 
-      await fetchPaymentMethods()
+      // Small delay to ensure database update is complete
+      setTimeout(async () => {
+        await fetchPaymentMethods()
+      }, 100)
+      
       setSuccess('Default payment method updated successfully')
       
       setTimeout(() => setSuccess(''), 3000)
@@ -232,6 +236,7 @@ export default function PaymentSettingsPage() {
               
               <div className="p-6">
                 <PaymentMethodsManager 
+                  user={user}
                   facilityId={profile.facility_id}
                   onPaymentMethodsChange={fetchPaymentMethods}
                 />

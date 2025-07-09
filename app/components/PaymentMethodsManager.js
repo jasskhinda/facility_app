@@ -11,7 +11,7 @@ const StripeCardElement = dynamic(() => import('./StripeCardElement'), {
   loading: () => <div className="p-4 text-center">Loading payment form...</div>
 });
 
-export default function PaymentMethodsManager({ user, facilityId }) {
+export default function PaymentMethodsManager({ user, facilityId, onPaymentMethodsChange }) {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [defaultMethod, setDefaultMethod] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -226,6 +226,11 @@ export default function PaymentMethodsManager({ user, facilityId }) {
       });
       setSetupClientSecret(null);
       fetchPaymentMethods();
+      
+      // Notify parent component about the change
+      if (onPaymentMethodsChange) {
+        onPaymentMethodsChange();
+      }
 
     } catch (err) {
       console.error('Error saving card:', err);
@@ -346,6 +351,11 @@ export default function PaymentMethodsManager({ user, facilityId }) {
         nickname: ''
       });
       fetchPaymentMethods();
+      
+      // Notify parent component about the change
+      if (onPaymentMethodsChange) {
+        onPaymentMethodsChange();
+      }
 
     } catch (err) {
       console.error('Error adding bank account:', err);
@@ -386,6 +396,11 @@ export default function PaymentMethodsManager({ user, facilityId }) {
       );
       
       setSuccessMessage('Default payment method updated');
+      
+      // Notify parent component about the change
+      if (onPaymentMethodsChange) {
+        onPaymentMethodsChange();
+      }
       
       // Fetch fresh data to ensure consistency
       setTimeout(() => {
@@ -431,6 +446,11 @@ export default function PaymentMethodsManager({ user, facilityId }) {
       setShowDeleteModal(false);
       setMethodToDelete(null);
       fetchPaymentMethods();
+      
+      // Notify parent component about the change
+      if (onPaymentMethodsChange) {
+        onPaymentMethodsChange();
+      }
 
     } catch (err) {
       console.error('Error deleting payment method:', err);
