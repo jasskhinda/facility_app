@@ -369,6 +369,12 @@ export default function PaymentMethodsManager({ user, facilityId, onPaymentMetho
     try {
       setError('');
       
+      console.log('🔧 PaymentMethodsManager: Setting default method:', {
+        methodId,
+        facilityId,
+        currentDefault: defaultMethod
+      });
+      
       // Use dedicated endpoint to set default payment method
       const response = await fetch('/api/stripe/facility-payment-methods/set-default', {
         method: 'POST',
@@ -379,10 +385,16 @@ export default function PaymentMethodsManager({ user, facilityId, onPaymentMetho
         })
       });
 
+      console.log('📡 PaymentMethodsManager: API response status:', response.status);
+
       if (!response.ok) {
         const { error } = await response.json();
+        console.error('❌ PaymentMethodsManager: API error:', error);
         throw new Error(error || 'Failed to update default payment method');
       }
+
+      const result = await response.json();
+      console.log('✅ PaymentMethodsManager: API success:', result);
 
       // Update the local state immediately
       setDefaultMethod(methodId);
@@ -395,15 +407,19 @@ export default function PaymentMethodsManager({ user, facilityId, onPaymentMetho
         }))
       );
       
+      console.log('🔄 PaymentMethodsManager: Updated local state, new default:', methodId);
+      
       setSuccessMessage('Default payment method updated');
       
       // Notify parent component about the change
       if (onPaymentMethodsChange) {
+        console.log('📢 PaymentMethodsManager: Notifying parent of change');
         onPaymentMethodsChange();
       }
       
       // Fetch fresh data to ensure consistency
       setTimeout(() => {
+        console.log('🔄 PaymentMethodsManager: Refreshing data after delay...');
         fetchPaymentMethods();
       }, 500);
 
