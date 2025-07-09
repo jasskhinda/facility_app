@@ -150,8 +150,16 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           new_billable_amount: payment_breakdown.new_billable_amount,
           show_paid: payment_breakdown.show_paid_amount,
           show_new: payment_breakdown.show_new_billable_amount,
-          payment_status: payment_status.current_status
+          payment_status: payment_status.current_status,
+          invoice_status: invoiceStatus,
+          has_verified_payment: payment_dates.last_payment_date ? true : false
         });
+        
+        // DEBUG: Force override if no verified payment
+        if (!payment_dates.last_payment_date && payment_breakdown.show_paid_amount) {
+          console.warn('⚠️ DEBUG: Overriding show_paid_amount because no verified payment exists');
+          setShowPaidAmount(false);
+        }
       } else {
         console.error('Error fetching payment breakdown:', data.error);
       }
@@ -1693,9 +1701,11 @@ ${monthlyTrips.map(trip => {
           
           {/* Show Paid Amount if there was a verified payment */}
           {showPaidAmount && (
-            <div className="bg-green-50 rounded-lg p-4 border-2 border-green-200">
-              <h3 className="text-sm font-medium text-green-700 mb-1">Paid Amount</h3>
-              <p className="text-2xl font-bold text-green-600">${paidAmount.toFixed(2)}</p>
+            <div className={`rounded-lg p-4 border-2 ${lastPaymentDate ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+              <h3 className={`text-sm font-medium mb-1 ${lastPaymentDate ? 'text-green-700' : 'text-red-700'}`}>
+                {lastPaymentDate ? 'Paid Amount' : 'Amount Due'}
+              </h3>
+              <p className={`text-2xl font-bold ${lastPaymentDate ? 'text-green-600' : 'text-red-600'}`}>${paidAmount.toFixed(2)}</p>
               {lastPaymentDate && (
                 <p className="text-xs text-green-600 mt-1">
                   Verified: {new Date(lastPaymentDate).toLocaleDateString('en-US', {
