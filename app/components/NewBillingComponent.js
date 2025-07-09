@@ -1739,11 +1739,11 @@ ${monthlyTrips.map(trip => {
           
           {/* Show billable amount - professional display based on payment status */}
           {!showPaidAmount && !showNewBillableAmount && (
-            <div className={`rounded-lg p-4 ${invoiceStatus.includes('PAID') || invoiceStatus.includes('VERIFIED') ? 'bg-green-50 border-2 border-green-200' : totalAmount > 0 ? 'bg-red-50 border-2 border-red-200' : 'bg-gray-50'}`}>
-              <h3 className={`text-sm font-medium mb-1 ${invoiceStatus.includes('PAID') || invoiceStatus.includes('VERIFIED') ? 'text-green-700' : totalAmount > 0 ? 'text-red-700' : 'text-gray-700'}`}>
-                {invoiceStatus.includes('PAID') || invoiceStatus.includes('VERIFIED') ? 'Paid Amount' : totalAmount > 0 ? 'Amount Due' : 'Billable Amount'}
+            <div className={`rounded-lg p-4 ${lastPaymentDate && (invoiceStatus.includes('PAID') || invoiceStatus.includes('VERIFIED')) ? 'bg-green-50 border-2 border-green-200' : totalAmount > 0 ? 'bg-red-50 border-2 border-red-200' : 'bg-gray-50'}`}>
+              <h3 className={`text-sm font-medium mb-1 ${lastPaymentDate && (invoiceStatus.includes('PAID') || invoiceStatus.includes('VERIFIED')) ? 'text-green-700' : totalAmount > 0 ? 'text-red-700' : 'text-gray-700'}`}>
+                {lastPaymentDate && (invoiceStatus.includes('PAID') || invoiceStatus.includes('VERIFIED')) ? 'Paid Amount' : totalAmount > 0 ? 'Amount Due' : 'Billable Amount'}
               </h3>
-              <p className={`text-2xl font-bold ${invoiceStatus.includes('PAID') || invoiceStatus.includes('VERIFIED') ? 'text-green-600' : totalAmount > 0 ? 'text-red-600' : 'text-gray-600'}`}>
+              <p className={`text-2xl font-bold ${lastPaymentDate && (invoiceStatus.includes('PAID') || invoiceStatus.includes('VERIFIED')) ? 'text-green-600' : totalAmount > 0 ? 'text-red-600' : 'text-gray-600'}`}>
                 ${(() => {
                   const paidStatuses = ['PAID', 'PAID WITH CARD', 'PAID WITH CARD - VERIFIED', 'PAID WITH BANK TRANSFER', 'PAID WITH BANK TRANSFER - VERIFIED', 'PAID WITH CHECK - VERIFIED', 'PAID WITH CHECK', 'PAID WITH CHECK (BEING VERIFIED)'];
                   const isPaid = paidStatuses.includes(invoiceStatus) || (invoiceStatus && invoiceStatus.includes('- VERIFIED'));
