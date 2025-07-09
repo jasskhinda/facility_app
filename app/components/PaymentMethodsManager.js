@@ -104,25 +104,33 @@ export default function PaymentMethodsManager({ user, facilityId }) {
             });
             
             setPaymentMethods(mergedMethods);
+            
+            // Find and set default method after setting payment methods
+            const defaultPaymentMethod = mergedMethods.find(method => method.is_default);
+            setDefaultMethod(defaultPaymentMethod?.id || null);
           } else {
             // If Stripe API fails, just use database data
             console.warn('Stripe API failed, using database data only');
             setPaymentMethods(dbMethods);
+            
+            // Find and set default method after setting payment methods
+            const defaultPaymentMethod = dbMethods.find(method => method.is_default);
+            setDefaultMethod(defaultPaymentMethod?.id || null);
           }
         } catch (stripeError) {
           console.error('Stripe API error:', stripeError);
           // Fallback to database data
           setPaymentMethods(dbMethods);
+          
+          // Find and set default method after setting payment methods
+          const defaultPaymentMethod = dbMethods.find(method => method.is_default);
+          setDefaultMethod(defaultPaymentMethod?.id || null);
         }
       } else {
         // No methods in database
         setPaymentMethods([]);
+        setDefaultMethod(null);
       }
-      
-      // Find default method
-      const methods = paymentMethods.length > 0 ? paymentMethods : dbMethods || [];
-      const defaultPaymentMethod = methods.find(method => method.is_default);
-      setDefaultMethod(defaultPaymentMethod?.id || null);
 
     } catch (err) {
       console.error('Error fetching payment methods:', err);
@@ -366,9 +374,23 @@ export default function PaymentMethodsManager({ user, facilityId }) {
         throw new Error(error || 'Failed to update default payment method');
       }
 
+      // Update the local state immediately
       setDefaultMethod(methodId);
+      
+      // Update the payment methods array to reflect the change
+      setPaymentMethods(prevMethods => 
+        prevMethods.map(method => ({
+          ...method,
+          is_default: method.id === methodId
+        }))
+      );
+      
       setSuccessMessage('Default payment method updated');
-      fetchPaymentMethods();
+      
+      // Fetch fresh data to ensure consistency
+      setTimeout(() => {
+        fetchPaymentMethods();
+      }, 500);
 
     } catch (err) {
       console.error('Error setting default method:', err);
@@ -481,6 +503,69 @@ export default function PaymentMethodsManager({ user, facilityId }) {
           Add and manage your payment methods for monthly invoice payments
         </p>
       </div>
+
+      {/* Default Payment Method Section */}
+      {paymentMethods.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Default Payment Method</h3>
+          {defaultMethod ? (
+            (() => {
+              const method = paymentMethods.find(m => m.id === defaultMethod);
+              return method ? (
+                <div className="flex items-center space-x-4 p-4 bg-gradient-to-r from-[#7CCFD0]/10 to-[#60BFC0]/10 rounded-lg border border-[#7CCFD0]/20">
+                  <div className="flex-shrink-0">
+                    {method.payment_method_type === 'card' ? (
+                      <div className="w-12 h-8 bg-gradient-to-r from-[#7CCFD0] to-[#60BFC0] rounded flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                      </div>
+                    ) : (
+                      <div className="w-12 h-8 bg-gradient-to-r from-green-500 to-green-600 rounded flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2">
+                      <h4 className="text-sm font-medium text-gray-900">{method.nickname}</h4>
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-[#7CCFD0]/20 text-[#60BFC0]">
+                        Default
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500">
+                      {method.payment_method_type === 'card' ? (
+                        <>
+                          {(method.stripe_data?.card?.brand || method.card_brand)?.toUpperCase()} ending in {method.stripe_data?.card?.last4 || method.last_four}
+                        </>
+                      ) : (
+                        <>
+                          {method.bank_account_type?.charAt(0).toUpperCase() + method.bank_account_type?.slice(1)} account ending in {method.stripe_data?.us_bank_account?.last4 || method.bank_account_last_four}
+                        </>
+                      )}
+                    </p>
+                  </div>
+                  <div className="text-[#60BFC0]">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                </div>
+              ) : null;
+            })()
+          ) : (
+            <div className="text-center py-8">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              <p className="mt-4 text-sm text-gray-500">No default payment method set</p>
+              <p className="text-xs text-gray-400">Add a payment method below and set it as default</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Add Payment Methods Section */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
