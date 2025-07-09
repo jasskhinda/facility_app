@@ -240,78 +240,74 @@ export async function PUT(request) {
       );
     }
 
-    // Use the database function to set default payment method
+    // Use direct database updates with transaction-like approach
     console.log('🔧 Attempting to set default payment method:', {
       facilityId,
       paymentMethodId,
       userRole: profile.role
     });
     
-    const { data: functionResult, error: functionError } = await supabase.rpc('set_default_payment_method', {
-      p_facility_id: facilityId,
-      p_payment_method_id: paymentMethodId
-    });
+    try {
+      // First, verify the payment method exists and belongs to this facility
+      const { data: paymentMethod, error: verifyError } = await supabase
+        .from('facility_payment_methods')
+        .select('id, nickname, payment_method_type')
+        .eq('id', paymentMethodId)
+        .eq('facility_id', facilityId)
+        .single();
 
-    if (functionError) {
-      console.error('❌ Database function error:', functionError);
-      console.error('Function error details:', {
-        message: functionError.message,
-        code: functionError.code,
-        details: functionError.details,
-        hint: functionError.hint
-      });
-      
-      // Check if function exists
-      if (functionError.code === '42883') {
-        console.error('❌ Function does not exist. Falling back to direct database updates.');
-        
-        // Fallback to direct database updates
-        try {
-          // First, remove default from all payment methods for this facility
-          const { error: clearError } = await supabase
-            .from('facility_payment_methods')
-            .update({ is_default: false })
-            .eq('facility_id', facilityId);
-
-          if (clearError) {
-            console.error('❌ Error clearing default payment methods:', clearError);
-            return NextResponse.json(
-              { error: 'Failed to clear default payment methods: ' + clearError.message },
-              { status: 500 }
-            );
-          }
-
-          // Set the new default payment method
-          const { error: setError } = await supabase
-            .from('facility_payment_methods')
-            .update({ is_default: true })
-            .eq('id', paymentMethodId)
-            .eq('facility_id', facilityId);
-
-          if (setError) {
-            console.error('❌ Error setting default payment method:', setError);
-            return NextResponse.json(
-              { error: 'Failed to set default payment method: ' + setError.message },
-              { status: 500 }
-            );
-          }
-          
-          console.log('✅ Successfully set default payment method using fallback method');
-        } catch (fallbackError) {
-          console.error('❌ Fallback method also failed:', fallbackError);
-          return NextResponse.json(
-            { error: 'Failed to set default payment method: ' + fallbackError.message },
-            { status: 500 }
-          );
-        }
-      } else {
+      if (verifyError || !paymentMethod) {
+        console.error('❌ Payment method not found or access denied:', verifyError);
         return NextResponse.json(
-          { error: 'Failed to set default payment method: ' + functionError.message },
+          { error: 'Payment method not found or access denied' },
+          { status: 404 }
+        );
+      }
+
+      console.log('✅ Payment method verified:', paymentMethod);
+
+      // Step 1: Remove default from all payment methods for this facility
+      const { error: clearError } = await supabase
+        .from('facility_payment_methods')
+        .update({ is_default: false })
+        .eq('facility_id', facilityId);
+
+      if (clearError) {
+        console.error('❌ Error clearing default payment methods:', clearError);
+        return NextResponse.json(
+          { error: 'Failed to clear default payment methods: ' + clearError.message },
           { status: 500 }
         );
       }
-    } else {
-      console.log('✅ Database function executed successfully:', functionResult);
+
+      console.log('✅ Cleared default flag from all payment methods');
+
+      // Step 2: Set the new default payment method
+      const { error: setError } = await supabase
+        .from('facility_payment_methods')
+        .update({ 
+          is_default: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', paymentMethodId)
+        .eq('facility_id', facilityId);
+
+      if (setError) {
+        console.error('❌ Error setting default payment method:', setError);
+        return NextResponse.json(
+          { error: 'Failed to set default payment method: ' + setError.message },
+          { status: 500 }
+        );
+      }
+      
+      console.log('✅ Successfully set default payment method using direct updates');
+
+    } catch (error) {
+      console.error('❌ Transaction failed:', error);
+      return NextResponse.json(
+        { error: 'Failed to set default payment method: ' + error.message },
+        { status: 500 }
+      );
     }
 
     console.log(`Successfully set payment method ${paymentMethodId} as default for facility ${facilityId}`);
