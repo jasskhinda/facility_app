@@ -599,7 +599,9 @@ ${monthlyTrips.map(trip => {
           </div>
           
           <div className="bg-[#F8F9FA]  rounded-lg p-4">
-            <h3 className="text-sm font-medium text-[#2E4F54] text-gray-900 mb-1">Total Amount</h3>
+            <h3 className="text-sm font-medium text-[#2E4F54] text-gray-900 mb-1">
+              {totalAmount > 0 ? 'Amount Due' : 'Total Amount'}
+            </h3>
             <p className="text-2xl font-bold text-[#7CCFD0]">${totalAmount.toFixed(2)}</p>
           </div>
           

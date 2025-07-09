@@ -1712,7 +1712,7 @@ ${monthlyTrips.map(trip => {
           {showNewBillableAmount && (
             <div className="bg-orange-50 rounded-lg p-4 border-2 border-orange-200">
               <h3 className="text-sm font-medium text-orange-700 mb-1">
-                {showPaidAmount ? 'New Billable Amount' : 'Billable Amount'}
+                {showPaidAmount ? 'New Amount Due' : newBillableAmount > 0 ? 'Amount Due' : 'Billable Amount'}
               </h3>
               <p className="text-2xl font-bold text-orange-600">${newBillableAmount.toFixed(2)}</p>
               <p className="text-xs text-orange-600 mt-1">
@@ -1725,7 +1725,7 @@ ${monthlyTrips.map(trip => {
           {!showPaidAmount && !showNewBillableAmount && (
             <div className={`rounded-lg p-4 ${invoiceStatus.includes('PAID') || invoiceStatus.includes('VERIFIED') ? 'bg-green-50 border-2 border-green-200' : totalAmount > 0 ? 'bg-red-50 border-2 border-red-200' : 'bg-gray-50'}`}>
               <h3 className={`text-sm font-medium mb-1 ${invoiceStatus.includes('PAID') || invoiceStatus.includes('VERIFIED') ? 'text-green-700' : totalAmount > 0 ? 'text-red-700' : 'text-gray-700'}`}>
-                {invoiceStatus.includes('PAID') || invoiceStatus.includes('VERIFIED') ? 'Paid Amount' : 'Billable Amount'}
+                {invoiceStatus.includes('PAID') || invoiceStatus.includes('VERIFIED') ? 'Paid Amount' : totalAmount > 0 ? 'Amount Due' : 'Billable Amount'}
               </h3>
               <p className={`text-2xl font-bold ${invoiceStatus.includes('PAID') || invoiceStatus.includes('VERIFIED') ? 'text-green-600' : totalAmount > 0 ? 'text-red-600' : 'text-gray-600'}`}>
                 ${(() => {
