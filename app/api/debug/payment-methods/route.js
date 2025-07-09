@@ -6,12 +6,58 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const facilityId = searchParams.get('facilityId');
     const paymentMethodId = searchParams.get('paymentMethodId');
+    const fixTrigger = searchParams.get('fixTrigger');
     
     if (!facilityId) {
       return NextResponse.json({ error: 'Facility ID is required' }, { status: 400 });
     }
 
     const supabase = await createRouteHandlerClient();
+    
+    // Fix trigger if requested
+    if (fixTrigger === 'true') {
+      console.log('🔧 Fixing payment method trigger...');
+      
+      const fixSQL = `
+        -- Drop the problematic trigger and function
+        DROP TRIGGER IF EXISTS ensure_single_default_payment_method_trigger ON facility_payment_methods;
+        DROP FUNCTION IF EXISTS ensure_single_default_payment_method();
+        
+        -- Create a new, simplified function
+        CREATE OR REPLACE FUNCTION ensure_single_default_payment_method()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            IF NEW.is_default = TRUE THEN
+                UPDATE facility_payment_methods 
+                SET is_default = FALSE 
+                WHERE facility_id = NEW.facility_id AND id != NEW.id;
+            END IF;
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+        
+        -- Recreate the trigger
+        CREATE TRIGGER ensure_single_default_payment_method_trigger
+            BEFORE INSERT OR UPDATE ON facility_payment_methods
+            FOR EACH ROW
+            EXECUTE FUNCTION ensure_single_default_payment_method();
+      `;
+
+      const { data: fixData, error: fixError } = await supabase.rpc('exec_sql', { sql: fixSQL });
+      
+      if (fixError) {
+        return NextResponse.json({ 
+          error: 'Failed to fix trigger: ' + fixError.message,
+          fixError 
+        }, { status: 500 });
+      }
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Trigger fixed successfully',
+        fixData 
+      });
+    }
     
     // Get payment methods from database
     const { data: methods, error } = await supabase
