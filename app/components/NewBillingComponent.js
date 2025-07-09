@@ -102,9 +102,14 @@ export default function FacilityBillingComponent({ user, facilityId }) {
 
   // Fetch professional payment breakdown to separate paid vs new billable amounts
   const fetchPaymentBreakdown = async (monthToFetch = selectedMonth) => {
-    if (!monthToFetch || !facilityId) return;
+    console.log('💸 fetchPaymentBreakdown called with:', { monthToFetch, facilityId });
+    if (!monthToFetch || !facilityId) {
+      console.log('⚠️ Skipping payment breakdown - missing data');
+      return;
+    }
     
     try {
+      console.log('📡 Calling calculate-payment-amounts API...');
       const response = await fetch('/api/facility/billing/calculate-payment-amounts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -237,6 +242,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       fetchMonthlyTrips(selectedMonth);
       fetchSavedPaymentMethods();
       fetchInvoiceStatus();
+      fetchPaymentBreakdown(selectedMonth); // Fetch payment breakdown on page load
     }
   }, [selectedMonth, facilityId]);
 
