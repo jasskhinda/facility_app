@@ -128,64 +128,33 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
   
   // Function to handle rebooking a trip
   const handleRebookTrip = async (trip) => {
-    setRebookingTrip(trip.id);
-    setIsSubmitting(true);
-    
     try {
-      // Get user profile to determine if they're a facility user
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('role, facility_id')
-        .eq('id', user.id)
-        .single();
-      
-      // Create a new trip based on the completed one
-      const newTripData = {
+      // Store trip data in sessionStorage for the booking form
+      const rebookData = {
         pickup_address: trip.pickup_address,
-        destination_address: trip.destination_address,
-        pickup_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
-        status: 'pending', // Start as pending for dispatcher approval
-        price: trip.price,
-        special_requirements: trip.special_requirements,
-        wheelchair_type: trip.wheelchair_type,
-        is_round_trip: trip.is_round_trip,
-        distance: trip.distance,
-        additional_passengers: trip.additional_passengers,
-        trip_notes: trip.trip_notes,
-        bill_to: trip.bill_to
+        destination_address: trip.destination_address || trip.dropoff_address,
+        is_round_trip: trip.is_round_trip || false,
+        wheelchair_type: trip.wheelchair_type || 'none',
+        additional_passengers: trip.additional_passengers || 0,
+        special_requirements: trip.special_requirements || '',
+        trip_notes: trip.trip_notes || '',
+        notes: trip.notes || '',
+        managed_client_id: trip.managed_client_id || null,
+        client_name: trip.user_profile 
+          ? `${trip.user_profile.first_name} ${trip.user_profile.last_name}`
+          : trip.managed_client 
+          ? `${trip.managed_client.first_name} ${trip.managed_client.last_name}`
+          : null
       };
       
-      // Set user fields based on role
-      if (profileData?.role === 'facility' && profileData?.facility_id) {
-        // For facility users, set facility_id and managed_client_id
-        newTripData.facility_id = profileData.facility_id;
-        newTripData.managed_client_id = trip.managed_client_id;
-        // Don't set user_id for facility trips
-      } else {
-        // For regular users, set user_id
-        newTripData.user_id = user.id;
-      }
+      // Store in sessionStorage
+      sessionStorage.setItem('rebookTripData', JSON.stringify(rebookData));
       
-      const { data, error } = await supabase
-        .from('trips')
-        .insert(newTripData)
-        .select();
-        
-      if (error) {
-        console.error('Error inserting new trip:', error);
-        console.error('Error details:', JSON.stringify(error));
-        throw error;
-      }
-      
-      // Redirect to the new trip's details page
-      if (data && data[0]) {
-        router.push(`/dashboard/trips/${data[0].id}`);
-      }
+      // Redirect to booking form with rebook flag
+      router.push('/dashboard/book?rebook=true');
     } catch (err) {
-      console.error('Error rebooking trip:', err);
-      console.error('Error details:', JSON.stringify(err));
-      alert('Failed to rebook trip. Please try again.');
-      setRebookingTrip(null);
+      console.error('Error preparing rebook:', err);
+      alert('Failed to prepare trip for rebooking. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -523,25 +492,14 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                           )}
                           <button
                             onClick={() => handleRebookTrip(trip)}
-                            disabled={isSubmitting && rebookingTrip === trip.id}
-                            className="btn-success text-xs px-4 py-2"
+                            disabled={isSubmitting}
+                            className="inline-flex items-center px-4 py-2 bg-[#7CCFD0] hover:bg-[#60BFC0] text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Book a new trip with the same pickup and destination"
                           >
-                            {isSubmitting && rebookingTrip === trip.id ? (
-                              <>
-                                <svg className="animate-spin w-4 h-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Rebooking...
-                              </>
-                            ) : (
-                              <>
-                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                                Rebook
-                              </>
-                            )}
+                            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Book Again
                           </button>
                           <Link
                             href={`/dashboard/trips/${trip.id}`}

@@ -349,19 +349,23 @@ export default function PaymentMethodsManager({ user, facilityId }) {
 
   const handleSetDefault = async (methodId) => {
     try {
-      // Remove default from all methods
-      await supabase
-        .from('facility_payment_methods')
-        .update({ is_default: false })
-        .eq('facility_id', facilityId);
+      setError('');
+      
+      // Use API endpoint to update default payment method
+      const response = await fetch('/api/stripe/facility-payment-methods', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentMethodId: methodId,
+          facilityId: facilityId,
+          action: 'set_default'
+        })
+      });
 
-      // Set new default
-      const { error } = await supabase
-        .from('facility_payment_methods')
-        .update({ is_default: true })
-        .eq('id', methodId);
-
-      if (error) throw error;
+      if (!response.ok) {
+        const { error } = await response.json();
+        throw new Error(error || 'Failed to update default payment method');
+      }
 
       setDefaultMethod(methodId);
       setSuccessMessage('Default payment method updated');

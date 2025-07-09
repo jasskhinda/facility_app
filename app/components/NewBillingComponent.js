@@ -1753,22 +1753,15 @@ ${monthlyTrips.map(trip => {
                 const hasDispatcherVerification = invoiceStatus.includes('PAID') || invoiceStatus.includes('VERIFIED');
                 const hasFacilityPayment = lastPaymentDate || invoiceStatus.includes('CHECK') || invoiceStatus.includes('CARD') || invoiceStatus.includes('BANK');
                 
-                return hasDispatcherVerification && hasFacilityPayment;
-              })() && (
-                <p className="text-xs text-green-600 mt-1">✅ PAID - Payment verified by dispatchers</p>
-              )}
-              {(() => {
-                const hasDispatcherVerification = invoiceStatus.includes('PAID') || invoiceStatus.includes('VERIFIED');
-                const hasFacilityPayment = lastPaymentDate || invoiceStatus.includes('CHECK') || invoiceStatus.includes('CARD') || invoiceStatus.includes('BANK');
-                
-                // Show awaiting payment if: (no verification) OR (has verification but no facility payment)
-                return totalAmount > 0 && (!hasDispatcherVerification || (hasDispatcherVerification && !hasFacilityPayment));
-              })() && (
-                <p className="text-xs text-red-600 mt-1">Awaiting payment</p>
-              )}
-              {totalAmount === 0 && !invoiceStatus.includes('PAID') && !invoiceStatus.includes('VERIFIED') && (
-                <p className="text-xs text-gray-600 mt-1">No billable trips</p>
-              )}
+                // Only show one status at a time - priority: verified payment > awaiting payment > no trips
+                if (hasDispatcherVerification && hasFacilityPayment) {
+                  return <p className="text-xs text-green-600 mt-1">✅ PAID - Payment verified by dispatchers</p>;
+                } else if (totalAmount > 0) {
+                  return <p className="text-xs text-red-600 mt-1">Awaiting payment</p>;
+                } else {
+                  return <p className="text-xs text-gray-600 mt-1">No billable trips</p>;
+                }
+              })()}
             </div>
           )}
           

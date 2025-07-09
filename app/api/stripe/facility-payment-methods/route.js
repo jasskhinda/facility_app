@@ -202,3 +202,66 @@ export async function DELETE(request) {
     );
   }
 }
+
+// PUT handler to update default payment method
+export async function PUT(request) {
+  try {
+    const { paymentMethodId, facilityId, action } = await request.json();
+    
+    if (!paymentMethodId || !facilityId || action !== 'set_default') {
+      return NextResponse.json(
+        { error: 'Payment method ID, facility ID, and action are required' },
+        { status: 400 }
+      );
+    }
+    
+    // Get the user session
+    const supabase = await createRouteHandlerClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      return NextResponse.json(
+        { error: 'You must be logged in to update a payment method' },
+        { status: 401 }
+      );
+    }
+
+    // Verify user has access to this facility
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('facility_id, role')
+      .eq('id', session.user.id)
+      .single();
+
+    if (profileError || profile.facility_id !== facilityId || profile.role !== 'facility') {
+      return NextResponse.json(
+        { error: 'Access denied to this facility' },
+        { status: 403 }
+      );
+    }
+
+    // Use the database function to set default payment method
+    const { error: functionError } = await supabase.rpc('set_default_payment_method', {
+      p_facility_id: facilityId,
+      p_payment_method_id: paymentMethodId
+    });
+
+    if (functionError) {
+      console.error('Error setting default payment method:', functionError);
+      return NextResponse.json(
+        { error: 'Failed to set default payment method' },
+        { status: 500 }
+      );
+    }
+
+    console.log(`Successfully set payment method ${paymentMethodId} as default for facility ${facilityId}`);
+    
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error updating default payment method:', error);
+    return NextResponse.json(
+      { error: 'Failed to update default payment method' },
+      { status: 500 }
+    );
+  }
+}

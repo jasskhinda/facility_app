@@ -68,7 +68,48 @@ export default function StreamlinedBookingForm({ user }) {
 
   useEffect(() => {
     loadFacilityAndClients();
-  }, [user]);
+    
+    // Check if this is a rebooking
+    if (searchParams.get('rebook') === 'true') {
+      const rebookDataStr = sessionStorage.getItem('rebookTripData');
+      if (rebookDataStr) {
+        try {
+          const rebookData = JSON.parse(rebookDataStr);
+          
+          // Update form with rebooked trip data
+          setFormData(prev => ({
+            ...prev,
+            pickupAddress: rebookData.pickup_address || '',
+            destinationAddress: rebookData.destination_address || '',
+            isRoundTrip: rebookData.is_round_trip || false,
+            wheelchairType: rebookData.wheelchair_type || 'no_wheelchair',
+            additionalPassengers: rebookData.additional_passengers || 0,
+            tripNotes: rebookData.trip_notes || rebookData.notes || '',
+            clientId: rebookData.managed_client_id || ''
+          }));
+          
+          // Set wheelchair data
+          if (rebookData.wheelchair_type && rebookData.wheelchair_type !== 'none') {
+            setWheelchairData({
+              type: rebookData.wheelchair_type === 'wheelchair' ? 'standard' : rebookData.wheelchair_type,
+              needsProvided: false,
+              customType: '',
+              hasWheelchairFee: true,
+              fee: 0
+            });
+          }
+          
+          // Clear the stored data
+          sessionStorage.removeItem('rebookTripData');
+          
+          // Show a message to the user
+          setSuccess('Trip details loaded from previous booking. Please update the date/time and review all details.');
+        } catch (err) {
+          console.error('Error loading rebook data:', err);
+        }
+      }
+    }
+  }, [user, searchParams]);
 
   useEffect(() => {
     if (formData.clientId) {
@@ -184,6 +225,17 @@ export default function StreamlinedBookingForm({ user }) {
     if (!formData.pickupDate || !formData.pickupTime) {
       setError('Please select pickup date and time');
       return;
+    }
+    
+    // Validate round trip times
+    if (formData.isRoundTrip && formData.returnTime) {
+      const pickupTime = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
+      const returnTime = new Date(`${formData.pickupDate}T${formData.returnTime}`);
+      
+      if (returnTime <= pickupTime) {
+        setError('Return time must be after pickup time for round trips');
+        return;
+      }
     }
 
     // Validate wheelchair selection
