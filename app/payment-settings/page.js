@@ -115,12 +115,20 @@ export default function PaymentSettingsPage() {
       setError('')
       setSuccess('')
 
-      const { error } = await supabase.rpc('set_default_payment_method', {
-        p_facility_id: profile.facility_id,
-        p_payment_method_id: paymentMethodId
+      // Use the API endpoint instead of direct RPC call
+      const response = await fetch('/api/stripe/facility-payment-methods/set-default', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentMethodId: paymentMethodId,
+          facilityId: profile.facility_id
+        })
       })
 
-      if (error) throw error
+      if (!response.ok) {
+        const { error } = await response.json()
+        throw new Error(error || 'Failed to update default payment method')
+      }
 
       await fetchPaymentMethods()
       setSuccess('Default payment method updated successfully')
@@ -128,7 +136,7 @@ export default function PaymentSettingsPage() {
       setTimeout(() => setSuccess(''), 3000)
     } catch (error) {
       console.error('Error setting default payment method:', error)
-      setError('Failed to update default payment method')
+      setError('Failed to update default payment method: ' + error.message)
     }
   }
 
