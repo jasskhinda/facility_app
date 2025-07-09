@@ -156,7 +156,7 @@ export async function POST(request) {
       showNewBillableAmount = false // Don't show new billable during check processing
     } else if (totalNewBillableAmount > 0) {
       displayStatus = 'UNPAID'
-      showPaidAmount = paidAmount > 0
+      showPaidAmount = false  // Don't show "Paid Amount" for unpaid invoices
       showNewBillableAmount = true
     }
 
