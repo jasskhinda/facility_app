@@ -8,7 +8,6 @@ import DashboardLayout from './DashboardLayout';
 import PricingDisplay from './PricingDisplay';
 import WheelchairSelectionFlow from './WheelchairSelectionFlow';
 import { getTodayISO } from '../utils/dateUtils';
-import StyledDateInput from './StyledDateInput';
 
 // Dynamically import Google Maps components to prevent SSR issues
 const SuperSimpleMap = dynamic(() => import('./SuperSimpleMap'), {
@@ -415,13 +414,27 @@ export default function StreamlinedBookingForm({ user }) {
                 <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                   Pickup Date *
                 </label>
-                <StyledDateInput
-                  value={formData.pickupDate}
-                  onChange={(value) => setFormData({ ...formData, pickupDate: value })}
-                  minDate={getTodayISO()}
-                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={formData.pickupDate}
+                    onChange={(e) => setFormData({ ...formData, pickupDate: e.target.value })}
+                    min={getTodayISO()}
+                    className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                    required
+                  />
+                  {formData.pickupDate && (
+                    <div className="absolute top-0 left-0 w-full h-full px-4 py-2 pointer-events-none flex items-center bg-white rounded-lg">
+                      <span className="text-[#2E4F54] text-gray-900">
+                        {new Date(formData.pickupDate + 'T00:00:00').toLocaleDateString('en-US', {
+                          month: 'long',
+                          day: 'numeric', 
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
               
               <div>
