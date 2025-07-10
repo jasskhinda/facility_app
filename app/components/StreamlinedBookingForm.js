@@ -8,6 +8,7 @@ import DashboardLayout from './DashboardLayout';
 import PricingDisplay from './PricingDisplay';
 import WheelchairSelectionFlow from './WheelchairSelectionFlow';
 import { getTodayISO } from '../utils/dateUtils';
+import StyledDateInput from './StyledDateInput';
 
 // Dynamically import Google Maps components to prevent SSR issues
 const SuperSimpleMap = dynamic(() => import('./SuperSimpleMap'), {
@@ -414,11 +415,10 @@ export default function StreamlinedBookingForm({ user }) {
                 <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                   Pickup Date *
                 </label>
-                <input
-                  type="date"
+                <StyledDateInput
                   value={formData.pickupDate}
-                  onChange={(e) => setFormData({ ...formData, pickupDate: e.target.value })}
-                  min={getTodayISO()}
+                  onChange={(value) => setFormData({ ...formData, pickupDate: value })}
+                  minDate={getTodayISO()}
                   className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   required
                 />
