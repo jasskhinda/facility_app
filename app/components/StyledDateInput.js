@@ -30,10 +30,19 @@ export default function StyledDateInput({
 
   const handleDisplayClick = (e) => {
     e.preventDefault();
-    e.stopPropagation();
     if (hiddenInputRef.current) {
-      hiddenInputRef.current.click();
-      hiddenInputRef.current.focus();
+      // Try multiple methods to open the date picker
+      try {
+        hiddenInputRef.current.focus();
+        hiddenInputRef.current.click();
+        // For browsers that support it
+        if (hiddenInputRef.current.showPicker) {
+          hiddenInputRef.current.showPicker();
+        }
+      } catch (error) {
+        console.log('Date picker fallback');
+        hiddenInputRef.current.focus();
+      }
     }
   };
 
@@ -46,8 +55,8 @@ export default function StyledDateInput({
       {/* Visible styled input that shows formatted date */}
       <div
         onClick={handleDisplayClick}
-        className={`${className} cursor-pointer flex items-center justify-between relative z-10`}
-        style={{ minHeight: '42px' }}
+        className={`${className} cursor-pointer flex items-center justify-between relative`}
+        style={{ zIndex: 2, minHeight: '42px' }}
       >
         <span className={`${value ? 'text-gray-900' : 'text-gray-500'} pointer-events-none`}>
           {value ? formatToUSDisplay(value) : 'Select date...'}
@@ -76,8 +85,8 @@ export default function StyledDateInput({
         onChange={handleDateChange}
         min={minDate}
         required={required}
-        className="absolute top-0 left-0 w-full h-full opacity-0 pointer-events-none"
-        tabIndex={-1}
+        className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+        style={{ zIndex: 3 }}
         {...props}
       />
     </div>
