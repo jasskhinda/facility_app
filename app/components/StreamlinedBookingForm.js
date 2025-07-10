@@ -414,14 +414,27 @@ export default function StreamlinedBookingForm({ user }) {
                 <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                   Pickup Date *
                 </label>
-                <input
-                  type="date"
-                  value={formData.pickupDate}
-                  onChange={(e) => setFormData({ ...formData, pickupDate: e.target.value })}
-                  min={getTodayISO()}
-                  className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={formData.pickupDate}
+                    onChange={(e) => setFormData({ ...formData, pickupDate: e.target.value })}
+                    min={getTodayISO()}
+                    className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] opacity-0 absolute top-0 left-0 cursor-pointer"
+                    required
+                  />
+                  <div className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white text-[#2E4F54] text-gray-900 pointer-events-none flex items-center justify-between">
+                    <span>
+                      {formData.pickupDate 
+                        ? new Date(formData.pickupDate + 'T00:00:00').toLocaleDateString('en-US')
+                        : 'mm/dd/yyyy'
+                      }
+                    </span>
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                </div>
               </div>
               
               <div>
