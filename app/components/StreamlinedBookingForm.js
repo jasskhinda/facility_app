@@ -7,7 +7,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from './DashboardLayout';
 import PricingDisplay from './PricingDisplay';
 import WheelchairSelectionFlow from './WheelchairSelectionFlow';
-import USDateInput from './USDateInput';
 import { getTodayISO } from '../utils/dateUtils';
 
 // Dynamically import Google Maps components to prevent SSR issues
@@ -415,10 +414,11 @@ export default function StreamlinedBookingForm({ user }) {
                 <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
                   Pickup Date *
                 </label>
-                <USDateInput
+                <input
+                  type="date"
                   value={formData.pickupDate}
-                  onChange={(isoDate) => setFormData({ ...formData, pickupDate: isoDate })}
-                  minDate={getTodayISO()}
+                  onChange={(e) => setFormData({ ...formData, pickupDate: e.target.value })}
+                  min={getTodayISO()}
                   className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                   required
                 />
