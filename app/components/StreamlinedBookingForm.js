@@ -420,54 +420,36 @@ export default function StreamlinedBookingForm({ user }) {
                     value={formData.pickupDate}
                     onChange={(e) => setFormData({ ...formData, pickupDate: e.target.value })}
                     min={getTodayISO()}
-                    className={`w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white text-[#2E4F54] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] ${formData.pickupDate ? 'text-transparent' : ''}`}
-                    placeholder="Select date..."
+                    className="w-full px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white text-transparent focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
                     required
                   />
-                  {formData.pickupDate && (
-                    <div className="absolute top-0 left-0 w-full h-full px-4 py-2 pointer-events-none flex items-center justify-between">
-                      <span className="text-[#2E4F54] text-gray-900">
-                        {new Date(formData.pickupDate + 'T00:00:00').toLocaleDateString('en-US', {
-                          month: 'long',
-                          day: 'numeric', 
-                          year: 'numeric'
-                        })}
-                      </span>
-                      {/* Calendar icon */}
-                      <svg 
-                        className="w-5 h-5 text-gray-400 flex-shrink-0" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth={2} 
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" 
-                        />
-                      </svg>
-                    </div>
-                  )}
-                  {!formData.pickupDate && (
-                    <div className="absolute top-0 left-0 w-full h-full px-4 py-2 pointer-events-none flex items-center justify-between">
-                      <span className="text-gray-500">Select date...</span>
-                      {/* Calendar icon */}
-                      <svg 
-                        className="w-5 h-5 text-gray-400 flex-shrink-0" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth={2} 
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" 
-                        />
-                      </svg>
-                    </div>
-                  )}
+                  {/* Single overlay that shows either placeholder or formatted date */}
+                  <div className="absolute top-0 left-0 w-full h-full px-4 py-2 pointer-events-none flex items-center justify-between">
+                    <span className={formData.pickupDate ? "text-[#2E4F54] text-gray-900" : "text-gray-500"}>
+                      {formData.pickupDate 
+                        ? new Date(formData.pickupDate + 'T00:00:00').toLocaleDateString('en-US', {
+                            month: 'long',
+                            day: 'numeric', 
+                            year: 'numeric'
+                          })
+                        : 'Select date...'
+                      }
+                    </span>
+                    {/* Calendar icon */}
+                    <svg 
+                      className="w-5 h-5 text-gray-400 flex-shrink-0" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" 
+                      />
+                    </svg>
+                  </div>
                 </div>
               </div>
               
