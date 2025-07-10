@@ -28,24 +28,6 @@ export default function StyledDateInput({
     }
   };
 
-  const handleDisplayClick = (e) => {
-    e.preventDefault();
-    if (hiddenInputRef.current) {
-      // Try multiple methods to open the date picker
-      try {
-        hiddenInputRef.current.focus();
-        hiddenInputRef.current.click();
-        // For browsers that support it
-        if (hiddenInputRef.current.showPicker) {
-          hiddenInputRef.current.showPicker();
-        }
-      } catch (error) {
-        console.log('Date picker fallback');
-        hiddenInputRef.current.focus();
-      }
-    }
-  };
-
   const handleDateChange = (e) => {
     onChange(e.target.value);
   };
@@ -54,16 +36,15 @@ export default function StyledDateInput({
     <div className="relative">
       {/* Visible styled input that shows formatted date */}
       <div
-        onClick={handleDisplayClick}
-        className={`${className} cursor-pointer flex items-center justify-between relative`}
-        style={{ zIndex: 2, minHeight: '42px' }}
+        className={`${className} flex items-center justify-between relative pointer-events-none`}
+        style={{ minHeight: '42px' }}
       >
-        <span className={`${value ? 'text-gray-900' : 'text-gray-500'} pointer-events-none`}>
+        <span className={`${value ? 'text-gray-900' : 'text-gray-500'}`}>
           {value ? formatToUSDisplay(value) : 'Select date...'}
         </span>
         {/* Calendar icon */}
         <svg 
-          className="w-5 h-5 text-gray-400 pointer-events-none flex-shrink-0" 
+          className="w-5 h-5 text-gray-400 flex-shrink-0" 
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
@@ -77,7 +58,7 @@ export default function StyledDateInput({
         </svg>
       </div>
 
-      {/* Hidden native date input for calendar functionality */}
+      {/* Native date input that handles all clicks */}
       <input
         ref={hiddenInputRef}
         type="date"
@@ -86,7 +67,6 @@ export default function StyledDateInput({
         min={minDate}
         required={required}
         className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
-        style={{ zIndex: 3 }}
         {...props}
       />
     </div>
