@@ -15,10 +15,10 @@ export default function NavigationLoader() {
         if (target.href.startsWith(window.location.origin)) {
           showLoading('Navigating...');
           
-          // Auto-hide after 1.5 seconds as fallback
+          // Auto-hide after 600ms as fallback (faster)
           setTimeout(() => {
             hideLoading();
-          }, 1500);
+          }, 600);
         }
       }
     };
@@ -29,10 +29,10 @@ export default function NavigationLoader() {
       if (form.tagName === 'FORM') {
         showLoading('Processing...');
         
-        // Auto-hide after 2 seconds as fallback
+        // Auto-hide after 1 second as fallback (faster)
         setTimeout(() => {
           hideLoading();
-        }, 2000);
+        }, 1000);
       }
     };
 
@@ -47,10 +47,10 @@ export default function NavigationLoader() {
       )) {
         showLoading('Processing...');
         
-        // Auto-hide after 2 seconds as fallback
+        // Auto-hide after 1 second as fallback (faster)
         setTimeout(() => {
           hideLoading();
-        }, 2000);
+        }, 1000);
       }
     };
 

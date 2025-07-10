@@ -47,16 +47,16 @@ export default function LoadingProvider({ children }) {
       setLoadingMessage('Navigating...');
       setIsLoading(true);
       
-      // Auto-hide after 1.5 seconds for route changes (slightly longer for form redirects)
+      // Auto-hide after 800ms for route changes (faster for better UX)
       timeoutId = setTimeout(() => {
         setIsLoading(false);
-      }, 1500);
+      }, 800);
       
-      // Global timeout protection - force hide after 5 seconds maximum (shorter for better UX)
+      // Global timeout protection - force hide after 2 seconds maximum (much shorter)
       globalTimeoutId = setTimeout(() => {
         console.warn('🚨 Global navigation timeout reached, forcing hide');
         setIsLoading(false);
-      }, 5000);
+      }, 2000);
     };
 
     const handleComplete = () => {
