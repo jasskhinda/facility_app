@@ -613,28 +613,74 @@ Website: https://compassionatecaretransportation.com
           <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Cost Breakdown</h3>
           
           <div className="space-y-3">
+            {/* Base Fare */}
             <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
-              <span className="text-sm text-[#2E4F54] text-gray-900">Base Fare</span>
+              <span className="text-sm text-[#2E4F54] text-gray-900">
+                Base fare ({trip.is_round_trip ? '2 legs' : '1 leg'} @ $50/leg)
+              </span>
               <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
-                ${trip.base_price?.toFixed(2) || (trip.price ? (trip.price * 0.8).toFixed(2) : '0.00')}
+                ${trip.is_round_trip ? '100.00' : '50.00'}
               </span>
             </div>
             
-            {trip.wheelchair_type === 'wheelchair' && (
+            {/* Distance Charge */}
+            {trip.distance && trip.distance > 0 && (
               <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
-                <span className="text-sm text-[#2E4F54] text-gray-900">Wheelchair Accessible Surcharge</span>
+                <span className="text-sm text-[#2E4F54] text-gray-900">
+                  Distance charge ({trip.distance} mi @ ${trip.county_info === 'Outside Franklin County' ? '4' : '3'}/mile)
+                </span>
                 <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
-                  ${trip.wheelchair_fee?.toFixed(2) || (trip.price ? (trip.price * 0.1).toFixed(2) : '0.00')}
+                  ${(trip.distance * (trip.county_info === 'Outside Franklin County' ? 4 : 3) * (trip.is_round_trip ? 2 : 1)).toFixed(2)}
                 </span>
               </div>
             )}
             
-            
-            {trip.is_round_trip && (
+            {/* County Surcharge */}
+            {trip.county_surcharge && trip.county_surcharge > 0 && (
               <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
-                <span className="text-sm text-[#2E4F54] text-gray-900">Round Trip</span>
+                <span className="text-sm text-[#2E4F54] text-gray-900">County surcharge</span>
                 <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
-                  ${trip.round_trip_fee?.toFixed(2) || (trip.price ? (trip.price * 0.1).toFixed(2) : '0.00')}
+                  ${trip.county_surcharge.toFixed(2)}
+                </span>
+              </div>
+            )}
+            
+            {/* Weekend/After-hours Surcharge */}
+            {trip.time_surcharge && trip.time_surcharge > 0 && (
+              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
+                <span className="text-sm text-[#2E4F54] text-gray-900">Weekend/After-hours surcharge</span>
+                <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
+                  ${trip.time_surcharge.toFixed(2)}
+                </span>
+              </div>
+            )}
+            
+            {/* Emergency Fee */}
+            {trip.emergency_fee && trip.emergency_fee > 0 && (
+              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
+                <span className="text-sm text-[#2E4F54] text-gray-900">Emergency fee</span>
+                <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
+                  ${trip.emergency_fee.toFixed(2)}
+                </span>
+              </div>
+            )}
+            
+            {/* Wheelchair Rental Fee */}
+            {trip.wheelchair_rental && trip.wheelchair_rental > 0 && (
+              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
+                <span className="text-sm text-[#2E4F54] text-gray-900">Wheelchair rental fee</span>
+                <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
+                  ${trip.wheelchair_rental.toFixed(2)}
+                </span>
+              </div>
+            )}
+            
+            {/* Veteran Discount */}
+            {trip.veteran_discount && trip.veteran_discount > 0 && (
+              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
+                <span className="text-sm text-green-600 dark:text-green-400">Veteran discount (20%)</span>
+                <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                  -${trip.veteran_discount.toFixed(2)}
                 </span>
               </div>
             )}
