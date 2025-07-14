@@ -46,7 +46,6 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
     isRoundTrip: trip?.is_round_trip || false,
     returnTime: trip?.return_pickup_time ? new Date(trip.return_pickup_time).toTimeString().slice(0,5) : '',
     tripNotes: trip?.trip_notes || '',
-    billTo: trip?.bill_to || 'facility',
     isEmergency: false
   });
 
@@ -173,7 +172,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
         additional_passengers: parseInt(formData.additionalPassengers) || 0,
         is_round_trip: formData.isRoundTrip,
         trip_notes: formData.tripNotes.trim() || null,
-        bill_to: formData.billTo,
+        bill_to: 'facility', // Always bill to facility in facility app
         // Add pricing information if available
         price: currentPricing?.pricing?.total || trip?.price || null,
         distance: routeInfo?.distance?.miles || currentPricing?.distance?.distance || trip?.distance || null,
@@ -454,36 +453,6 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
               />
             </div>
 
-            {/* Billing */}
-            <div>
-              <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
-                Bill To
-              </label>
-              <div className="space-y-2">
-                <label className="flex items-center space-x-3">
-                  <input
-                    type="radio"
-                    value="facility"
-                    checked={formData.billTo === 'facility'}
-                    onChange={(e) => setFormData({ ...formData, billTo: e.target.value })}
-                    className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] focus:ring-[#7CCFD0]"
-                    disabled={loading}
-                  />
-                  <span className="text-[#2E4F54] text-gray-900">Facility</span>
-                </label>
-                <label className="flex items-center space-x-3">
-                  <input
-                    type="radio"
-                    value="client"
-                    checked={formData.billTo === 'client'}
-                    onChange={(e) => setFormData({ ...formData, billTo: e.target.value })}
-                    className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] focus:ring-[#7CCFD0]"
-                    disabled={loading}
-                  />
-                  <span className="text-[#2E4F54] text-gray-900">Client</span>
-                </label>
-              </div>
-            </div>
 
             {/* Pricing Display */}
             <PricingDisplay 
