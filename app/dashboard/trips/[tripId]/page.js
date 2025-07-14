@@ -76,7 +76,7 @@ COST BREAKDOWN
 ================================================
 Base Fare: $${trip.base_price?.toFixed(2) || (trip.price ? (trip.price * 0.8).toFixed(2) : '0.00')}
 ${trip.wheelchair_type === 'wheelchair' ? `Wheelchair Surcharge: $${trip.wheelchair_fee?.toFixed(2) || (trip.price ? (trip.price * 0.1).toFixed(2) : '0.00')}` : ''}
-${trip.additional_passengers && trip.additional_passengers > 0 ? `Additional Passengers: $${trip.passenger_fee?.toFixed(2) || (trip.additional_passengers * 5).toFixed(2)}` : ''}
+${trip.additional_passengers && trip.additional_passengers > 0 ? `Additional Passengers: ${trip.additional_passengers}` : ''}
 ${trip.is_round_trip ? `Round Trip Fee: $${trip.round_trip_fee?.toFixed(2) || (trip.price ? (trip.price * 0.1).toFixed(2) : '0.00')}` : ''}
 ------------------------------------------------
 TOTAL AMOUNT: $${trip.price?.toFixed(2) || '0.00'}
@@ -629,14 +629,6 @@ Website: https://compassionatecaretransportation.com
               </div>
             )}
             
-            {trip.additional_passengers && trip.additional_passengers > 0 && (
-              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
-                <span className="text-sm text-[#2E4F54] text-gray-900">Additional Passengers ({trip.additional_passengers})</span>
-                <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
-                  ${trip.passenger_fee?.toFixed(2) || (trip.additional_passengers * 5).toFixed(2)}
-                </span>
-              </div>
-            )}
             
             {trip.is_round_trip && (
               <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
