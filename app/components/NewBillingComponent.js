@@ -437,7 +437,10 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           pickup_address,
           destination_address,
           pickup_time,
+          pickup_date,
           price,
+          total_fare,
+          billable,
           wheelchair_type,
           is_round_trip,
           additional_passengers,
@@ -446,8 +449,9 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           managed_client_id
         `)
         .eq('facility_id', facilityId)
-        .gte('pickup_time', startISO)
-        .lte('pickup_time', endISO)
+        .eq('billable', true)
+        .gte('pickup_date', `${year}-${month.padStart(2, '0')}-01`)
+        .lte('pickup_date', `${year}-${month.padStart(2, '0')}-31`)
         .in('status', ['completed', 'pending', 'upcoming', 'confirmed'])
         .order('pickup_time', { ascending: false });
 
@@ -646,8 +650,8 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           } else {
             categorizedDueTrips.push(trip);
             // Only count completed trips with valid prices as billable
-            if (trip.status === 'completed' && trip.price > 0) {
-              currentActualBillableAmount += (trip.price || 0);
+            if (trip.status === 'completed' && (trip.total_fare > 0 || trip.price > 0)) {
+              currentActualBillableAmount += (trip.total_fare || trip.price || 0);
             }
           }
         });
@@ -738,7 +742,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
             // Calculate the total paid amount before resetting
             const totalPaidAmount = trips.reduce((sum, trip) => {
               if (trip.status === 'completed' && trip.price > 0) {
-                return sum + (trip.price || 0);
+                return sum + (trip.total_fare || trip.price || 0);
               }
               return sum;
             }, 0);
@@ -879,14 +883,14 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         // - BILLABLE: Only completed trips with valid prices
         // - NON-BILLABLE: Pending, upcoming, confirmed trips (show but no charge)
         const isCompleted = trip.status === 'completed';
-        const hasValidPrice = trip.price && parseFloat(trip.price) > 0;
+        const hasValidPrice = (trip.total_fare && parseFloat(trip.total_fare) > 0) || (trip.price && parseFloat(trip.price) > 0);
         const isBillable = isCompleted && hasValidPrice;
         
         return {
           ...trip,
           clientName,
           billable: isBillable,
-          displayPrice: hasValidPrice ? parseFloat(trip.price) : 0,
+          displayPrice: hasValidPrice ? parseFloat(trip.total_fare || trip.price) : 0,
           category: isCompleted ? 'completed' : 'pending'
         };
       });
@@ -1022,7 +1026,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       if (isPaid) {
         if (paidTrips.length > 0) {
           // Calculate total from paid trips
-          displayAmount = paidTrips.reduce((sum, trip) => sum + (trip.price || 0), 0);
+          displayAmount = paidTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0);
         } else if (window.originalPaidAmount) {
           // Use stored original amount
           displayAmount = window.originalPaidAmount;
@@ -1046,7 +1050,7 @@ ${monthlyTrips.map(trip => {
   const date = trip.pickup_time ? new Date(trip.pickup_time).toLocaleDateString() : 'N/A';
   const pickup = (trip.pickup_address || '').replace(/"/g, '""');
   const destination = (trip.destination_address || '').replace(/"/g, '""');
-  const price = (trip.price || 0).toFixed(2);
+  const price = (trip.total_fare || trip.price || 0).toFixed(2);
   const status = trip.status || 'unknown';
   return `${date},"${trip.clientName}","${pickup}","${destination}","$${price}",${status}`;
 }).join('\n')}`;
@@ -1081,7 +1085,7 @@ ${monthlyTrips.map(trip => {
     if (isPaid) {
       if (paidTrips.length > 0) {
         // Calculate total from paid trips
-        displayAmount = paidTrips.reduce((sum, trip) => sum + (trip.price || 0), 0);
+        displayAmount = paidTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0);
       } else if (window.originalPaidAmount) {
         // Use stored original amount
         displayAmount = window.originalPaidAmount;
@@ -1420,7 +1424,7 @@ ${monthlyTrips.map(trip => {
       let paymentData = {
         facility_id: facilityId,
         month: selectedMonth,
-        amount: billableTrips.reduce((sum, trip) => sum + (trip.price || 0), 0),
+        amount: billableTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0),
         payment_method: paymentMethod,
         payment_date: new Date().toISOString(),
         trip_ids: billableTrips.map(trip => trip.id),
@@ -1750,7 +1754,7 @@ ${monthlyTrips.map(trip => {
                   
                   if (isPaid && paidTrips.length > 0) {
                     // Calculate total paid amount from paid trips
-                    const paidAmount = paidTrips.reduce((sum, trip) => sum + (trip.price || 0), 0);
+                    const paidAmount = paidTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0);
                     return paidAmount.toFixed(2);
                   } else if (isPaid && window.originalPaidAmount) {
                     // Use stored original invoice amount for paid invoices
@@ -1826,14 +1830,14 @@ ${monthlyTrips.map(trip => {
                         ${(() => {
                           // Get the actual paid amount
                           if (paidTrips.length > 0) {
-                            return paidTrips.reduce((sum, trip) => sum + (trip.price || 0), 0).toFixed(2);
+                            return paidTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0).toFixed(2);
                           } else if (window.originalPaidAmount) {
                             return window.originalPaidAmount.toFixed(2);
                           } else if (invoiceHistory[0]?.total_amount) {
                             return invoiceHistory[0].total_amount.toFixed(2);
                           } else {
                             // Calculate from all trips since they're paid
-                            return monthlyTrips.reduce((sum, trip) => sum + (trip.price || 0), 0).toFixed(2);
+                            return monthlyTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0).toFixed(2);
                           }
                         })()} (Paid)
                       </span>
@@ -1847,7 +1851,7 @@ ${monthlyTrips.map(trip => {
                         UPCOMING INVOICE
                       </span>
                       <span className="text-sm text-gray-600">
-                        ${(monthlyTrips.reduce((sum, trip) => trip.billable ? sum + trip.price : sum, 0)).toFixed(2)}
+                        ${(monthlyTrips.reduce((sum, trip) => trip.billable ? sum + (trip.total_fare || trip.price) : sum, 0)).toFixed(2)}
                       </span>
                     </>
                   );
@@ -1866,7 +1870,7 @@ ${monthlyTrips.map(trip => {
                         {displayStatus}
                       </span>
                       <span className="text-sm text-gray-600">
-                        ${(monthlyTrips.reduce((sum, trip) => trip.billable ? sum + trip.price : sum, 0)).toFixed(2)}
+                        ${(monthlyTrips.reduce((sum, trip) => trip.billable ? sum + (trip.total_fare || trip.price) : sum, 0)).toFixed(2)}
                       </span>
                     </>
                   );
@@ -2049,7 +2053,7 @@ ${monthlyTrips.map(trip => {
                     <div>• Invoice Amount: ${(() => {
                       // Get the actual paid amount
                       if (paidTrips.length > 0) {
-                        return paidTrips.reduce((sum, trip) => sum + (trip.price || 0), 0).toFixed(2);
+                        return paidTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0).toFixed(2);
                       } else if (window.originalPaidAmount) {
                         return window.originalPaidAmount.toFixed(2);
                       } else if (invoiceHistory[0]?.total_amount) {
@@ -2201,7 +2205,7 @@ ${monthlyTrips.map(trip => {
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-bold text-red-700">
-                      ${dueTrips.filter(trip => trip.billable).reduce((sum, trip) => sum + (trip.price || 0), 0).toFixed(2)}
+                      ${dueTrips.filter(trip => trip.billable).reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0).toFixed(2)}
                     </div>
                     <div className="text-xs text-red-600">Amount Due</div>
                   </div>
@@ -2239,11 +2243,11 @@ ${monthlyTrips.map(trip => {
                           <td className="px-6 py-4 text-sm font-medium">
                             {trip.billable ? (
                               <span className="text-red-600 font-semibold">
-                                ${trip.price.toFixed(2)}
+                                ${(trip.total_fare || trip.price).toFixed(2)}
                               </span>
                             ) : (
                               <span className="text-gray-400">
-                                ${(trip.price || 0).toFixed(2)}
+                                ${(trip.total_fare || trip.price || 0).toFixed(2)}
                               </span>
                             )}
                           </td>
@@ -2291,7 +2295,7 @@ ${monthlyTrips.map(trip => {
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-bold text-green-700">
-                      ${paidTrips.reduce((sum, trip) => sum + (trip.price || 0), 0).toFixed(2)}
+                      ${paidTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0).toFixed(2)}
                     </div>
                     <div className="text-xs text-green-600">Already Paid</div>
                   </div>
@@ -2328,7 +2332,7 @@ ${monthlyTrips.map(trip => {
                           </td>
                           <td className="px-6 py-4 text-sm font-medium">
                             <span className="text-green-600 font-semibold">
-                              ${trip.price.toFixed(2)}
+                              ${(trip.total_fare || trip.price).toFixed(2)}
                             </span>
                           </td>
                           <td className="px-6 py-4">
@@ -2370,7 +2374,7 @@ ${monthlyTrips.map(trip => {
                     </div>
                     <div className="text-gray-700 font-medium">Billable Trips Due</div>
                     <div className="text-sm text-red-600 font-semibold mt-1">
-                      ${dueTrips.filter(trip => trip.billable).reduce((sum, trip) => sum + (trip.price || 0), 0).toFixed(2)}
+                      ${dueTrips.filter(trip => trip.billable).reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0).toFixed(2)}
                     </div>
                   </>
                 )}
@@ -2382,7 +2386,7 @@ ${monthlyTrips.map(trip => {
                 </div>
                 <div className="text-gray-700 font-medium">Total Trips</div>
                 <div className="text-sm text-blue-600 font-semibold mt-1">
-                  ${(dueTrips.reduce((sum, trip) => sum + (trip.price || 0), 0) + paidTrips.reduce((sum, trip) => sum + (trip.price || 0), 0)).toFixed(2)}
+                  ${(dueTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0) + paidTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0)).toFixed(2)}
                 </div>
               </div>
             </div>
