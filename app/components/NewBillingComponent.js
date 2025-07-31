@@ -449,10 +449,9 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           managed_client_id
         `)
         .eq('facility_id', facilityId)
-        .eq('billable', true)
-        .gte('pickup_date', `${year}-${month.padStart(2, '0')}-01`)
-        .lte('pickup_date', `${year}-${month.padStart(2, '0')}-31`)
         .in('status', ['completed', 'pending', 'upcoming', 'confirmed'])
+        .gte('pickup_time', startISO)
+        .lte('pickup_time', endISO)
         .order('pickup_time', { ascending: false });
 
       console.log('🚗 FACILITY TRIPS Query result:', { 
@@ -884,7 +883,8 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         // - NON-BILLABLE: Pending, upcoming, confirmed trips (show but no charge)
         const isCompleted = trip.status === 'completed';
         const hasValidPrice = (trip.total_fare && parseFloat(trip.total_fare) > 0) || (trip.price && parseFloat(trip.price) > 0);
-        const isBillable = isCompleted && hasValidPrice;
+        // Use the billable flag from database if available, otherwise determine by status and price
+        const isBillable = trip.billable !== undefined ? trip.billable : (isCompleted && hasValidPrice);
         
         return {
           ...trip,
