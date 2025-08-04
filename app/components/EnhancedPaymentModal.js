@@ -97,7 +97,7 @@ const generateProfessionalCheckNote = async (checkSubmissionType, checkDetails, 
       note += `📬 Date Mailed by Facility: ${checkDetails.date_mailed}\n`
     }
     if (checkDetails.tracking_number) {
-      note += `📦 Tracking Number: ${checkDetails.tracking_number}\n`
+      note += `📦 Check Number: ${checkDetails.tracking_number}\n`
     }
     
     note += `\n📋 DISPATCHER ACTION REQUIRED:\n`
@@ -405,7 +405,7 @@ function PaymentForm({
           successMessage += `📅 Date Mailed: ${checkDetails.date_mailed}\n`
         }
         if (checkDetails.tracking_number) {
-          successMessage += `📦 Tracking: ${checkDetails.tracking_number}\n`
+          successMessage += `📦 Check Number: ${checkDetails.tracking_number}\n`
         }
         successMessage += '\n📋 WHAT HAPPENS NEXT:\n'
         successMessage += '• Our team will watch for your check\n'
@@ -817,11 +817,11 @@ function PaymentForm({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-green-700 mb-1">Tracking Number</label>
+              <label className="block text-sm font-medium text-green-700 mb-1">CHECK NUMBER</label>
               <input
                 type="text"
                 id="check_tracking"
-                placeholder="Optional tracking number"
+                placeholder="Optional check number"
                 className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
