@@ -1298,7 +1298,8 @@ ${monthlyTrips.map(trip => {
 
   // Open payment modal - allow payments for all months
   const openPaymentModal = async () => {
-    if (totalAmount <= 0) {
+    const calculatedAmount = monthlyTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0);
+    if (calculatedAmount <= 0) {
       setError('No amount due for payment');
       return;
     }
@@ -1998,7 +1999,7 @@ ${monthlyTrips.map(trip => {
           {/* Pay Monthly Invoice Button - Enhanced for Multiple Payments */}
           <button
             onClick={openPaymentModal}
-            disabled={loading || (totalAmount === 0) || (invoiceStatus && (invoiceStatus.includes('PAID WITH CARD') || invoiceStatus.includes('PAID WITH BANK TRANSFER') || invoiceStatus.includes('PAID WITH CHECK - VERIFIED'))) || (invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED') && !invoiceStatus.includes('ISSUES') && !invoiceStatus.includes('REPLACEMENT'))}
+            disabled={loading || (monthlyTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0) === 0) || (invoiceStatus && (invoiceStatus.includes('PAID WITH CARD') || invoiceStatus.includes('PAID WITH BANK TRANSFER') || invoiceStatus.includes('PAID WITH CHECK - VERIFIED'))) || (invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED') && !invoiceStatus.includes('ISSUES') && !invoiceStatus.includes('REPLACEMENT'))}
             className={`${
               invoiceStatus && (invoiceStatus.includes('HAS ISSUES') || invoiceStatus.includes('PAYMENT FAILED'))
                 ? 'bg-orange-600 hover:bg-orange-700' 
@@ -2455,7 +2456,7 @@ ${monthlyTrips.map(trip => {
       <EnhancedPaymentModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
-        totalAmount={totalAmount}
+        totalAmount={monthlyTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0)}
         facilityId={facilityId}
         invoiceNumber={invoiceNumber}
         selectedMonth={selectedMonth}
