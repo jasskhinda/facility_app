@@ -60,7 +60,7 @@ export default function DashboardBillingPage() {
 
   if (loading) {
     return (
-      <DashboardLayout user={user}>
+      <DashboardLayout user={user} activeTab="billing">
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7CCFD0]"></div>
         </div>
@@ -70,7 +70,7 @@ export default function DashboardBillingPage() {
 
   if (error) {
     return (
-      <DashboardLayout user={user}>
+      <DashboardLayout user={user} activeTab="billing">
         <div className="max-w-2xl mx-auto">
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
             <div className="flex items-start">
@@ -95,7 +95,7 @@ export default function DashboardBillingPage() {
   }
 
   return (
-    <DashboardLayout user={user}>
+    <DashboardLayout user={user} activeTab="billing">
       <div className="max-w-7xl mx-auto">
         {/* Page Header */}
         <div className="mb-8">
