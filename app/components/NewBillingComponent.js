@@ -1855,12 +1855,6 @@ ${monthlyTrips.map(trip => {
             </div>
           )}
           
-          <div className="bg-yellow-50 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-yellow-700 mb-1">Pending Trips</h3>
-            <p className="text-2xl font-bold text-yellow-600">
-              {monthlyTrips.filter(trip => !trip.billable).length}
-            </p>
-          </div>
           
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="text-sm font-medium text-gray-700 mb-1">Billing Email</h3>
@@ -2572,15 +2566,6 @@ ${monthlyTrips.map(trip => {
                 )}
               </div>
               
-              <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="text-3xl font-bold text-blue-600">
-                  {dueTrips.length + paidTrips.length}
-                </div>
-                <div className="text-gray-700 font-medium">Billable Amount once all trips are completed</div>
-                <div className="text-sm text-blue-600 font-semibold mt-1">
-                  ${(dueTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0) + paidTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0) + pendingTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0) + upcomingTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0)).toFixed(2)}
-                </div>
-              </div>
             </div>
           </div>
         </div>
