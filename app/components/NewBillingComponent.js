@@ -1777,6 +1777,10 @@ ${monthlyTrips.map(trip => {
                 setError('');
                 setLoading(true);
                 setMonthlyTrips([]);
+                setDueTrips([]);
+                setPaidTrips([]);
+                setPendingTrips([]);
+                setUpcomingTrips([]);
                 setTotalAmount(0);
                 
                 // Update display immediately for better UX - FIXED DATE PARSING
