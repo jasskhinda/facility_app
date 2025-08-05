@@ -29,38 +29,60 @@ export default function ClientForm({ clientId = null }) {
 
   useEffect(() => {
     async function initialize() {
-      // Get session
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      setSession(currentSession);
-      
-      if (!currentSession?.user) {
-        router.push('/login');
-        return;
-      }
       try {
+        console.log('ClientForm: Starting initialization...');
+        
+        // Get session
+        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+        console.log('ClientForm: Session check:', { hasSession: !!currentSession, sessionError });
+        
+        if (sessionError) {
+          console.error('ClientForm: Session error:', sessionError);
+          setError('Authentication error. Please try logging in again.');
+          setLoading(false);
+          return;
+        }
+        
+        setSession(currentSession);
+        
+        if (!currentSession?.user) {
+          console.log('ClientForm: No session, redirecting to login');
+          router.push('/login');
+          return;
+        }
+        
         setLoading(true);
         setError(null);
         
         // Check if user is a facility admin
+        console.log('ClientForm: Checking user profile...');
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role, facility_id')
           .eq('id', currentSession.user.id)
           .single();
           
-        if (profileError) throw profileError;
+        console.log('ClientForm: Profile check:', { profile, profileError });
+          
+        if (profileError) {
+          console.error('ClientForm: Profile error:', profileError);
+          throw profileError;
+        }
         
         if (profile.role !== 'facility') {
+          console.log('ClientForm: Not a facility user, redirecting');
           router.push('/dashboard');
           return;
         }
         
         if (!profile.facility_id) {
+          console.log('ClientForm: No facility_id found');
           setError('No facility associated with this account');
           setLoading(false);
           return;
         }
         
+        console.log('ClientForm: Setting facility_id:', profile.facility_id);
         setFacilityId(profile.facility_id);
         
         // If editing an existing client, load their data
@@ -87,15 +109,29 @@ export default function ClientForm({ clientId = null }) {
           });
         }
         
+        console.log('ClientForm: Initialization complete');
         setLoading(false);
       } catch (err) {
-        console.error('Error initializing client form:', err);
-        setError(err.message);
+        console.error('ClientForm: Error initializing:', err);
+        setError(err.message || 'Failed to initialize form');
         setLoading(false);
       }
     }
     
-    initialize();
+    // Add a timeout safety net to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.error('ClientForm: Initialization timeout - clearing loading state');
+        setLoading(false);
+        setError('Form initialization timed out. Please refresh the page.');
+      }
+    }, 15000); // 15 seconds timeout
+    
+    initialize().finally(() => {
+      clearTimeout(timeoutId);
+    });
+    
+    return () => clearTimeout(timeoutId);
   }, [router, supabase, clientId]);
 
   const handleChange = (e) => {

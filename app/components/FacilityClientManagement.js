@@ -56,7 +56,7 @@ export default function FacilityClientManagement({ user }) {
       setClients(clients || []);
       
       // Load trip counts for each client
-      await loadClientTripCounts(clients || [], supabase);
+      await loadClientTripCounts(clients || [], supabase, profile.facility_id);
     } catch (err) {
       console.error('Error loading clients:', err);
     } finally {
@@ -65,18 +65,23 @@ export default function FacilityClientManagement({ user }) {
   };
 
   // Load trip counts for clients
-  const loadClientTripCounts = async (clientList, supabase) => {
+  const loadClientTripCounts = async (clientList, supabase, currentFacilityId) => {
     try {
+      if (!currentFacilityId) {
+        console.log('No facility ID provided, skipping trip counts');
+        return;
+      }
+      
       const tripCounts = {};
       
       for (const client of clientList) {
-        // Count trips for this client (both user_id and managed_client_id)
+        // Count trips for this client (both user_id and managed_client_id) - FILTERED BY FACILITY
         const userTripsQuery = client.user_id 
-          ? supabase.from('trips').select('*', { count: 'exact', head: true }).eq('user_id', client.user_id)
+          ? supabase.from('trips').select('*', { count: 'exact', head: true }).eq('user_id', client.user_id).eq('facility_id', currentFacilityId)
           : Promise.resolve({ count: 0 });
           
         const managedTripsQuery = client.id 
-          ? supabase.from('trips').select('*', { count: 'exact', head: true }).eq('managed_client_id', client.id)
+          ? supabase.from('trips').select('*', { count: 'exact', head: true }).eq('managed_client_id', client.id).eq('facility_id', currentFacilityId)
           : Promise.resolve({ count: 0 });
           
         const [userResult, managedResult] = await Promise.all([userTripsQuery, managedTripsQuery]);
@@ -87,6 +92,8 @@ export default function FacilityClientManagement({ user }) {
       setClientTrips(tripCounts);
     } catch (error) {
       console.error('Error loading trip counts:', error);
+      // Don't block the page if trip counting fails
+      setClientTrips({});
     }
   };
   
