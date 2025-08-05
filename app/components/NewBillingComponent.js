@@ -53,6 +53,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   const [paidTrips, setPaidTrips] = useState([]);
   const [pendingTrips, setPendingTrips] = useState([]);
   const [upcomingTrips, setUpcomingTrips] = useState([]);
+  const [cancelledTrips, setCancelledTrips] = useState([]);
   const [invoicePaid, setInvoicePaid] = useState(false);
   const [actualBillableAmount, setActualBillableAmount] = useState(0);
   
@@ -713,9 +714,10 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         // Set invoice paid status if there are any paid trips
         currentInvoicePaid = categorizedPaidTrips.length > 0;
         
-        // Create separate arrays for pending and upcoming trips
+        // Create separate arrays for pending, upcoming, and cancelled trips
         const pendingTrips = trips.filter(trip => trip.status === 'pending');
         const upcomingTrips = trips.filter(trip => ['upcoming', 'confirmed', 'approved'].includes(trip.status));
+        const cancelledTrips = trips.filter(trip => ['cancelled', 'canceled', 'no-show'].includes(trip.status));
         
         console.log('📊 Trip categorization completed:', {
           totalTrips: trips.length,
@@ -1073,12 +1075,35 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         
         return { ...trip, clientName, billable: false };
       });
+      
+      const enhancedCancelledTrips = cancelledTrips.map(trip => {
+        let clientName = 'Unknown Client';
+        
+        if (trip.user_id) {
+          const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
+          if (userProfile && userProfile.first_name) {
+            clientName = `${userProfile.first_name} ${userProfile.last_name || ''}`.trim();
+          }
+        } else if (trip.managed_client_id) {
+          const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
+          if (managedClient && managedClient.first_name) {
+            let name = `${managedClient.first_name} ${managedClient.last_name || ''}`.trim();
+            if (managedClient.phone_number) {
+              name += ` - ${managedClient.phone_number}`;
+            }
+            clientName = `${name} (Managed)`;
+          }
+        }
+        
+        return { ...trip, clientName, billable: false };
+      });
 
       // Set the categorized trips
       setDueTrips(enhancedDueTrips);
       setPaidTrips(enhancedPaidTrips);
       setPendingTrips(enhancedPendingTrips);
       setUpcomingTrips(enhancedUpcomingTrips);
+      setCancelledTrips(enhancedCancelledTrips);
       setInvoicePaid(currentInvoicePaid);
       setActualBillableAmount(currentActualBillableAmount);
       
@@ -1124,23 +1149,15 @@ export default function FacilityBillingComponent({ user, facilityId }) {
 
   const downloadRideSummary = () => {
     try {
-      // Determine the correct amount to show
+      // Calculate the correct total amount from monthly trips (same as Payment Status section)
+      const calculatedAmount = monthlyTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0);
+      
+      // Determine payment status
       const paidStatuses = ['PAID', 'PAID WITH CARD', 'PAID WITH CARD - VERIFIED', 'PAID WITH BANK TRANSFER', 'PAID WITH BANK TRANSFER - VERIFIED', 'PAID WITH CHECK - VERIFIED', 'PAID WITH CHECK', 'PAID WITH CHECK (BEING VERIFIED)'];
       const isPaid = paidStatuses.includes(invoiceStatus) || (invoiceStatus && invoiceStatus.includes('- VERIFIED'));
       
-      let displayAmount = totalAmount;
-      if (isPaid) {
-        if (paidTrips.length > 0) {
-          // Calculate total from paid trips
-          displayAmount = paidTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0);
-        } else if (window.originalPaidAmount) {
-          // Use stored original amount
-          displayAmount = window.originalPaidAmount;
-        } else if (invoiceHistory[0]?.total_amount) {
-          // Use amount from invoice history
-          displayAmount = invoiceHistory[0].total_amount;
-        }
-      }
+      // Always use the calculated amount from monthly trips for consistency with UI
+      const displayAmount = calculatedAmount;
       
       const paymentStatusText = isPaid ? 'PAID' : 'UNPAID';
       
@@ -1781,6 +1798,7 @@ ${monthlyTrips.map(trip => {
                 setPaidTrips([]);
                 setPendingTrips([]);
                 setUpcomingTrips([]);
+                setCancelledTrips([]);
                 setTotalAmount(0);
                 
                 // Update display immediately for better UX - FIXED DATE PARSING
@@ -2382,6 +2400,77 @@ ${monthlyTrips.map(trip => {
                                 Included in previous payment
                               </span>
                             </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          
+          {/* CANCELLED TRIPS Section */}
+          {cancelledTrips.length > 0 && (
+            <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+              <div className="px-6 py-4 border-b bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      ❌ CANCELLED TRIPS
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Trips that were cancelled or marked as no-show ({cancelledTrips.length} trips)
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-gray-600">
+                      ${cancelledTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0).toFixed(2)}
+                    </div>
+                    <div className="text-xs text-gray-500">Not Billable</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Date</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Client</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Route</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Price</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {cancelledTrips.map((trip) => {
+                      const formattedDate = trip.pickup_time ? 
+                        new Date(trip.pickup_time).toLocaleDateString() : 'N/A';
+
+                      return (
+                        <tr key={trip.id} className="hover:bg-gray-50 opacity-75">
+                          <td className="px-6 py-4 text-sm text-gray-900">{formattedDate}</td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">{trip.clientName}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <div className="max-w-xs">
+                              <p className="truncate font-medium">{trip.pickup_address || 'Unknown pickup'}</p>
+                              <p className="truncate text-xs text-gray-500">
+                                → {trip.destination_address || 'Unknown destination'}
+                              </p>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium">
+                            <span className="text-gray-500 line-through">
+                              ${(trip.total_fare || trip.price || 0).toFixed(2)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                              {trip.status === 'cancelled' || trip.status === 'canceled' ? 'CANCELLED' : 
+                               trip.status === 'no-show' ? 'NO-SHOW' : 
+                               trip.status.toUpperCase()}
+                            </span>
                           </td>
                         </tr>
                       );
