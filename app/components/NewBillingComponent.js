@@ -422,10 +422,13 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       const startISO = `${year}-${month.padStart(2, '0')}-01T00:00:00.000Z`;
       const endISO = `${year}-${month.padStart(2, '0')}-${lastDayOfMonth.toString().padStart(2, '0')}T23:59:59.999Z`;
       
-      console.log('📅 Date range for query:', {
+      console.log('🔍 DEBUG - Month filtering details:', {
+        originalSelectedMonth: selectedMonth,
         monthToFetch,
-        start: startISO,
-        end: endISO,
+        year: parseInt(year),
+        month: parseInt(month),
+        startISO,
+        endISO,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString()
       });
@@ -460,6 +463,16 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         trips: trips?.length || 0, 
         error: tripsError?.message || 'none'
       });
+
+      // DEBUG: Log the pickup times of returned trips to verify filtering
+      if (trips && trips.length > 0) {
+        console.log('🔍 DEBUG - Trips returned with pickup times:', trips.map(trip => ({
+          id: trip.id,
+          pickup_time: trip.pickup_time,
+          pickup_date: trip.pickup_date,
+          status: trip.status
+        })));
+      }
 
       if (tripsError) {
         console.error('❌ Facility trips query error:', tripsError);
