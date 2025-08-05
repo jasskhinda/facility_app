@@ -400,6 +400,8 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   };
 
   const fetchMonthlyTrips = async (monthToFetch = selectedMonth) => {
+    console.log('🚀 fetchMonthlyTrips CALLED with:', { monthToFetch, selectedMonth, facilityId });
+    
     if (!monthToFetch || !facilityId) {
       console.log('📅 fetchMonthlyTrips: Missing required params:', { monthToFetch, facilityId });
       setLoading(false);
@@ -470,8 +472,21 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           id: trip.id,
           pickup_time: trip.pickup_time,
           pickup_date: trip.pickup_date,
-          status: trip.status
+          status: trip.status,
+          isInRange: trip.pickup_time >= startISO && trip.pickup_time <= endISO
         })));
+        
+        console.log('🔍 DEBUG - Query used:', {
+          query: 'trips',
+          filters: {
+            facility_id: facilityId,
+            status_in: ['completed', 'pending', 'upcoming', 'confirmed'],
+            pickup_time_gte: startISO,
+            pickup_time_lte: endISO
+          }
+        });
+      } else {
+        console.log('🔍 DEBUG - No trips returned for month:', monthToFetch);
       }
 
       if (tripsError) {
