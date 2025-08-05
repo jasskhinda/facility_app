@@ -99,13 +99,13 @@ export default function DashboardBillingPage() {
       <div className="max-w-7xl mx-auto">
         {/* Page Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-black dark:text-white mb-2">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Monthly Billing & Invoices
           </h1>
-          <p className="text-black/70 dark:text-white/70">
+          <p className="text-gray-700">
             Professional invoice management for {profile?.first_name ? `${profile.first_name} ${profile.last_name}` : 'Facility'}
           </p>
-          <p className="text-black/60 dark:text-white/60 text-sm mt-1">
+          <p className="text-gray-600 text-sm mt-1">
             💳 Now supporting online payments and traditional billing methods
           </p>
         </div>
