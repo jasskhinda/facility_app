@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClientSupabase } from '@/lib/client-supabase';
 import EnhancedPaymentModal from './EnhancedPaymentModal';
 
@@ -8,6 +8,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   const [monthlyTrips, setMonthlyTrips] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [displayMonth, setDisplayMonth] = useState('');
+  const isDropdownChangeRef = useRef(false);
   const [totalAmount, setTotalAmount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [facility, setFacility] = useState(null);
@@ -237,11 +238,18 @@ export default function FacilityBillingComponent({ user, facilityId }) {
     }
   }, [selectedMonth]);
 
-  // Fetch data when month or facility changes
+  // Fetch data when month or facility changes (but not when month is changed via dropdown)
   useEffect(() => {
     if (selectedMonth && facilityId) {
       fetchFacilityInfo();
-      fetchMonthlyTrips(selectedMonth);
+      // Skip fetchMonthlyTrips if this is triggered by dropdown change to avoid race condition
+      if (isDropdownChangeRef.current) {
+        console.log('🔄 useEffect skipping fetchMonthlyTrips - dropdown change in progress');
+        isDropdownChangeRef.current = false; // Reset flag
+      } else {
+        console.log('🔄 useEffect triggered for initial load or facility change');
+        fetchMonthlyTrips(selectedMonth);
+      }
       fetchSavedPaymentMethods();
       fetchInvoiceStatus();
       fetchPaymentBreakdown(selectedMonth); // Fetch payment breakdown on page load
@@ -1761,6 +1769,9 @@ ${monthlyTrips.map(trip => {
               onChange={(e) => {
                 const newMonth = e.target.value;
                 console.log('📅 Month dropdown changed from', selectedMonth, 'to', newMonth);
+                
+                // Set flag to prevent useEffect race condition
+                isDropdownChangeRef.current = true;
                 
                 setSelectedMonth(newMonth);
                 setError('');
