@@ -106,3 +106,4 @@ This project is built with [Next.js](https://nextjs.org) and uses:
 
 MIT
 # Trigger deployment
+# Trigger deployment
