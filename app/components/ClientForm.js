@@ -217,14 +217,21 @@ export default function ClientForm({ clientId = null }) {
   };
 
   if (loading) {
-    return <div className="p-4">Loading...</div>;
+    return (
+      <div className="p-4 flex items-center justify-center min-h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#7CCFD0] mx-auto"></div>
+          <p className="text-gray-600 mt-2">Loading form...</p>
+        </div>
+      </div>
+    );
   }
 
   const formTitle = clientId ? 'Edit Client' : 'Add New Client';
 
   return (
     <div className="max-w-2xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">{formTitle}</h1>
+      <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">{formTitle}</h1>
       
       {error && (
         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
@@ -242,7 +249,7 @@ export default function ClientForm({ clientId = null }) {
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="first_name" className="block mb-1 font-medium">
+              <label htmlFor="first_name" className="block mb-1 font-medium text-gray-700 dark:text-gray-300">
                 First Name
               </label>
               <input
@@ -257,7 +264,7 @@ export default function ClientForm({ clientId = null }) {
             </div>
             
             <div>
-              <label htmlFor="last_name" className="block mb-1 font-medium">
+              <label htmlFor="last_name" className="block mb-1 font-medium text-gray-700 dark:text-gray-300">
                 Last Name
               </label>
               <input
@@ -273,7 +280,7 @@ export default function ClientForm({ clientId = null }) {
           </div>
           
           <div>
-            <label htmlFor="email" className="block mb-1 font-medium">
+            <label htmlFor="email" className="block mb-1 font-medium text-gray-700 dark:text-gray-300">
               Email *
             </label>
             <input
@@ -291,7 +298,7 @@ export default function ClientForm({ clientId = null }) {
           </div>
           
           <div>
-            <label htmlFor="phone_number" className="block mb-1 font-medium">
+            <label htmlFor="phone_number" className="block mb-1 font-medium text-gray-700 dark:text-gray-300">
               Phone Number
             </label>
             <input
@@ -306,7 +313,7 @@ export default function ClientForm({ clientId = null }) {
           </div>
           
           <div>
-            <label htmlFor="address" className="block mb-1 font-medium">
+            <label htmlFor="address" className="block mb-1 font-medium text-gray-700 dark:text-gray-300">
               Address
             </label>
             <textarea
@@ -321,7 +328,7 @@ export default function ClientForm({ clientId = null }) {
           </div>
           
           <div>
-            <label htmlFor="accessibility_needs" className="block mb-1 font-medium">
+            <label htmlFor="accessibility_needs" className="block mb-1 font-medium text-gray-700 dark:text-gray-300">
               Accessibility Needs
             </label>
             <textarea
@@ -335,7 +342,7 @@ export default function ClientForm({ clientId = null }) {
           </div>
           
           <div>
-            <label htmlFor="medical_requirements" className="block mb-1 font-medium">
+            <label htmlFor="medical_requirements" className="block mb-1 font-medium text-gray-700 dark:text-gray-300">
               Medical Requirements
             </label>
             <textarea
@@ -349,7 +356,7 @@ export default function ClientForm({ clientId = null }) {
           </div>
           
           <div>
-            <label htmlFor="emergency_contact" className="block mb-1 font-medium">
+            <label htmlFor="emergency_contact" className="block mb-1 font-medium text-gray-700 dark:text-gray-300">
               Emergency Contact
             </label>
             <input

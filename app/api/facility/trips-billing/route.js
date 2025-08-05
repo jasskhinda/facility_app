@@ -83,10 +83,11 @@ export async function GET(request) {
     const month = searchParams.get('month');
     if (month && year) {
       const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0);
+      const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+      // Use pickup_time for proper billing period filtering
       query = query
-        .gte('created_at', startDate.toISOString())
-        .lt('created_at', endDate.toISOString());
+        .gte('pickup_time', startDate.toISOString())
+        .lte('pickup_time', endDate.toISOString());
     }
     
     const { data: trips, error: tripsError } = await query;
@@ -94,6 +95,15 @@ export async function GET(request) {
     if (tripsError) {
       return NextResponse.json({ error: tripsError.message }, { status: 500 });
     }
+    
+    console.log(`📊 Found ${trips.length} trips for billing period`);
+    console.log('🔍 Sample trips:', trips.slice(0, 3).map(t => ({
+      id: t.id?.substring(0, 8),
+      user_id: t.user_id,
+      managed_client_id: t.managed_client_id,
+      pickup_time: t.pickup_time,
+      price: t.price
+    })));
     
     // Fetch user profiles for the trips to get client names
     const userIds = [...new Set(trips.filter(trip => trip.user_id).map(trip => trip.user_id))];
@@ -456,7 +466,10 @@ export async function GET(request) {
         id: trip.id,
         bill_number: `TRIP-${trip.id.split('-')[0].toUpperCase()}`,
         client_name: clientName,
+        clientName: clientName, // Add both for compatibility
         client_id: trip.user_id || trip.managed_client_id,
+        user_id: trip.user_id, // Include for component to enhance
+        managed_client_id: trip.managed_client_id, // Include for component to enhance
         trip_id: trip.id,
         pickup_address: trip.pickup_address,
         destination_address: trip.destination_address,
@@ -468,9 +481,12 @@ export async function GET(request) {
         additional_passengers: trip.additional_passengers || 0,
         amount: parseFloat(trip.price || 0),
         total: parseFloat(trip.price || 0),
+        price: parseFloat(trip.price || 0), // Include price field
+        // Trip status for the component
+        status: trip.status,
         // 💼 PROFESSIONAL BILLING STATUS SYSTEM
         // Maps trip statuses to billing states for clear financial reporting
-        status: trip.status === 'completed' ? 'DUE' : 
+        billing_status: trip.status === 'completed' ? 'DUE' : 
                 trip.status === 'cancelled' ? 'CANCELLED' : 
                 trip.status === 'pending' ? 'PENDING_APPROVAL' :
                 trip.status === 'upcoming' ? 'UPCOMING' : 'UPCOMING',

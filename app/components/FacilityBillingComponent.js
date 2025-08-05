@@ -668,8 +668,7 @@ ${monthlyTrips.map(trip => {
                 {monthlyTrips.map((trip) => {
                   const formattedDate = trip.pickup_time ? 
                     new Date(trip.pickup_time).toLocaleDateString() : 'N/A';
-                  const clientName = trip.user ? 
-                    `${trip.user.first_name} ${trip.user.last_name}` : 'Unknown Client';
+                  const clientName = trip.clientName || 'Unknown Client';
 
                   return (
                     <tr key={trip.id} className="hover:bg-[#F8F9FA] dark:hover:bg-[#24393C]">

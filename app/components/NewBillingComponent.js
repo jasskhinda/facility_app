@@ -518,6 +518,16 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       const userIds = [...new Set(trips.filter(trip => trip.user_id).map(trip => trip.user_id))];
       let userProfiles = [];
       
+      console.log('🔍 Fetching client data for trips:', {
+        totalTrips: trips.length,
+        uniqueUserIds: userIds.length,
+        sampleTrips: trips.slice(0, 3).map(t => ({
+          id: t.id?.substring(0, 8),
+          user_id: t.user_id,
+          managed_client_id: t.managed_client_id
+        }))
+      });
+      
       if (userIds.length > 0) {
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
@@ -526,6 +536,9 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         
         if (!profileError && profileData) {
           userProfiles = profileData;
+          console.log(`✅ Found ${userProfiles.length} user profiles`);
+        } else {
+          console.log('❌ Error fetching profiles:', profileError);
         }
       }
       

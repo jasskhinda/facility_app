@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 export default function LoadingScreen({ isLoading, message = "Loading..." }) {
   const [dots, setDots] = useState('');
+  const [showRefreshButton, setShowRefreshButton] = useState(false);
 
   // Animate dots
   useEffect(() => {
@@ -18,6 +19,24 @@ export default function LoadingScreen({ isLoading, message = "Loading..." }) {
 
     return () => clearInterval(interval);
   }, [isLoading]);
+
+  // Show refresh button after 10 seconds of loading
+  useEffect(() => {
+    if (!isLoading) {
+      setShowRefreshButton(false);
+      return;
+    }
+    
+    const timer = setTimeout(() => {
+      setShowRefreshButton(true);
+    }, 10000); // 10 seconds
+
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
+  const handleRefresh = () => {
+    window.location.reload();
+  };
 
   if (!isLoading) return null;
 
@@ -53,6 +72,19 @@ export default function LoadingScreen({ isLoading, message = "Loading..." }) {
       <div className="mt-4">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7CCFD0]"></div>
       </div>
+      
+      {/* Refresh button (shows after 10 seconds) */}
+      {showRefreshButton && (
+        <div className="mt-8 text-center">
+          <p className="text-gray-500 text-sm mb-4">Taking longer than expected?</p>
+          <button
+            onClick={handleRefresh}
+            className="px-6 py-3 bg-[#7CCFD0] hover:bg-[#6BB5B6] text-white font-semibold rounded-lg transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
+          >
+            🔄 STUCK? REFRESH
+          </button>
+        </div>
+      )}
     </div>
   );
 }
