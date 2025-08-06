@@ -1976,7 +1976,7 @@ ${monthlyTrips.map(trip => {
                 UPCOMING INVOICE
               </span>
               <span className="text-2xl font-bold text-blue-600">
-                ${monthlyTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0).toFixed(2)}
+                ${actualBillableAmount.toFixed(2)}
               </span>
             </div>
             {invoiceStatus.includes('CHECK PAYMENT') && (
@@ -2344,7 +2344,7 @@ ${monthlyTrips.map(trip => {
                       : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  All ({pendingTrips.length + upcomingTrips.length + approvedTrips.length + cancelledTrips.length})
+                  All ({pendingTrips.length + upcomingTrips.length + cancelledTrips.length})
                 </button>
                 <button
                   onClick={() => setSelectedTripFilter('pending')}
@@ -2357,16 +2357,6 @@ ${monthlyTrips.map(trip => {
                   ⏳ Pending ({pendingTrips.length})
                 </button>
                 <button
-                  onClick={() => setSelectedTripFilter('approved')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    selectedTripFilter === 'approved'
-                      ? 'bg-green-500 text-white'
-                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  ✅ Approved ({approvedTrips.length})
-                </button>
-                <button
                   onClick={() => setSelectedTripFilter('upcoming')}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     selectedTripFilter === 'upcoming'
@@ -2374,7 +2364,7 @@ ${monthlyTrips.map(trip => {
                       : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  🚀 Upcoming ({upcomingTrips.length})
+                  🚀 Approved & Upcoming ({upcomingTrips.length})
                 </button>
                 <button
                   onClick={() => setSelectedTripFilter('cancelled')}
@@ -2407,11 +2397,9 @@ ${monthlyTrips.map(trip => {
                       let tripsToShow = [];
                       
                       if (selectedTripFilter === 'all') {
-                        tripsToShow = [...pendingTrips, ...approvedTrips, ...upcomingTrips, ...cancelledTrips];
+                        tripsToShow = [...pendingTrips, ...upcomingTrips, ...cancelledTrips];
                       } else if (selectedTripFilter === 'pending') {
                         tripsToShow = pendingTrips;
-                      } else if (selectedTripFilter === 'approved') {
-                        tripsToShow = approvedTrips;
                       } else if (selectedTripFilter === 'upcoming') {
                         tripsToShow = upcomingTrips;
                       } else if (selectedTripFilter === 'cancelled') {
@@ -2630,7 +2618,7 @@ ${monthlyTrips.map(trip => {
       <EnhancedPaymentModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
-        totalAmount={monthlyTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0)}
+        totalAmount={actualBillableAmount}
         facilityId={facilityId}
         invoiceNumber={invoiceNumber}
         selectedMonth={selectedMonth}
