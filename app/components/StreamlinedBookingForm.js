@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { createClientSupabase } from '@/lib/client-supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from './DashboardLayout';
@@ -357,9 +358,17 @@ export default function StreamlinedBookingForm({ user }) {
     <DashboardLayout user={user} activeTab="book">
       <div className="max-w-3xl mx-auto">
         <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0] p-6">
-          <h1 className="text-2xl font-bold text-[#2E4F54] text-gray-900 mb-6">
-            Book Transportation
-          </h1>
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-[#2E4F54] text-gray-900">
+              Book Transportation
+            </h1>
+            <Link
+              href="/dashboard/clients/add"
+              className="bg-[#7CCFD0] hover:bg-[#60BFC0] text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+            >
+              Add New Client
+            </Link>
+          </div>
           
           {error && (
             <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
