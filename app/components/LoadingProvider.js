@@ -43,6 +43,9 @@ export default function LoadingProvider({ children }) {
     let timeoutId;
     let globalTimeoutId;
     
+    // Force clear loading state when pathname changes
+    setIsLoading(false);
+    
     const handleStart = () => {
       setLoadingMessage('Navigating...');
       setIsLoading(true);
@@ -52,11 +55,11 @@ export default function LoadingProvider({ children }) {
         setIsLoading(false);
       }, 800);
       
-      // Global timeout protection - force hide after 2 seconds maximum (much shorter)
+      // Global timeout protection - force hide after 3 seconds maximum
       globalTimeoutId = setTimeout(() => {
         console.warn('🚨 Global navigation timeout reached, forcing hide');
         setIsLoading(false);
-      }, 2000);
+      }, 3000);
     };
 
     const handleComplete = () => {

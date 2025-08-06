@@ -60,10 +60,16 @@ export default function UpdatePasswordForm() {
       setPassword('');
       setConfirmPassword('');
       
-      // Redirect to login after a short delay
-      setTimeout(() => {
-        router.push('/login');
-      }, 2000);
+      // Refresh the session to ensure clean state and redirect to dashboard
+      setTimeout(async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          // Use router.replace to avoid triggering the loading state
+          router.replace('/dashboard');
+        } else {
+          router.push('/login');
+        }
+      }, 1500);
       
     } catch (error) {
       console.error('Update password error:', error);
