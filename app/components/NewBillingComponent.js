@@ -736,6 +736,179 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           paidTripIds: Array.from(paidTripIds)
         });
         
+        // ✅ CREATE ENHANCED ARRAYS RIGHT HERE WHERE FILTERED ARRAYS ARE IN SCOPE
+        console.log('🔍 DEBUG - Before enhancement, filteredPendingTrips:', filteredPendingTrips.length, filteredPendingTrips.map(t => ({id: t.id, status: t.status})));
+        
+        const enhancedPendingTrips = filteredPendingTrips.map(trip => {
+          let clientName = 'Unknown Client';
+          
+          if (trip.user_id) {
+            const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
+            if (userProfile && userProfile.first_name) {
+              clientName = `${userProfile.first_name} ${userProfile.last_name || ''}`.trim();
+            }
+          } else if (trip.managed_client_id) {
+            const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
+            if (managedClient && managedClient.first_name) {
+              let name = `${managedClient.first_name} ${managedClient.last_name || ''}`.trim();
+              if (managedClient.phone_number) {
+                name += ` - ${managedClient.phone_number}`;
+              }
+              clientName = `${name} (Managed)`;
+            }
+          }
+          
+          return { ...trip, clientName, billable: false };
+        });
+        
+        const enhancedUpcomingTrips = filteredUpcomingTrips.map(trip => {
+          let clientName = 'Unknown Client';
+          
+          if (trip.user_id) {
+            const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
+            if (userProfile && userProfile.first_name) {
+              clientName = `${userProfile.first_name} ${userProfile.last_name || ''}`.trim();
+            }
+          } else if (trip.managed_client_id) {
+            const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
+            if (managedClient && managedClient.first_name) {
+              let name = `${managedClient.first_name} ${managedClient.last_name || ''}`.trim();
+              if (managedClient.phone_number) {
+                name += ` - ${managedClient.phone_number}`;
+              }
+              clientName = `${name} (Managed)`;
+            }
+          }
+          
+          return { ...trip, clientName, billable: false };
+        });
+        
+        const enhancedApprovedTrips = filteredApprovedTrips.map(trip => {
+          let clientName = 'Unknown Client';
+          
+          if (trip.user_id) {
+            const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
+            if (userProfile && userProfile.first_name) {
+              clientName = `${userProfile.first_name} ${userProfile.last_name || ''}`.trim();
+            }
+          } else if (trip.managed_client_id) {
+            const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
+            if (managedClient && managedClient.first_name) {
+              let name = `${managedClient.first_name} ${managedClient.last_name || ''}`.trim();
+              if (managedClient.phone_number) {
+                name += ` - ${managedClient.phone_number}`;
+              }
+              clientName = `${name} (Managed)`;
+            }
+          }
+          
+          return { ...trip, clientName, billable: false };
+        });
+        
+        const enhancedCancelledTrips = filteredCancelledTrips.map(trip => {
+          let clientName = 'Unknown Client';
+          
+          if (trip.user_id) {
+            const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
+            if (userProfile && userProfile.first_name) {
+              clientName = `${userProfile.first_name} ${userProfile.last_name || ''}`.trim();
+            }
+          } else if (trip.managed_client_id) {
+            const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
+            if (managedClient && managedClient.first_name) {
+              let name = `${managedClient.first_name} ${managedClient.last_name || ''}`.trim();
+              if (managedClient.phone_number) {
+                name += ` - ${managedClient.phone_number}`;
+              }
+              clientName = `${name} (Managed)`;
+            }
+          }
+          
+          return { ...trip, clientName, billable: false };
+        });
+        
+        // Create enhanced DUE and PAID trips
+        const enhancedDueTrips = categorizedDueTrips.map(trip => {
+          let clientName = 'Unknown Client';
+          
+          if (trip.user_id) {
+            const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
+            if (userProfile && userProfile.first_name) {
+              clientName = `${userProfile.first_name} ${userProfile.last_name || ''}`.trim();
+            }
+          } else if (trip.managed_client_id) {
+            const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
+            if (managedClient && managedClient.first_name) {
+              let name = `${managedClient.first_name} ${managedClient.last_name || ''}`.trim();
+              if (managedClient.phone_number) {
+                name += ` - ${managedClient.phone_number}`;
+              }
+              clientName = `${name} (Managed)`;
+            }
+          }
+          
+          return {
+            ...trip,
+            clientName,
+            billable: trip.status === 'completed' && trip.price > 0
+          };
+        });
+        
+        const enhancedPaidTrips = categorizedPaidTrips.map(trip => {
+          let clientName = 'Unknown Client';
+          
+          if (trip.user_id) {
+            const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
+            if (userProfile && userProfile.first_name) {
+              clientName = `${userProfile.first_name} ${userProfile.last_name || ''}`.trim();
+            }
+          } else if (trip.managed_client_id) {
+            const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
+            if (managedClient && managedClient.first_name) {
+              let name = `${managedClient.first_name} ${managedClient.last_name || ''}`.trim();
+              if (managedClient.phone_number) {
+                name += ` - ${managedClient.phone_number}`;
+              }
+              clientName = `${name} (Managed)`;
+            }
+          }
+          
+          return {
+            ...trip,
+            clientName,
+            billable: false // Already paid
+          };
+        });
+        
+        // Create combined enhanced trips for backward compatibility
+        const enhancedTrips = [...enhancedDueTrips, ...enhancedPaidTrips, ...enhancedPendingTrips, ...enhancedUpcomingTrips, ...enhancedApprovedTrips, ...enhancedCancelledTrips];
+        
+        // ✅ SET STATE WITH ENHANCED ARRAYS
+        console.log('🔧 DEBUG - Setting trip state arrays:', {
+          dueTrips: categorizedDueTrips.length,
+          paidTrips: categorizedPaidTrips.length,
+          pendingTrips: enhancedPendingTrips.length,
+          upcomingTrips: enhancedUpcomingTrips.length,
+          approvedTrips: enhancedApprovedTrips.length,
+          cancelledTrips: enhancedCancelledTrips.length
+        });
+        
+        setDueTrips(enhancedDueTrips);
+        setPaidTrips(enhancedPaidTrips);
+        setPendingTrips(enhancedPendingTrips);
+        setUpcomingTrips(enhancedUpcomingTrips);
+        setApprovedTrips(enhancedApprovedTrips);
+        setCancelledTrips(enhancedCancelledTrips);
+        setInvoicePaid(currentInvoicePaid);
+        setActualBillableAmount(currentActualBillableAmount);
+        
+        // Set combined trips for backward compatibility
+        setMonthlyTrips(enhancedTrips);
+        
+        // Set total amount for billing
+        setTotalAmount(currentActualBillableAmount);
+        setError('');
+        
         // Enhanced Fallback: Check multiple payment verification sources
         if (categorizedPaidTrips.length === 0) {
           console.log('🔄 No trips found with specific trip_ids, checking alternative payment verification...');
@@ -1040,123 +1213,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         };
       });
 
-      // Create enhanced arrays for pending and upcoming trips
-      console.log('🔍 DEBUG - Before enhancement, filteredPendingTrips:', filteredPendingTrips.length, filteredPendingTrips.map(t => ({id: t.id, status: t.status})));
-      
-      const enhancedPendingTrips = filteredPendingTrips.map(trip => {
-        let clientName = 'Unknown Client';
-        
-        if (trip.user_id) {
-          const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
-          if (userProfile && userProfile.first_name) {
-            clientName = `${userProfile.first_name} ${userProfile.last_name || ''}`.trim();
-          }
-        } else if (trip.managed_client_id) {
-          const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
-          if (managedClient && managedClient.first_name) {
-            let name = `${managedClient.first_name} ${managedClient.last_name || ''}`.trim();
-            if (managedClient.phone_number) {
-              name += ` - ${managedClient.phone_number}`;
-            }
-            clientName = `${name} (Managed)`;
-          }
-        }
-        
-        return { ...trip, clientName, billable: false };
-      });
-      
-      const enhancedUpcomingTrips = filteredUpcomingTrips.map(trip => {
-        let clientName = 'Unknown Client';
-        
-        if (trip.user_id) {
-          const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
-          if (userProfile && userProfile.first_name) {
-            clientName = `${userProfile.first_name} ${userProfile.last_name || ''}`.trim();
-          }
-        } else if (trip.managed_client_id) {
-          const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
-          if (managedClient && managedClient.first_name) {
-            let name = `${managedClient.first_name} ${managedClient.last_name || ''}`.trim();
-            if (managedClient.phone_number) {
-              name += ` - ${managedClient.phone_number}`;
-            }
-            clientName = `${name} (Managed)`;
-          }
-        }
-        
-        return { ...trip, clientName, billable: false };
-      });
-      
-      const enhancedApprovedTrips = filteredApprovedTrips.map(trip => {
-        let clientName = 'Unknown Client';
-        
-        if (trip.user_id) {
-          const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
-          if (userProfile && userProfile.first_name) {
-            clientName = `${userProfile.first_name} ${userProfile.last_name || ''}`.trim();
-          }
-        } else if (trip.managed_client_id) {
-          const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
-          if (managedClient && managedClient.first_name) {
-            let name = `${managedClient.first_name} ${managedClient.last_name || ''}`.trim();
-            if (managedClient.phone_number) {
-              name += ` - ${managedClient.phone_number}`;
-            }
-            clientName = `${name} (Managed)`;
-          }
-        }
-        
-        return { ...trip, clientName, billable: false };
-      });
-      
-      const enhancedCancelledTrips = filteredCancelledTrips.map(trip => {
-        let clientName = 'Unknown Client';
-        
-        if (trip.user_id) {
-          const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
-          if (userProfile && userProfile.first_name) {
-            clientName = `${userProfile.first_name} ${userProfile.last_name || ''}`.trim();
-          }
-        } else if (trip.managed_client_id) {
-          const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
-          if (managedClient && managedClient.first_name) {
-            let name = `${managedClient.first_name} ${managedClient.last_name || ''}`.trim();
-            if (managedClient.phone_number) {
-              name += ` - ${managedClient.phone_number}`;
-            }
-            clientName = `${name} (Managed)`;
-          }
-        }
-        
-        return { ...trip, clientName, billable: false };
-      });
-
-      // Set the categorized trips
-      console.log('🔧 DEBUG - Setting trip state arrays:', {
-        dueTrips: enhancedDueTrips.length,
-        paidTrips: enhancedPaidTrips.length,
-        pendingTrips: enhancedPendingTrips.length,
-        upcomingTrips: enhancedUpcomingTrips.length,
-        approvedTrips: enhancedApprovedTrips.length,
-        cancelledTrips: enhancedCancelledTrips.length
-      });
-      
-      setDueTrips(enhancedDueTrips);
-      setPaidTrips(enhancedPaidTrips);
-      setPendingTrips(enhancedPendingTrips);
-      setUpcomingTrips(enhancedUpcomingTrips);
-      setApprovedTrips(enhancedApprovedTrips);
-      setCancelledTrips(enhancedCancelledTrips);
-      setInvoicePaid(currentInvoicePaid);
-      setActualBillableAmount(currentActualBillableAmount);
-      
-      // Set combined trips for backward compatibility with existing code
-      setMonthlyTrips(enhancedTrips);
-      
-      // Set total amount - always show the amount for trips that are due
-      console.log('💰 Setting total amount to current actual billable amount:', currentActualBillableAmount);
-      setTotalAmount(currentActualBillableAmount);
-      setError('');
+      // Trip state and data are set earlier in the correct scope
 
     } catch (err) {
       console.error('Error fetching trips:', err);
