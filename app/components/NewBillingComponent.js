@@ -60,6 +60,10 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   // Testing functionality
   const [resettingPayment, setResettingPayment] = useState(false);
   const [resetMessage, setResetMessage] = useState('');
+  
+  // Filter states for non-completed trips
+  const [selectedTripFilter, setSelectedTripFilter] = useState('all');
+  const [approvedTrips, setApprovedTrips] = useState([]);
 
   const supabase = createClientSupabase();
 
@@ -714,10 +718,11 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         // Set invoice paid status if there are any paid trips
         currentInvoicePaid = categorizedPaidTrips.length > 0;
         
-        // Create separate arrays for pending, upcoming, and cancelled trips
+        // Create separate arrays for pending, upcoming, approved, and cancelled trips
         const pendingTrips = trips.filter(trip => trip.status === 'pending');
-        const upcomingTrips = trips.filter(trip => ['upcoming', 'confirmed', 'approved'].includes(trip.status));
-        const cancelledTrips = trips.filter(trip => ['cancelled', 'canceled', 'no-show'].includes(trip.status));
+        const upcomingTrips = trips.filter(trip => trip.status === 'upcoming' || trip.status === 'confirmed');
+        const approvedTrips = trips.filter(trip => trip.status === 'approved');
+        const cancelledTrips = trips.filter(trip => ['cancelled', 'canceled', 'no-show', 'rejected'].includes(trip.status));
         
         console.log('📊 Trip categorization completed:', {
           totalTrips: trips.length,
@@ -1076,6 +1081,28 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         return { ...trip, clientName, billable: false };
       });
       
+      const enhancedApprovedTrips = approvedTrips.map(trip => {
+        let clientName = 'Unknown Client';
+        
+        if (trip.user_id) {
+          const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
+          if (userProfile && userProfile.first_name) {
+            clientName = `${userProfile.first_name} ${userProfile.last_name || ''}`.trim();
+          }
+        } else if (trip.managed_client_id) {
+          const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
+          if (managedClient && managedClient.first_name) {
+            let name = `${managedClient.first_name} ${managedClient.last_name || ''}`.trim();
+            if (managedClient.phone_number) {
+              name += ` - ${managedClient.phone_number}`;
+            }
+            clientName = `${name} (Managed)`;
+          }
+        }
+        
+        return { ...trip, clientName, billable: false };
+      });
+      
       const enhancedCancelledTrips = cancelledTrips.map(trip => {
         let clientName = 'Unknown Client';
         
@@ -1103,6 +1130,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       setPaidTrips(enhancedPaidTrips);
       setPendingTrips(enhancedPendingTrips);
       setUpcomingTrips(enhancedUpcomingTrips);
+      setApprovedTrips(enhancedApprovedTrips);
       setCancelledTrips(enhancedCancelledTrips);
       setInvoicePaid(currentInvoicePaid);
       setActualBillableAmount(currentActualBillableAmount);
@@ -1798,6 +1826,7 @@ ${monthlyTrips.map(trip => {
                 setPaidTrips([]);
                 setPendingTrips([]);
                 setUpcomingTrips([]);
+                setApprovedTrips([]);
                 setCancelledTrips([]);
                 setTotalAmount(0);
                 
@@ -2214,21 +2243,81 @@ ${monthlyTrips.map(trip => {
             </div>
           )}
 
-          {/* PENDING TRIPS Section */}
-          {pendingTrips.length > 0 && (
+          {/* OTHER TRIPS Section - Non-completed trips with filters */}
+          {(pendingTrips.length > 0 || upcomingTrips.length > 0 || approvedTrips.length > 0 || cancelledTrips.length > 0) && (
             <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-              <div className="px-6 py-4 border-b bg-amber-50">
+              <div className="px-6 py-4 border-b bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-amber-800">
-                      ⏳ PENDING APPROVAL
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      📋 OTHER TRIPS
                     </h3>
-                    <p className="text-sm text-amber-600 mt-1">
-                      Trips awaiting dispatcher approval ({pendingTrips.length} trips)
+                    <p className="text-sm text-gray-600 mt-1">
+                      All non-completed trips for this month
                     </p>
                   </div>
+                  <div className="text-right">
+                    <div className="text-sm text-gray-600">
+                      Total: {pendingTrips.length + upcomingTrips.length + approvedTrips.length + cancelledTrips.length} trips
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Filter Buttons */}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedTripFilter('all')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      selectedTripFilter === 'all'
+                        ? 'bg-[#7CCFD0] text-white'
+                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    All ({pendingTrips.length + upcomingTrips.length + approvedTrips.length + cancelledTrips.length})
+                  </button>
+                  <button
+                    onClick={() => setSelectedTripFilter('pending')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      selectedTripFilter === 'pending'
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    ⏳ Pending ({pendingTrips.length})
+                  </button>
+                  <button
+                    onClick={() => setSelectedTripFilter('approved')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      selectedTripFilter === 'approved'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    ✅ Approved ({approvedTrips.length})
+                  </button>
+                  <button
+                    onClick={() => setSelectedTripFilter('upcoming')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      selectedTripFilter === 'upcoming'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    🚀 Upcoming ({upcomingTrips.length})
+                  </button>
+                  <button
+                    onClick={() => setSelectedTripFilter('cancelled')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      selectedTripFilter === 'cancelled'
+                        ? 'bg-red-500 text-white'
+                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    ❌ Cancelled ({cancelledTrips.length})
+                  </button>
                 </div>
               </div>
+              
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50">
@@ -2241,95 +2330,84 @@ ${monthlyTrips.map(trip => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {pendingTrips.map((trip) => {
-                      const formattedDate = trip.pickup_time ? 
-                        new Date(trip.pickup_time).toLocaleDateString() : 'N/A';
-                      return (
-                        <tr key={trip.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 text-sm text-gray-900">{formattedDate}</td>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">{trip.clientName}</td>
-                          <td className="px-6 py-4 text-sm text-gray-900">
-                            <div className="max-w-xs">
-                              <p className="truncate font-medium">{trip.pickup_address || 'Unknown pickup'}</p>
-                              <p className="truncate text-xs text-gray-500">
-                                → {trip.destination_address || 'Unknown destination'}
-                              </p>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium">
-                            <span className="text-amber-600 font-semibold">
-                              ${(trip.total_fare || trip.price || 0).toFixed(2)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800">
-                              PENDING APPROVAL
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* UPCOMING TRIPS Section */}
-          {upcomingTrips.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-              <div className="px-6 py-4 border-b bg-blue-50">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-blue-800">
-                      🚀 UPCOMING TRIPS
-                    </h3>
-                    <p className="text-sm text-blue-600 mt-1">
-                      Approved trips scheduled for pickup ({upcomingTrips.length} trips)
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Date</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Client</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Route</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Price</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {upcomingTrips.map((trip) => {
-                      const formattedDate = trip.pickup_time ? 
-                        new Date(trip.pickup_time).toLocaleDateString() : 'N/A';
-                      return (
-                        <tr key={trip.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 text-sm text-gray-900">{formattedDate}</td>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">{trip.clientName}</td>
-                          <td className="px-6 py-4 text-sm text-gray-900">
-                            <div className="max-w-xs">
-                              <p className="truncate font-medium">{trip.pickup_address || 'Unknown pickup'}</p>
-                              <p className="truncate text-xs text-gray-500">
-                                → {trip.destination_address || 'Unknown destination'}
-                              </p>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium">
-                            <span className="text-blue-600 font-semibold">
-                              ${(trip.total_fare || trip.price || 0).toFixed(2)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                              {trip.status.toUpperCase()}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {(() => {
+                      let tripsToShow = [];
+                      
+                      if (selectedTripFilter === 'all') {
+                        tripsToShow = [...pendingTrips, ...approvedTrips, ...upcomingTrips, ...cancelledTrips];
+                      } else if (selectedTripFilter === 'pending') {
+                        tripsToShow = pendingTrips;
+                      } else if (selectedTripFilter === 'approved') {
+                        tripsToShow = approvedTrips;
+                      } else if (selectedTripFilter === 'upcoming') {
+                        tripsToShow = upcomingTrips;
+                      } else if (selectedTripFilter === 'cancelled') {
+                        tripsToShow = cancelledTrips;
+                      }
+                      
+                      // Sort by pickup time
+                      tripsToShow.sort((a, b) => {
+                        const dateA = a.pickup_time ? new Date(a.pickup_time) : new Date(0);
+                        const dateB = b.pickup_time ? new Date(b.pickup_time) : new Date(0);
+                        return dateA - dateB;
+                      });
+                      
+                      return tripsToShow.map((trip) => {
+                        const formattedDate = trip.pickup_time ? 
+                          new Date(trip.pickup_time).toLocaleDateString() : 'N/A';
+                        
+                        const getStatusColor = (status) => {
+                          if (status === 'pending') return 'bg-amber-100 text-amber-800';
+                          if (status === 'approved') return 'bg-green-100 text-green-800';
+                          if (status === 'upcoming' || status === 'confirmed') return 'bg-blue-100 text-blue-800';
+                          if (['cancelled', 'canceled', 'no-show', 'rejected'].includes(status)) return 'bg-red-100 text-red-800';
+                          return 'bg-gray-100 text-gray-800';
+                        };
+                        
+                        const getStatusText = (status) => {
+                          if (status === 'pending') return 'PENDING';
+                          if (status === 'approved') return 'APPROVED';
+                          if (status === 'upcoming') return 'UPCOMING';
+                          if (status === 'confirmed') return 'CONFIRMED';
+                          if (status === 'cancelled' || status === 'canceled') return 'CANCELLED';
+                          if (status === 'no-show') return 'NO-SHOW';
+                          if (status === 'rejected') return 'REJECTED';
+                          return status.toUpperCase();
+                        };
+                        
+                        const isCancelled = ['cancelled', 'canceled', 'no-show', 'rejected'].includes(trip.status);
+                        
+                        return (
+                          <tr key={trip.id} className={`hover:bg-gray-50 ${isCancelled ? 'opacity-60' : ''}`}>
+                            <td className="px-6 py-4 text-sm text-gray-900">{formattedDate}</td>
+                            <td className="px-6 py-4 text-sm font-medium text-gray-900">{trip.clientName}</td>
+                            <td className="px-6 py-4 text-sm text-gray-900">
+                              <div className="max-w-xs">
+                                <p className="truncate font-medium">{trip.pickup_address || 'Unknown pickup'}</p>
+                                <p className="truncate text-xs text-gray-500">
+                                  → {trip.destination_address || 'Unknown destination'}
+                                </p>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm font-medium">
+                              <span className={`${isCancelled ? 'text-gray-500 line-through' : 'text-gray-900'} font-semibold`}>
+                                ${(trip.total_fare || trip.price || 0).toFixed(2)}
+                              </span>
+                              {!isCancelled && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  Not billable yet
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(trip.status)}`}>
+                                {getStatusText(trip.status)}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      });
+                    })()}
                   </tbody>
                 </table>
               </div>
@@ -2410,76 +2488,6 @@ ${monthlyTrips.map(trip => {
             </div>
           )}
           
-          {/* CANCELLED TRIPS Section */}
-          {cancelledTrips.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-              <div className="px-6 py-4 border-b bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      ❌ CANCELLED TRIPS
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Trips that were cancelled or marked as no-show ({cancelledTrips.length} trips)
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-gray-600">
-                      ${cancelledTrips.reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0).toFixed(2)}
-                    </div>
-                    <div className="text-xs text-gray-500">Not Billable</div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Date</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Client</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Route</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Price</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {cancelledTrips.map((trip) => {
-                      const formattedDate = trip.pickup_time ? 
-                        new Date(trip.pickup_time).toLocaleDateString() : 'N/A';
-
-                      return (
-                        <tr key={trip.id} className="hover:bg-gray-50 opacity-75">
-                          <td className="px-6 py-4 text-sm text-gray-900">{formattedDate}</td>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">{trip.clientName}</td>
-                          <td className="px-6 py-4 text-sm text-gray-900">
-                            <div className="max-w-xs">
-                              <p className="truncate font-medium">{trip.pickup_address || 'Unknown pickup'}</p>
-                              <p className="truncate text-xs text-gray-500">
-                                → {trip.destination_address || 'Unknown destination'}
-                              </p>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium">
-                            <span className="text-gray-500 line-through">
-                              ${(trip.total_fare || trip.price || 0).toFixed(2)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
-                              {trip.status === 'cancelled' || trip.status === 'canceled' ? 'CANCELLED' : 
-                               trip.status === 'no-show' ? 'NO-SHOW' : 
-                               trip.status.toUpperCase()}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
           
           {/* Professional Trip Summary */}
           <div className="bg-white rounded-lg shadow-sm border p-6">
