@@ -469,7 +469,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           managed_client_id
         `)
         .eq('facility_id', facilityId)
-        .in('status', ['completed', 'pending', 'upcoming', 'confirmed'])
+        .in('status', ['completed', 'pending', 'upcoming', 'confirmed', 'approved', 'cancelled', 'canceled', 'rejected', 'no-show'])
         .gte('pickup_time', startISO)
         .lte('pickup_time', endISO)
         .order('pickup_time', { ascending: false });
@@ -493,7 +493,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           query: 'trips',
           filters: {
             facility_id: facilityId,
-            status_in: ['completed', 'pending', 'upcoming', 'confirmed'],
+            status_in: ['completed', 'pending', 'upcoming', 'confirmed', 'approved', 'cancelled', 'canceled', 'rejected', 'no-show'],
             pickup_time_gte: startISO,
             pickup_time_lte: endISO
           }
