@@ -1936,7 +1936,7 @@ ${monthlyTrips.map(trip => {
         </div>
 
         {/* Professional Payment Breakdown */}
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           <div className="bg-blue-50 rounded-lg p-4">
             <h3 className="text-sm font-medium text-[#60BFC0] mb-1">Total Trips</h3>
             <p className="text-2xl font-bold text-[#60BFC0]">{monthlyTrips.length}</p>
@@ -1976,16 +1976,16 @@ ${monthlyTrips.map(trip => {
           
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="text-sm font-medium text-gray-700 mb-1">Billing Email</h3>
-            <p className="text-sm text-gray-600 truncate">{facility?.billing_email || 'Not set'}</p>
+            <p className="text-sm text-gray-600 break-all">{facility?.billing_email || 'Not set'}</p>
           </div>
           
           <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
             <h3 className="text-sm font-medium text-blue-700 mb-1">Payment Status</h3>
-            <div className="flex items-center space-x-2">
-              <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+            <div className="flex flex-col space-y-2">
+              <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 text-center">
                 UPCOMING INVOICE
               </span>
-              <span className="text-2xl font-bold text-blue-600">
+              <span className="text-2xl font-bold text-blue-600 text-center">
                 ${actualBillableAmount.toFixed(2)}
               </span>
             </div>
