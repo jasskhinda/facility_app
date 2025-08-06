@@ -1936,31 +1936,33 @@ ${monthlyTrips.map(trip => {
         </div>
 
         {/* Professional Payment Breakdown */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-          <div className="bg-blue-50 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-[#60BFC0] mb-1">Total Trips</h3>
-            <p className="text-2xl font-bold text-[#60BFC0]">{monthlyTrips.length}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-blue-50 rounded-xl p-6 border border-blue-200 shadow-sm">
+            <h3 className="text-lg font-semibold text-[#60BFC0] mb-3">Total Trips</h3>
+            <p className="text-4xl font-bold text-[#60BFC0]">{monthlyTrips.length}</p>
+            <p className="text-sm text-blue-600 mt-2 opacity-75">All trips this month</p>
           </div>
           
-          <div className="bg-red-50 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-red-700 mb-1">Current Billable Amount</h3>
-            <p className="text-2xl font-bold text-red-600">
+          <div className="bg-red-50 rounded-xl p-6 border border-red-200 shadow-sm">
+            <h3 className="text-lg font-semibold text-red-700 mb-3">Current Billable Amount</h3>
+            <p className="text-4xl font-bold text-red-600">
               {dueTrips.filter(trip => trip.billable).length}
             </p>
-            <p className="text-sm text-red-600 font-semibold">
+            <p className="text-lg text-red-600 font-bold mt-2">
               ${dueTrips.filter(trip => trip.billable).reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0).toFixed(2)}
             </p>
+            <p className="text-sm text-red-500 mt-1 opacity-75">Completed trips</p>
           </div>
           
           {/* Show Paid Amount if there was a verified payment */}
           {showPaidAmount && (
-            <div className={`rounded-lg p-4 border-2 ${lastPaymentDate ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-              <h3 className={`text-sm font-medium mb-1 ${lastPaymentDate ? 'text-green-700' : 'text-red-700'}`}>
+            <div className={`rounded-xl p-6 border shadow-sm ${lastPaymentDate ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+              <h3 className={`text-lg font-semibold mb-3 ${lastPaymentDate ? 'text-green-700' : 'text-red-700'}`}>
                 {lastPaymentDate ? 'Paid Amount' : 'Amount Due'}
               </h3>
-              <p className={`text-2xl font-bold ${lastPaymentDate ? 'text-green-600' : 'text-red-600'}`}>${paidAmount.toFixed(2)}</p>
+              <p className={`text-4xl font-bold ${lastPaymentDate ? 'text-green-600' : 'text-red-600'}`}>${paidAmount.toFixed(2)}</p>
               {lastPaymentDate && (
-                <p className="text-xs text-green-600 mt-1">
+                <p className="text-sm text-green-600 mt-2 opacity-75">
                   Verified: {new Date(lastPaymentDate).toLocaleDateString('en-US', {
                     month: 'short',
                     day: 'numeric',
@@ -1970,22 +1972,19 @@ ${monthlyTrips.map(trip => {
               )}
             </div>
           )}
-          
-          
-          
-          
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-1">Billing Email</h3>
-            <p className="text-sm text-gray-600 break-all">{facility?.billing_email || 'Not set'}</p>
+          <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-700 mb-3">Billing Email</h3>
+            <p className="text-base text-gray-600 break-all font-medium">{facility?.billing_email || 'Not set'}</p>
+            <p className="text-sm text-gray-500 mt-2 opacity-75">Invoice destination</p>
           </div>
           
-          <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
-            <h3 className="text-sm font-medium text-blue-700 mb-1">Payment Status</h3>
-            <div className="flex flex-col space-y-2">
-              <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 text-center">
+          <div className="bg-blue-50 rounded-xl p-6 border border-blue-200 shadow-sm">
+            <h3 className="text-lg font-semibold text-blue-700 mb-3">Payment Status</h3>
+            <div className="flex flex-col space-y-3">
+              <span className="px-4 py-2 rounded-full text-base font-semibold bg-blue-100 text-blue-800 text-center">
                 UPCOMING INVOICE
               </span>
-              <span className="text-2xl font-bold text-blue-600 text-center">
+              <span className="text-4xl font-bold text-blue-600 text-center">
                 ${actualBillableAmount.toFixed(2)}
               </span>
             </div>
