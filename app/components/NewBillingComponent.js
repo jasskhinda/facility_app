@@ -728,6 +728,10 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           totalTrips: trips.length,
           paidTrips: categorizedPaidTrips.length,
           dueTrips: categorizedDueTrips.length,
+          pendingTrips: pendingTrips.length,
+          upcomingTrips: upcomingTrips.length,
+          approvedTrips: approvedTrips.length,
+          cancelledTrips: cancelledTrips.length,
           billableAmount: currentActualBillableAmount,
           paidTripIds: Array.from(paidTripIds)
         });
@@ -1126,6 +1130,15 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       });
 
       // Set the categorized trips
+      console.log('🔧 DEBUG - Setting trip state arrays:', {
+        dueTrips: enhancedDueTrips.length,
+        paidTrips: enhancedPaidTrips.length,
+        pendingTrips: enhancedPendingTrips.length,
+        upcomingTrips: enhancedUpcomingTrips.length,
+        approvedTrips: enhancedApprovedTrips.length,
+        cancelledTrips: enhancedCancelledTrips.length
+      });
+      
       setDueTrips(enhancedDueTrips);
       setPaidTrips(enhancedPaidTrips);
       setPendingTrips(enhancedPendingTrips);
