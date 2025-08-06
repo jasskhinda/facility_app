@@ -719,19 +719,19 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         currentInvoicePaid = categorizedPaidTrips.length > 0;
         
         // Create separate arrays for pending, upcoming, approved, and cancelled trips
-        const pendingTrips = trips.filter(trip => trip.status === 'pending');
-        const upcomingTrips = trips.filter(trip => trip.status === 'upcoming' || trip.status === 'confirmed');
-        const approvedTrips = trips.filter(trip => trip.status === 'approved');
-        const cancelledTrips = trips.filter(trip => ['cancelled', 'canceled', 'no-show', 'rejected'].includes(trip.status));
+        const filteredPendingTrips = trips.filter(trip => trip.status === 'pending');
+        const filteredUpcomingTrips = trips.filter(trip => trip.status === 'upcoming' || trip.status === 'confirmed');
+        const filteredApprovedTrips = trips.filter(trip => trip.status === 'approved');
+        const filteredCancelledTrips = trips.filter(trip => ['cancelled', 'canceled', 'no-show', 'rejected'].includes(trip.status));
         
         console.log('📊 Trip categorization completed:', {
           totalTrips: trips.length,
           paidTrips: categorizedPaidTrips.length,
           dueTrips: categorizedDueTrips.length,
-          pendingTrips: pendingTrips.length,
-          upcomingTrips: upcomingTrips.length,
-          approvedTrips: approvedTrips.length,
-          cancelledTrips: cancelledTrips.length,
+          pendingTrips: filteredPendingTrips.length,
+          upcomingTrips: filteredUpcomingTrips.length,
+          approvedTrips: filteredApprovedTrips.length,
+          cancelledTrips: filteredCancelledTrips.length,
           billableAmount: currentActualBillableAmount,
           paidTripIds: Array.from(paidTripIds)
         });
@@ -1041,7 +1041,9 @@ export default function FacilityBillingComponent({ user, facilityId }) {
       });
 
       // Create enhanced arrays for pending and upcoming trips
-      const enhancedPendingTrips = pendingTrips.map(trip => {
+      console.log('🔍 DEBUG - Before enhancement, filteredPendingTrips:', filteredPendingTrips.length, filteredPendingTrips.map(t => ({id: t.id, status: t.status})));
+      
+      const enhancedPendingTrips = filteredPendingTrips.map(trip => {
         let clientName = 'Unknown Client';
         
         if (trip.user_id) {
@@ -1063,7 +1065,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         return { ...trip, clientName, billable: false };
       });
       
-      const enhancedUpcomingTrips = upcomingTrips.map(trip => {
+      const enhancedUpcomingTrips = filteredUpcomingTrips.map(trip => {
         let clientName = 'Unknown Client';
         
         if (trip.user_id) {
@@ -1085,7 +1087,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         return { ...trip, clientName, billable: false };
       });
       
-      const enhancedApprovedTrips = approvedTrips.map(trip => {
+      const enhancedApprovedTrips = filteredApprovedTrips.map(trip => {
         let clientName = 'Unknown Client';
         
         if (trip.user_id) {
@@ -1107,7 +1109,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         return { ...trip, clientName, billable: false };
       });
       
-      const enhancedCancelledTrips = cancelledTrips.map(trip => {
+      const enhancedCancelledTrips = filteredCancelledTrips.map(trip => {
         let clientName = 'Unknown Client';
         
         if (trip.user_id) {
