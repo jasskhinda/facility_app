@@ -718,11 +718,11 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         // Set invoice paid status if there are any paid trips
         currentInvoicePaid = categorizedPaidTrips.length > 0;
         
-        // Create separate arrays for pending, upcoming, approved, and cancelled trips
+        // Create separate arrays for different trip statuses based on actual database values
         const filteredPendingTrips = trips.filter(trip => trip.status === 'pending');
-        const filteredUpcomingTrips = trips.filter(trip => trip.status === 'upcoming' || trip.status === 'confirmed');
-        const filteredApprovedTrips = trips.filter(trip => trip.status === 'approved');
-        const filteredCancelledTrips = trips.filter(trip => ['cancelled', 'canceled', 'no-show', 'rejected'].includes(trip.status));
+        const filteredUpcomingTrips = trips.filter(trip => trip.status === 'awaiting_driver_acceptance');
+        const filteredApprovedTrips = trips.filter(trip => trip.status === 'approved'); // This status doesn't exist in current data
+        const filteredCancelledTrips = trips.filter(trip => ['cancelled', 'canceled', 'rejected'].includes(trip.status));
         
         console.log('📊 Trip categorization completed:', {
           totalTrips: trips.length,
