@@ -1850,20 +1850,20 @@ ${monthlyTrips.map(trip => {
       </div>
 
       {/* Professional Billing Header */}
-      <div className="bg-gradient-to-r from-[#7CCFD0] to-[#60BFC0] rounded-lg p-6 text-white">
+      <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Monthly Billing & Invoices</h1>
-            <p className="text-blue-100 mt-1">
+            <h1 className="text-2xl font-bold text-gray-900">Monthly Billing & Invoices</h1>
+            <p className="text-gray-600 mt-1">
               Professional invoice management for {facility?.name || 'your facility'}
             </p>
-            <p className="text-blue-200 text-sm mt-2">
+            <p className="text-gray-500 text-sm mt-2">
               💳 Now supporting online payments and traditional billing methods
             </p>
           </div>
           <div className="text-right">
-            <div className="text-sm text-blue-200">Invoice #</div>
-            <div className="text-lg font-mono font-semibold">{invoiceNumber}</div>
+            <div className="text-sm text-gray-500">Invoice #</div>
+            <div className="text-lg font-mono font-semibold text-gray-900">{invoiceNumber}</div>
           </div>
         </div>
       </div>
@@ -2589,36 +2589,6 @@ ${monthlyTrips.map(trip => {
                 </ul>
               </div>
             )}
-          </div>
-        </div>
-      )}
-      
-      {/* Professional Billing Summary */}
-      {monthlyTrips.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Professional Billing Summary</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className={`text-center p-4 rounded-lg border ${
-              dueTrips.filter(trip => trip.billable).length === 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-            }`}>
-              {dueTrips.filter(trip => trip.billable).length === 0 ? (
-                <>
-                  <div className="text-2xl font-bold text-green-600">
-                    ✅ All Trips Paid
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="text-3xl font-bold text-red-600">
-                    {dueTrips.filter(trip => trip.billable).length}
-                  </div>
-                  <div className="text-gray-700 font-medium">Current Billable Amount</div>
-                  <div className="text-sm text-red-600 font-semibold mt-1">
-                    ${dueTrips.filter(trip => trip.billable).reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0).toFixed(2)}
-                  </div>
-                </>
-              )}
-            </div>
           </div>
         </div>
       )}
