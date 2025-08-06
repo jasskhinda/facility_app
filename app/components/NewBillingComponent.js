@@ -1936,10 +1936,20 @@ ${monthlyTrips.map(trip => {
         </div>
 
         {/* Professional Payment Breakdown */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
           <div className="bg-blue-50 rounded-lg p-4">
             <h3 className="text-sm font-medium text-[#60BFC0] mb-1">Total Trips</h3>
             <p className="text-2xl font-bold text-[#60BFC0]">{monthlyTrips.length}</p>
+          </div>
+          
+          <div className="bg-red-50 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-red-700 mb-1">Current Billable Amount</h3>
+            <p className="text-2xl font-bold text-red-600">
+              {dueTrips.filter(trip => trip.billable).length}
+            </p>
+            <p className="text-sm text-red-600 font-semibold">
+              ${dueTrips.filter(trip => trip.billable).reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0).toFixed(2)}
+            </p>
           </div>
           
           {/* Show Paid Amount if there was a verified payment */}
@@ -2007,34 +2017,6 @@ ${monthlyTrips.map(trip => {
                 <p className="text-blue-600 mt-1">{getCleanPaymentNote(invoiceHistory[0].payment_notes)}</p>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Professional Billing Summary - moved here after Total Trips */}
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Professional Billing Summary</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className={`text-center p-4 rounded-lg border ${
-              dueTrips.filter(trip => trip.billable).length === 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-            }`}>
-              {dueTrips.filter(trip => trip.billable).length === 0 ? (
-                <>
-                  <div className="text-2xl font-bold text-green-600">
-                    ✅ All Trips Paid
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="text-3xl font-bold text-red-600">
-                    {dueTrips.filter(trip => trip.billable).length}
-                  </div>
-                  <div className="text-gray-700 font-medium">Current Billable Amount</div>
-                  <div className="text-sm text-red-600 font-semibold mt-1">
-                    ${dueTrips.filter(trip => trip.billable).reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0).toFixed(2)}
-                  </div>
-                </>
-              )}
-            </div>
           </div>
         </div>
 
@@ -2608,6 +2590,36 @@ ${monthlyTrips.map(trip => {
                 </ul>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      
+      {/* Professional Billing Summary */}
+      {monthlyTrips.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Professional Billing Summary</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className={`text-center p-4 rounded-lg border ${
+              dueTrips.filter(trip => trip.billable).length === 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+            }`}>
+              {dueTrips.filter(trip => trip.billable).length === 0 ? (
+                <>
+                  <div className="text-2xl font-bold text-green-600">
+                    ✅ All Trips Paid
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-3xl font-bold text-red-600">
+                    {dueTrips.filter(trip => trip.billable).length}
+                  </div>
+                  <div className="text-gray-700 font-medium">Current Billable Amount</div>
+                  <div className="text-sm text-red-600 font-semibold mt-1">
+                    ${dueTrips.filter(trip => trip.billable).reduce((sum, trip) => sum + (trip.total_fare || trip.price || 0), 0).toFixed(2)}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
