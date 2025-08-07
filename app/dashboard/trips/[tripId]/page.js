@@ -8,13 +8,71 @@ import DashboardLayout from '@/app/components/DashboardLayout';
 import EditTripForm from '@/app/components/EditTripForm';
 import { getPricingEstimate, createPricingBreakdown, formatCurrency } from '@/lib/pricing';
 
-// Professional Cost Breakdown Component that uses the same pricing logic as booking page
+// Professional Cost Breakdown Component that uses stored pricing data to ensure consistency
 function ProfessionalCostBreakdown({ trip }) {
   const [pricingBreakdown, setPricingBreakdown] = useState(null);
 
   useEffect(() => {
-    const calculateProfessionalPricing = async () => {
+    const useSamePricingAsBooking = () => {
       try {
+        // If trip has stored pricing breakdown, use that for consistency
+        if (trip.total_fare || trip.price) {
+          // Create consistent breakdown using stored values or reasonable calculations
+          const storedPrice = trip.total_fare || trip.price;
+          const basePrice = trip.base_price || 50; // Default base price if not stored
+          const roundTripPrice = trip.is_round_trip ? 50 : 0;
+          
+          // Calculate distance charge as difference between total and other known charges
+          let distancePrice = storedPrice - basePrice - roundTripPrice;
+          
+          // Subtract known surcharges
+          if (trip.county_surcharge) distancePrice -= trip.county_surcharge;
+          if (trip.time_surcharge) distancePrice -= trip.time_surcharge;
+          if (trip.emergency_fee) distancePrice -= trip.emergency_fee;
+          if (trip.wheelchair_rental) distancePrice -= trip.wheelchair_rental;
+          
+          // Ensure distance price is reasonable (non-negative)
+          distancePrice = Math.max(0, distancePrice);
+          
+          const mockPricing = {
+            basePrice: basePrice,
+            roundTripPrice: roundTripPrice,
+            distancePrice: distancePrice,
+            countyPrice: trip.county_surcharge || 0,
+            weekendAfterHoursSurcharge: trip.time_surcharge || 0,
+            emergencyFee: trip.emergency_fee || 0,
+            wheelchairPrice: trip.wheelchair_rental || 0,
+            veteranDiscount: trip.veteran_discount || 0,
+            total: storedPrice,
+            distance: trip.distance || 0
+          };
+          
+          const mockResult = {
+            success: true,
+            pricing: mockPricing,
+            distance: {
+              distance: trip.distance || 0,
+              duration: 'N/A',
+              distanceText: trip.distance ? `${trip.distance} mi` : '',
+              isEstimated: false
+            }
+          };
+          
+          setPricingBreakdown(mockResult);
+          return;
+        }
+        
+        // Fallback: recalculate if no stored pricing (this ensures we always show something)
+        calculateFallbackPricing();
+      } catch (error) {
+        console.error('Error using stored pricing:', error);
+        calculateFallbackPricing();
+      }
+    };
+
+    const calculateFallbackPricing = async () => {
+      try {
+        console.log('Using fallback pricing calculation');
         // Use the same professional pricing calculation as the booking page
         const pricingResult = await getPricingEstimate({
           pickupAddress: trip.pickup_address,
@@ -37,11 +95,11 @@ function ProfessionalCostBreakdown({ trip }) {
           setPricingBreakdown(pricingResult);
         }
       } catch (error) {
-        console.error('Error calculating professional pricing:', error);
+        console.error('Error calculating fallback pricing:', error);
       }
     };
 
-    calculateProfessionalPricing();
+    useSamePricingAsBooking();
   }, [trip]);
 
   if (!pricingBreakdown) {
