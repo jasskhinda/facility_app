@@ -613,77 +613,107 @@ Website: https://compassionatecaretransportation.com
           <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Cost Breakdown</h3>
           
           <div className="space-y-3">
-            {/* Base Fare */}
-            <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
-              <span className="text-sm text-[#2E4F54] text-gray-900">
-                Base fare ({trip.is_round_trip ? '2 legs' : '1 leg'} @ $50/leg)
-              </span>
-              <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
-                ${trip.is_round_trip ? '100.00' : '50.00'}
-              </span>
-            </div>
-            
-            {/* Distance Charge */}
-            {trip.distance && trip.distance > 0 && (
-              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
-                <span className="text-sm text-[#2E4F54] text-gray-900">
-                  Distance charge ({trip.distance} mi @ ${trip.county_info === 'Outside Franklin County' ? '4' : '3'}/mile)
-                </span>
-                <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
-                  ${(trip.distance * (trip.county_info === 'Outside Franklin County' ? 4 : 3) * (trip.is_round_trip ? 2 : 1)).toFixed(2)}
-                </span>
-              </div>
-            )}
-            
-            {/* County Surcharge */}
-            {trip.county_surcharge && trip.county_surcharge > 0 && (
-              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
-                <span className="text-sm text-[#2E4F54] text-gray-900">County surcharge</span>
-                <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
-                  ${trip.county_surcharge.toFixed(2)}
-                </span>
-              </div>
-            )}
-            
-            {/* Weekend/After-hours Surcharge */}
-            {trip.time_surcharge && trip.time_surcharge > 0 && (
-              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
-                <span className="text-sm text-[#2E4F54] text-gray-900">Weekend/After-hours surcharge</span>
-                <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
-                  ${trip.time_surcharge.toFixed(2)}
-                </span>
-              </div>
-            )}
-            
-            {/* Emergency Fee */}
-            {trip.emergency_fee && trip.emergency_fee > 0 && (
-              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
-                <span className="text-sm text-[#2E4F54] text-gray-900">Emergency fee</span>
-                <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
-                  ${trip.emergency_fee.toFixed(2)}
-                </span>
-              </div>
-            )}
-            
-            {/* Wheelchair Rental Fee */}
-            {trip.wheelchair_rental && trip.wheelchair_rental > 0 && (
-              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
-                <span className="text-sm text-[#2E4F54] text-gray-900">Wheelchair rental fee</span>
-                <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
-                  ${trip.wheelchair_rental.toFixed(2)}
-                </span>
-              </div>
-            )}
-            
-            {/* Veteran Discount */}
-            {trip.veteran_discount && trip.veteran_discount > 0 && (
-              <div className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
-                <span className="text-sm text-green-600 dark:text-green-400">Veteran discount (20%)</span>
-                <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                  -${trip.veteran_discount.toFixed(2)}
-                </span>
-              </div>
-            )}
+            {(() => {
+              // Use the same pricing logic as the booking page
+              const totalLegs = trip.is_round_trip ? 2 : 1;
+              const baseFare = totalLegs * 50; // $50 per leg
+              
+              // Calculate distance charge using proper logic
+              let distanceCharge = 0;
+              if (trip.distance && trip.distance > 0) {
+                const effectiveDistance = trip.is_round_trip ? trip.distance * 2 : trip.distance;
+                const isInFranklinCounty = trip.county_info !== 'Outside Franklin County';
+                const rate = isInFranklinCounty ? 3 : 4; // $3 in Franklin, $4 outside
+                distanceCharge = effectiveDistance * rate;
+              }
+              
+              const items = [];
+              
+              // Base fare item
+              items.push({
+                label: `Base fare (${totalLegs} leg${totalLegs > 1 ? 's' : ''} @ $50/leg)`,
+                amount: baseFare,
+                type: 'base'
+              });
+              
+              // Distance charge item
+              if (distanceCharge > 0) {
+                const isInFranklinCounty = trip.county_info !== 'Outside Franklin County';
+                const rateText = isInFranklinCounty ? '$3/mile' : '$4/mile';
+                const locationText = isInFranklinCounty ? 'Franklin County' : 'Outside Franklin County';
+                const effectiveDistance = trip.is_round_trip ? trip.distance * 2 : trip.distance;
+                
+                items.push({
+                  label: `Distance charge (${effectiveDistance.toFixed(1)} mi @ ${rateText})`,
+                  amount: distanceCharge,
+                  type: 'charge'
+                });
+              }
+              
+              // County surcharge
+              if (trip.county_surcharge && trip.county_surcharge > 0) {
+                items.push({
+                  label: 'County surcharge',
+                  amount: trip.county_surcharge,
+                  type: 'premium'
+                });
+              }
+              
+              // Weekend/After-hours surcharge
+              if (trip.time_surcharge && trip.time_surcharge > 0) {
+                items.push({
+                  label: 'Weekend/After-hours surcharge',
+                  amount: trip.time_surcharge,
+                  type: 'premium'
+                });
+              }
+              
+              // Emergency fee
+              if (trip.emergency_fee && trip.emergency_fee > 0) {
+                items.push({
+                  label: 'Emergency fee',
+                  amount: trip.emergency_fee,
+                  type: 'premium'
+                });
+              }
+              
+              // Wheelchair rental fee
+              if (trip.wheelchair_rental && trip.wheelchair_rental > 0) {
+                items.push({
+                  label: 'Wheelchair rental fee',
+                  amount: trip.wheelchair_rental,
+                  type: 'premium'
+                });
+              }
+              
+              // Veteran discount
+              if (trip.veteran_discount && trip.veteran_discount > 0) {
+                items.push({
+                  label: 'Veteran discount (20%)',
+                  amount: -trip.veteran_discount,
+                  type: 'discount'
+                });
+              }
+              
+              return items.map((item, index) => (
+                <div key={index} className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
+                  <span className={`text-sm ${
+                    item.type === 'discount' ? 'text-green-600 dark:text-green-400' :
+                    item.type === 'premium' ? 'text-orange-600 dark:text-orange-400' :
+                    'text-[#2E4F54] text-gray-900'
+                  }`}>
+                    {item.label}
+                  </span>
+                  <span className={`text-sm font-medium ${
+                    item.type === 'discount' ? 'text-green-600 dark:text-green-400' :
+                    item.type === 'premium' ? 'text-orange-600 dark:text-orange-400' :
+                    'text-[#2E4F54] text-gray-900'
+                  }`}>
+                    ${Math.abs(item.amount).toFixed(2)}
+                  </span>
+                </div>
+              ));
+            })()}
             
             <div className="flex justify-between items-center py-3 bg-[#F8F9FA]  rounded-lg px-4 mt-4">
               <span className="text-lg font-semibold text-[#2E4F54] text-gray-900">Total Amount</span>
