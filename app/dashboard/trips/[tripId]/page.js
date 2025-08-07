@@ -6,6 +6,84 @@ import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 import DashboardLayout from '@/app/components/DashboardLayout';
 import EditTripForm from '@/app/components/EditTripForm';
+import { getPricingEstimate, createPricingBreakdown, formatCurrency } from '@/lib/pricing';
+
+// Professional Cost Breakdown Component that uses the same pricing logic as booking page
+function ProfessionalCostBreakdown({ trip }) {
+  const [pricingBreakdown, setPricingBreakdown] = useState(null);
+
+  useEffect(() => {
+    const calculateProfessionalPricing = async () => {
+      try {
+        // Use the same professional pricing calculation as the booking page
+        const pricingResult = await getPricingEstimate({
+          pickupAddress: trip.pickup_address,
+          destinationAddress: trip.destination_address || trip.dropoff_address,
+          isRoundTrip: trip.is_round_trip,
+          pickupDateTime: trip.pickup_time,
+          wheelchairType: trip.wheelchair_type || 'no_wheelchair',
+          clientType: 'facility',
+          additionalPassengers: trip.additional_passengers || 0,
+          isEmergency: trip.emergency || false,
+          preCalculatedDistance: {
+            distance: trip.distance || 0,
+            miles: trip.distance || 0,
+            text: trip.distance ? `${trip.distance} mi` : '',
+            duration: 'N/A'
+          }
+        });
+
+        if (pricingResult.success) {
+          setPricingBreakdown(pricingResult);
+        }
+      } catch (error) {
+        console.error('Error calculating professional pricing:', error);
+      }
+    };
+
+    calculateProfessionalPricing();
+  }, [trip]);
+
+  if (!pricingBreakdown) {
+    return (
+      <div className="animate-pulse">
+        <div className="h-4 bg-gray-200 rounded mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded mb-2"></div>
+        <div className="h-6 bg-gray-200 rounded"></div>
+      </div>
+    );
+  }
+
+  const breakdownItems = createPricingBreakdown(pricingBreakdown.pricing);
+
+  return (
+    <>
+      {breakdownItems.map((item, index) => (
+        <div key={index} className={`flex justify-between items-center py-2 ${
+          item.type === 'total' ? 'border-t-2 border-[#7CCFD0] pt-3 bg-[#F8F9FA] rounded-lg px-4 mt-4' : 
+          'border-b border-[#DDE5E7] dark:border-[#E0E0E0]'
+        }`}>
+          <span className={`${item.type === 'total' ? 'text-lg font-semibold' : 'text-sm'} ${
+            item.type === 'total' ? 'text-[#2E4F54] text-gray-900' :
+            item.type === 'discount' ? 'text-green-600 dark:text-green-400' :
+            item.type === 'premium' ? 'text-orange-600 dark:text-orange-400' :
+            'text-[#2E4F54] text-gray-900'
+          }`}>
+            {item.type === 'total' ? 'Total Amount' : item.label}
+          </span>
+          <span className={`${item.type === 'total' ? 'text-lg font-bold text-[#7CCFD0]' : 'text-sm font-medium'} ${
+            item.type === 'total' ? '' :
+            item.type === 'discount' ? 'text-green-600 dark:text-green-400' :
+            item.type === 'premium' ? 'text-orange-600 dark:text-orange-400' :
+            'text-[#2E4F54] text-gray-900'
+          }`}>
+            ${Math.abs(item.amount).toFixed(2)}
+          </span>
+        </div>
+      ))}
+    </>
+  );
+}
 
 export default function TripDetailsPage() {
   const params = useParams();
@@ -613,136 +691,7 @@ Website: https://compassionatecaretransportation.com
           <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Cost Breakdown</h3>
           
           <div className="space-y-3">
-            {(() => {
-              // Use the same pricing logic as the booking page
-              const totalLegs = trip.is_round_trip ? 2 : 1;
-              const baseFare = totalLegs * 50; // $50 per leg
-              
-              // Calculate distance charge using proper logic
-              let distanceCharge = 0;
-              if (trip.distance && trip.distance > 0) {
-                const effectiveDistance = trip.is_round_trip ? trip.distance * 2 : trip.distance;
-                const isInFranklinCounty = trip.county_info !== 'Outside Franklin County';
-                const rate = isInFranklinCounty ? 3 : 4; // $3 in Franklin, $4 outside
-                distanceCharge = effectiveDistance * rate;
-              }
-              
-              const items = [];
-              
-              // Base fare item
-              items.push({
-                label: `Base fare (${totalLegs} leg${totalLegs > 1 ? 's' : ''} @ $50/leg)`,
-                amount: baseFare,
-                type: 'base'
-              });
-              
-              // Distance charge item
-              if (distanceCharge > 0) {
-                const isInFranklinCounty = trip.county_info !== 'Outside Franklin County';
-                const rateText = isInFranklinCounty ? '$3/mile' : '$4/mile';
-                const locationText = isInFranklinCounty ? 'Franklin County' : 'Outside Franklin County';
-                const effectiveDistance = trip.is_round_trip ? trip.distance * 2 : trip.distance;
-                
-                items.push({
-                  label: `Distance charge (${effectiveDistance.toFixed(1)} mi @ ${rateText})`,
-                  amount: distanceCharge,
-                  type: 'charge'
-                });
-              }
-              
-              // County surcharge
-              if (trip.county_surcharge && trip.county_surcharge > 0) {
-                items.push({
-                  label: 'County surcharge',
-                  amount: trip.county_surcharge,
-                  type: 'premium'
-                });
-              }
-              
-              // Weekend/After-hours surcharge
-              if (trip.time_surcharge && trip.time_surcharge > 0) {
-                items.push({
-                  label: 'Weekend/After-hours surcharge',
-                  amount: trip.time_surcharge,
-                  type: 'premium'
-                });
-              }
-              
-              // Emergency fee
-              if (trip.emergency_fee && trip.emergency_fee > 0) {
-                items.push({
-                  label: 'Emergency fee',
-                  amount: trip.emergency_fee,
-                  type: 'premium'
-                });
-              }
-              
-              // Wheelchair rental fee
-              if (trip.wheelchair_rental && trip.wheelchair_rental > 0) {
-                items.push({
-                  label: 'Wheelchair rental fee',
-                  amount: trip.wheelchair_rental,
-                  type: 'premium'
-                });
-              }
-              
-              // Veteran discount
-              if (trip.veteran_discount && trip.veteran_discount > 0) {
-                items.push({
-                  label: 'Veteran discount (20%)',
-                  amount: -trip.veteran_discount,
-                  type: 'discount'
-                });
-              }
-              
-              return items.map((item, index) => (
-                <div key={index} className="flex justify-between items-center py-2 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
-                  <span className={`text-sm ${
-                    item.type === 'discount' ? 'text-green-600 dark:text-green-400' :
-                    item.type === 'premium' ? 'text-orange-600 dark:text-orange-400' :
-                    'text-[#2E4F54] text-gray-900'
-                  }`}>
-                    {item.label}
-                  </span>
-                  <span className={`text-sm font-medium ${
-                    item.type === 'discount' ? 'text-green-600 dark:text-green-400' :
-                    item.type === 'premium' ? 'text-orange-600 dark:text-orange-400' :
-                    'text-[#2E4F54] text-gray-900'
-                  }`}>
-                    ${Math.abs(item.amount).toFixed(2)}
-                  </span>
-                </div>
-              ));
-            })()}
-            
-            <div className="flex justify-between items-center py-3 bg-[#F8F9FA]  rounded-lg px-4 mt-4">
-              <span className="text-lg font-semibold text-[#2E4F54] text-gray-900">Total Amount</span>
-              <span className="text-lg font-bold text-[#7CCFD0]">
-                ${(() => {
-                  // Calculate correct total from breakdown items instead of using stored trip.price
-                  const totalLegs = trip.is_round_trip ? 2 : 1;
-                  const baseFare = totalLegs * 50;
-                  
-                  let distanceCharge = 0;
-                  if (trip.distance && trip.distance > 0) {
-                    const effectiveDistance = trip.is_round_trip ? trip.distance * 2 : trip.distance;
-                    const isInFranklinCounty = trip.county_info !== 'Outside Franklin County';
-                    const rate = isInFranklinCounty ? 3 : 4;
-                    distanceCharge = effectiveDistance * rate;
-                  }
-                  
-                  const total = baseFare + 
-                               distanceCharge + 
-                               (trip.county_surcharge || 0) + 
-                               (trip.time_surcharge || 0) + 
-                               (trip.emergency_fee || 0) + 
-                               (trip.wheelchair_rental || 0) - 
-                               (trip.veteran_discount || 0);
-                               
-                  return total.toFixed(2);
-                })()}
-              </span>
-            </div>
+            <ProfessionalCostBreakdown trip={trip} />
             
             {trip.status === 'completed' && (
               <div className="flex justify-between items-center py-2 text-sm">
