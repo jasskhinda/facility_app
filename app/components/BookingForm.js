@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from './DashboardLayout';
 import WheelchairSelectionFlow from './WheelchairSelectionFlow';
 import Script from 'next/script';
+import { getPricingEstimate } from '../lib/pricing';
 
 // Helper function to format date in AM/PM format
 function formatTimeAmPm(dateStr) {
@@ -163,38 +164,60 @@ export default function BookingForm({ user }) {
           setDistanceMiles(miles);
           setDistanceMeters(distanceValue);
           
-          // Calculate price using base price logic
-          let basePrice = 50; // Base price
-
-          // Round trip adjustment
-          if (formData.isRoundTrip) {
-            basePrice = 100;
-          }
-          
-          // Mileage calculation ($3 per mile)
-          basePrice += miles * 3;
-          
-          // Weekend adjustment
-          const pickupDate = new Date(formData.pickupTime);
-          const day = pickupDate.getDay();
-          if (day === 0 || day === 6) { // Weekend (0 = Sunday, 6 = Saturday)
-            basePrice += 40;
-          }
-          
-          // Extra hour adjustment (before 8am or after 8pm)
-          const hour = pickupDate.getHours();
-          if (hour <= 8 || hour >= 20) {
-            basePrice += 40;
-          }
-          
-          // Wheelchair fee adjustment
-          if (wheelchairData.hasWheelchairFee) {
-            basePrice += wheelchairData.fee;
-          }
-          
-          // Set the price as an integer without the $ prefix
-          const finalPrice = Math.round(basePrice);
-          setEstimatedFare(finalPrice);
+          // Use professional pricing calculation
+          (async () => {
+            try {
+              const pricingResult = await getPricingEstimate({
+                pickupAddress: formData.pickupAddress,
+                destinationAddress: formData.destinationAddress,
+                isRoundTrip: formData.isRoundTrip,
+                pickupDateTime: formData.pickupTime,
+                wheelchairType: wheelchairData.hasWheelchairFee ? 'provided' : 'no_wheelchair',
+                clientType: 'facility',
+                additionalPassengers: 0,
+                isEmergency: false,
+                preCalculatedDistance: {
+                  distance: miles,
+                  miles: miles,
+                  text: `${miles.toFixed(1)} mi`,
+                  duration: duration
+                }
+              });
+              
+              if (pricingResult.success) {
+                setEstimatedFare(Math.round(pricingResult.pricing.total));
+              } else {
+                // Fallback to simple calculation if pricing fails
+                let basePrice = 50; // Base price
+                if (formData.isRoundTrip) {
+                  basePrice = 100;
+                }
+                basePrice += miles * 3;
+                const pickupDate = new Date(formData.pickupTime);
+                const day = pickupDate.getDay();
+                if (day === 0 || day === 6) {
+                  basePrice += 40;
+                }
+                const hour = pickupDate.getHours();
+                if (hour <= 8 || hour >= 20) {
+                  basePrice += 40;
+                }
+                if (wheelchairData.hasWheelchairFee) {
+                  basePrice += wheelchairData.fee;
+                }
+                setEstimatedFare(Math.round(basePrice));
+              }
+            } catch (error) {
+              console.error('Pricing calculation error:', error);
+              // Fallback calculation
+              let basePrice = 50;
+              if (formData.isRoundTrip) {
+                basePrice = 100;
+              }
+              basePrice += miles * 3;
+              setEstimatedFare(Math.round(basePrice));
+            }
+          })();
           setEstimatedDuration(duration);
         }
       } else {

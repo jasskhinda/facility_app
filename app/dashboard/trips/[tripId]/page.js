@@ -717,7 +717,31 @@ Website: https://compassionatecaretransportation.com
             
             <div className="flex justify-between items-center py-3 bg-[#F8F9FA]  rounded-lg px-4 mt-4">
               <span className="text-lg font-semibold text-[#2E4F54] text-gray-900">Total Amount</span>
-              <span className="text-lg font-bold text-[#7CCFD0]">${trip.price?.toFixed(2) || '0.00'}</span>
+              <span className="text-lg font-bold text-[#7CCFD0]">
+                ${(() => {
+                  // Calculate correct total from breakdown items instead of using stored trip.price
+                  const totalLegs = trip.is_round_trip ? 2 : 1;
+                  const baseFare = totalLegs * 50;
+                  
+                  let distanceCharge = 0;
+                  if (trip.distance && trip.distance > 0) {
+                    const effectiveDistance = trip.is_round_trip ? trip.distance * 2 : trip.distance;
+                    const isInFranklinCounty = trip.county_info !== 'Outside Franklin County';
+                    const rate = isInFranklinCounty ? 3 : 4;
+                    distanceCharge = effectiveDistance * rate;
+                  }
+                  
+                  const total = baseFare + 
+                               distanceCharge + 
+                               (trip.county_surcharge || 0) + 
+                               (trip.time_surcharge || 0) + 
+                               (trip.emergency_fee || 0) + 
+                               (trip.wheelchair_rental || 0) - 
+                               (trip.veteran_discount || 0);
+                               
+                  return total.toFixed(2);
+                })()}
+              </span>
             </div>
             
             {trip.status === 'completed' && (
