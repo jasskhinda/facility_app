@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClientSupabase } from '@/lib/client-supabase';
 import EnhancedPaymentModal from './EnhancedPaymentModal';
+import Link from 'next/link';
 
 export default function FacilityBillingComponent({ user, facilityId }) {
   const [monthlyTrips, setMonthlyTrips] = useState([]);
@@ -2265,6 +2266,7 @@ ${monthlyTrips.map(trip => {
                       <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Route</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Price</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Status</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -2314,6 +2316,17 @@ ${monthlyTrips.map(trip => {
                                 </span>
                               )}
                             </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <Link
+                              href={`/dashboard/trips/${trip.id}`}
+                              className="bg-[#7CCFD0] text-white px-3 py-1 rounded text-xs hover:bg-[#60BFC0] transition-colors inline-flex items-center"
+                            >
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              Trip Details
+                            </Link>
                           </td>
                         </tr>
                       );
@@ -2399,6 +2412,7 @@ ${monthlyTrips.map(trip => {
                       <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Route</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Price</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Status</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -2474,6 +2488,17 @@ ${monthlyTrips.map(trip => {
                                 {getStatusText(trip.status)}
                               </span>
                             </td>
+                            <td className="px-6 py-4 text-sm">
+                              <Link
+                                href={`/dashboard/trips/${trip.id}`}
+                                className="bg-[#7CCFD0] text-white px-3 py-1 rounded text-xs hover:bg-[#60BFC0] transition-colors inline-flex items-center"
+                              >
+                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Trip Details
+                              </Link>
+                            </td>
                           </tr>
                         );
                       });
@@ -2525,6 +2550,7 @@ ${monthlyTrips.map(trip => {
                       <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Route</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Price</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Status</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -2558,6 +2584,17 @@ ${monthlyTrips.map(trip => {
                                 Included in previous payment
                               </span>
                             </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <Link
+                              href={`/dashboard/trips/${trip.id}`}
+                              className="bg-[#7CCFD0] text-white px-3 py-1 rounded text-xs hover:bg-[#60BFC0] transition-colors inline-flex items-center"
+                            >
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              Trip Details
+                            </Link>
                           </td>
                         </tr>
                       );
