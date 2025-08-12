@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test User Creation</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin: 10px 0; }
+        label { display: block; margin-bottom: 5px; }
+        input, select { width: 300px; padding: 8px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }
+        .result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Test User Creation API</h1>
+    
+    <form id="userForm">
+        <div class="form-group">
+            <label>Facility ID:</label>
+            <input type="text" id="facilityId" value="39fad399-1707-495c-bbb9-7bf153117309" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Email:</label>
+            <input type="email" id="email" value="" placeholder="test@example.com" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Password:</label>
+            <input type="password" id="password" value="TestPassword123!" required>
+        </div>
+        
+        <div class="form-group">
+            <label>First Name:</label>
+            <input type="text" id="firstName" value="Test" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Last Name:</label>
+            <input type="text" id="lastName" value="User" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Role:</label>
+            <select id="role" required>
+                <option value="scheduler">Scheduler</option>
+                <option value="admin">Admin</option>
+                <option value="super_admin">Super Admin</option>
+            </select>
+        </div>
+        
+        <button type="submit">Create User</button>
+    </form>
+    
+    <div id="result" class="result" style="display: none;"></div>
+
+    <script>
+        // Generate unique email
+        document.getElementById('email').value = 'test-' + Date.now() + '@example.com';
+        
+        document.getElementById('userForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                facilityId: document.getElementById('facilityId').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                role: document.getElementById('role').value
+            };
+            
+            console.log('Sending request:', formData);
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = 'Creating user...';
+            
+            try {
+                const response = await fetch('/api/facility/simple-users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData),
+                });
+                
+                const result = await response.json();
+                
+                console.log('Response:', result);
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <h3>Success!</h3>
+                        <p>User created successfully</p>
+                        <p><strong>Email:</strong> ${result.credentials?.email}</p>
+                        <p><strong>Password:</strong> ${result.credentials?.password}</p>
+                        <p><strong>User ID:</strong> ${result.userId}</p>
+                    `;
+                    resultDiv.style.backgroundColor = '#d4edda';
+                    resultDiv.style.borderColor = '#c3e6cb';
+                } else {
+                    resultDiv.innerHTML = `
+                        <h3>Error</h3>
+                        <p>${result.error}</p>
+                    `;
+                    resultDiv.style.backgroundColor = '#f8d7da';
+                    resultDiv.style.borderColor = '#f5c6cb';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `
+                    <h3>Network Error</h3>
+                    <p>${error.message}</p>
+                `;
+                resultDiv.style.backgroundColor = '#f8d7da';
+                resultDiv.style.borderColor = '#f5c6cb';
+            }
+        });
+    </script>
+</body>
+</html>

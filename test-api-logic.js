@@ -1,20 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
+import dotenv from 'dotenv';
 
-// Simple API that bypasses session issues for now
-export async function POST(request) {
+// Load environment variables
+dotenv.config({ path: '.env.local' });
+
+async function testAPILogic() {
   try {
-    console.log('🚀 Simple user creation API called');
-    console.log('🔍 Request headers:', Object.fromEntries(request.headers.entries()));
+    console.log('🧪 Testing API logic directly...');
     
-    const body = await request.json();
-    const { facilityId, email, password, firstName, lastName, role } = body;
+    const facilityId = '39fad399-1707-495c-bbb9-7bf153117309'; // Encompass facility
+    const email = 'direct-test-' + Date.now() + '@example.com';
+    const password = 'TestPassword123!';
+    const firstName = 'Direct';
+    const lastName = 'Test';
+    const role = 'scheduler';
 
-    console.log('📝 Request data:', { facilityId, email, firstName, lastName, role });
-    console.log('📝 Full body:', body);
+    console.log('📝 Test data:', { facilityId, email, firstName, lastName, role });
 
     if (!facilityId || !email || !password || !firstName || !lastName || !role) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      console.error('❌ Missing required fields');
+      return;
     }
 
     // Create admin client
@@ -40,10 +45,7 @@ export async function POST(request) {
 
     if (authError) {
       console.error('❌ Auth error:', authError);
-      console.error('❌ Auth error details:', JSON.stringify(authError, null, 2));
-      return NextResponse.json({ 
-        error: authError.message || 'Failed to create user account' 
-      }, { status: 400 });
+      return;
     }
 
     console.log('✅ User created in auth:', newUser.user.id);
@@ -65,13 +67,12 @@ export async function POST(request) {
 
     if (profileError) {
       console.error('❌ Profile update error:', profileError);
-      console.error('❌ Profile error details:', JSON.stringify(profileError, null, 2));
       // Clean up auth user
       await adminSupabase.auth.admin.deleteUser(newUser.user.id);
-      return NextResponse.json({ error: 'Failed to update user profile: ' + profileError.message }, { status: 500 });
+      return;
     }
 
-    console.log('✅ Profile created');
+    console.log('✅ Profile updated');
 
     // Add to facility_users table
     console.log('🏢 Adding to facility_users...');
@@ -81,33 +82,44 @@ export async function POST(request) {
         facility_id: facilityId,
         user_id: newUser.user.id,
         role: role,
-        invited_by: null, // Use null instead of 'system'
+        invited_by: null,
         status: 'active'
       });
 
     if (facilityUserError) {
       console.error('❌ Facility users table error:', facilityUserError);
-      console.error('❌ Facility user error details:', JSON.stringify(facilityUserError, null, 2));
-      // Don't fail completely - the profile was created successfully
       console.log('⚠️ User profile created but facility_users entry failed. User can still login.');
     } else {
       console.log('✅ Added to facility_users table');
     }
 
     console.log('🎉 User creation complete!');
+    console.log('📧 Credentials:', { email, password });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'User created successfully',
-      userId: newUser.user.id,
-      credentials: {
-        email: email,
-        password: password // For testing - remove in production
-      }
-    });
+    // Verify the user
+    console.log('🔍 Verifying user...');
+    const { data: profile } = await adminSupabase
+      .from('profiles')
+      .select('*')
+      .eq('id', newUser.user.id)
+      .single();
+
+    console.log('👤 Created profile:', profile);
+
+    const { data: facilityUser } = await adminSupabase
+      .from('facility_users')
+      .select('*')
+      .eq('user_id', newUser.user.id)
+      .single();
+
+    console.log('🏢 Created facility user:', facilityUser);
+
+    // Don't clean up so we can test login
+    console.log('✅ Test user created successfully - not cleaning up for testing');
 
   } catch (error) {
     console.error('💥 Unexpected error:', error);
-    return NextResponse.json({ error: 'Internal server error: ' + error.message }, { status: 500 });
   }
 }
+
+testAPILogic();

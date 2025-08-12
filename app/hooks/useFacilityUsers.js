@@ -90,19 +90,26 @@ export function useFacilityUsers(facilityId, currentUser) {
     try {
       setError(null);
       
+      console.log('🚀 Calling API with facilityId:', facilityId);
+      console.log('📝 User data:', userData);
+      
+      const requestBody = {
+        facilityId,
+        email: userData.email,
+        password: userData.password,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        role: userData.role
+      };
+      
+      console.log('📦 Request body:', requestBody);
+      
       const response = await fetch('/api/facility/simple-users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          facilityId,
-          email: userData.email,
-          password: userData.password,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          role: userData.role
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const result = await response.json();

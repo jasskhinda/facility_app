@@ -76,6 +76,7 @@ export default function FacilitySettings() {
         }
         
         // Load facility data
+        console.log('🏢 Loading facility data for ID:', facilityId);
         const { data: facilityData, error: facilityError } = await supabase
           .from('facilities')
           .select('*')
@@ -83,9 +84,11 @@ export default function FacilitySettings() {
           .single();
           
         if (facilityError) {
+          console.error('❌ Error loading facility:', facilityError);
           throw facilityError;
         }
         
+        console.log('✅ Facility data loaded:', facilityData);
         setFacility(facilityData);
       } catch (err) {
         console.error('Error loading facility:', err);

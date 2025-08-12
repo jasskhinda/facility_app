@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useFacilityUsers } from '@/app/hooks/useFacilityUsers';
 
 export default function FacilityUserManagement({ user, facilityId }) {
+  console.log('🏢 FacilityUserManagement received facilityId:', facilityId);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [addUserForm, setAddUserForm] = useState({
     email: '',
