@@ -232,7 +232,7 @@ export function useFacilityUsers(facilityId, currentUser) {
   }
 
   // Check if current user is the facility owner (with safety check)
-  const isOwner = users.find(u => u.user_id === user?.id)?.is_owner || false;
+  const isOwner = users.find(u => u.user_id === currentUser?.id)?.is_owner || false;
 
   return {
     users,
