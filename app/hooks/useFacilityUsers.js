@@ -90,7 +90,7 @@ export function useFacilityUsers(facilityId, currentUser) {
     try {
       setError(null);
       
-      const response = await fetch('/api/facility/users', {
+      const response = await fetch('/api/facility/simple-users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
