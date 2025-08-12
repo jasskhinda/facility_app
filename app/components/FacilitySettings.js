@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
-import ContractManager from './ContractManager';
+import FacilityUserManagement from './FacilityUserManagement';
+import ContractViewer from './ContractViewer';
 
 export default function FacilitySettings() {
   const supabase = createBrowserClient(
@@ -17,6 +18,8 @@ export default function FacilitySettings() {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
   const [session, setSession] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [activeTab, setActiveTab] = useState('facility');
 
   useEffect(() => {
     async function loadFacility() {
@@ -32,23 +35,43 @@ export default function FacilitySettings() {
         setLoading(true);
         setError(null);
         
-        // Check if user is a facility user
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
+        // Check if user is a facility user - now check facility_users table
+        const { data: facilityUserData, error: facilityUserError } = await supabase
+          .from('facility_users')
           .select('role, facility_id')
-          .eq('id', currentSession.user.id)
+          .eq('user_id', currentSession.user.id)
+          .eq('status', 'active')
           .single();
           
-        if (profileError) {
-          throw profileError;
-        }
+        let profileData = null;
+        let facilityId = null;
         
-        if (profileData.role !== 'facility') {
-          router.push('/dashboard');
-          return;
+        if (facilityUserError) {
+          // Fallback to old profiles table for backward compatibility
+          const { data: profileDataResult, error: profileError } = await supabase
+            .from('profiles')
+            .select('role, facility_id')
+            .eq('id', currentSession.user.id)
+            .single();
+            
+          profileData = profileDataResult;
+            
+          if (profileError || !profileData || profileData.role !== 'facility') {
+            router.push('/dashboard');
+            return;
+          }
+          
+          if (!profileData.facility_id) {
+            throw new Error('No facility associated with this account');
+          }
+          
+          setUserRole('super_admin'); // Default for legacy users
+          facilityId = profileData.facility_id;
+        } else {
+          setUserRole(facilityUserData.role);
+          facilityId = facilityUserData.facility_id;
         }
-        
-        if (!profileData.facility_id) {
+        if (!facilityId) {
           throw new Error('No facility associated with this account');
         }
         
@@ -56,7 +79,7 @@ export default function FacilitySettings() {
         const { data: facilityData, error: facilityError } = await supabase
           .from('facilities')
           .select('*')
-          .eq('id', profileData.facility_id)
+          .eq('id', facilityId)
           .single();
           
         if (facilityError) {
@@ -123,181 +146,231 @@ export default function FacilitySettings() {
     return <div className="p-4 text-red-500">Error: {error}</div>;
   }
 
+  const tabs = [
+    { id: 'facility', label: 'Facility Info', icon: '🏥' },
+    { id: 'users', label: 'User Management', icon: '👥' },
+    { id: 'contracts', label: 'Contracts', icon: '📋' },
+    { id: 'security', label: 'Security', icon: '🔒' }
+  ];
+
   return (
-    <div className="max-w-4xl mx-auto p-4 space-y-8">
-      {/* Facility Settings Section */}
-      <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0] p-6">
-        <h2 className="text-xl font-semibold mb-6 text-[#2E4F54] text-gray-900">Facility Information</h2>
-        
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
-            {error}
-          </div>
-        )}
-        
-        {message && (
-          <div className="mb-4 p-3 bg-green-100 text-green-700 rounded">
-            {message}
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="name" className="block mb-1 font-medium text-[#2E4F54] text-gray-900">
-                Facility Name
-              </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                value={facility?.name || ''}
-                onChange={handleChange}
-                className="w-full p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
-                required
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="address" className="block mb-1 font-medium text-[#2E4F54] text-gray-900">
-                Address
-              </label>
-              <textarea
-                id="address"
-                name="address"
-                value={facility?.address || ''}
-                onChange={handleChange}
-                className="w-full p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
-                rows="3"
-                required
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="phone_number" className="block mb-1 font-medium text-[#2E4F54] text-gray-900">
-                Phone Number
-              </label>
-              <input
-                id="phone_number"
-                name="phone_number"
-                type="tel"
-                value={facility?.phone_number || ''}
-                onChange={handleChange}
-                className="w-full p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="contact_email" className="block mb-1 font-medium text-[#2E4F54] text-gray-900">
-                Contact Email
-              </label>
-              <input
-                id="contact_email"
-                name="contact_email"
-                type="email"
-                value={facility?.contact_email || ''}
-                onChange={handleChange}
-                className="w-full p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="billing_email" className="block mb-1 font-medium text-[#2E4F54] text-gray-900">
-                Billing Email
-              </label>
-              <input
-                id="billing_email"
-                name="billing_email"
-                type="email"
-                value={facility?.billing_email || ''}
-                onChange={handleChange}
-                className="w-full p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="facility_type" className="block mb-1 font-medium text-[#2E4F54] text-gray-900">
-                Facility Type
-              </label>
-              <select
-                id="facility_type"
-                name="facility_type"
-                value={facility?.facility_type || ''}
-                onChange={handleChange}
-                className="w-full p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white  text-[#2E4F54] text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
-              >
-                <option value="">Select Facility Type</option>
-                <option value="hospital">Hospital</option>
-                <option value="nursing_home">Nursing Home</option>
-                <option value="rehabilitation_center">Rehabilitation Center</option>
-                <option value="assisted_living">Assisted Living</option>
-                <option value="dialysis_center">Dialysis Center</option>
-                <option value="outpatient_clinic">Outpatient Clinic</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            
-            <div className="pt-4">
+    <div className="max-w-6xl mx-auto p-4 space-y-6">
+      {/* Tab Navigation */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-8 px-6">
+            {tabs.map((tab) => (
               <button
-                type="submit"
-                className="bg-[#7CCFD0] hover:bg-[#60BFC0] text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={saving}
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-[#7CCFD0] text-[#7CCFD0]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
               >
-                {saving ? 'Saving...' : 'Save Settings'}
+                <span className="mr-2">{tab.icon}</span>
+                {tab.label}
               </button>
-            </div>
-          </div>
-        </form>
-      </div>
-
-      {/* Contract Management Section */}
-      <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0]">
-        <div className="p-6 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
-          <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900">Contract Management</h2>
-          <p className="text-sm text-[#2E4F54]/70 text-gray-900/70 mt-1">
-            Upload and manage your facility's transportation service contract
-          </p>
+            ))}
+          </nav>
         </div>
+        
         <div className="p-6">
-          <ContractManager facilityId={facility?.id} />
-        </div>
-      </div>
-
-      {/* Account Security Section */}
-      <div className="bg-white  rounded-lg shadow-sm border border-[#DDE5E7] dark:border-[#E0E0E0]">
-        <div className="p-6 border-b border-[#DDE5E7] dark:border-[#E0E0E0]">
-          <h2 className="text-xl font-semibold text-[#2E4F54] text-gray-900">Account Security</h2>
-          <p className="text-sm text-[#2E4F54]/70 text-gray-900/70 mt-1">
-            Manage your account password and security settings
-          </p>
-        </div>
-        <div className="p-6">
-          <div className="space-y-4">
+          {/* Facility Information Tab */}
+          {activeTab === 'facility' && (
             <div>
-              <h3 className="text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">Password</h3>
-              <p className="text-sm text-[#2E4F54]/70 text-gray-900/70 mb-4">
-                Update your password to keep your account secure. You'll need to sign in again after changing your password.
-              </p>
-              <a
-                href="/update-password"
-                className="inline-flex items-center px-4 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg shadow-sm text-sm font-medium text-[#2E4F54] text-gray-900 bg-white  hover:bg-[#F8F9FA] dark:hover:bg-[#F8F9FA] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7CCFD0] transition-colors"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m0 0a2 2 0 012 2v6a2 2 0 01-2 2H7a2 2 0 01-2-2v-6a2 2 0 012-2m0 0V7a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                Update Password
-              </a>
+              <h2 className="text-xl font-semibold mb-6 text-gray-900">Facility Information</h2>
+              
+              {error && (
+                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+                  {error}
+                </div>
+              )}
+              
+              {message && (
+                <div className="mb-4 p-3 bg-green-100 text-green-700 rounded">
+                  {message}
+                </div>
+              )}
+              
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="name" className="block mb-1 font-medium text-gray-900">
+                      Facility Name
+                    </label>
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      value={facility?.name || ''}
+                      onChange={handleChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
+                      required
+                      disabled={!['super_admin', 'admin'].includes(userRole)}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="address" className="block mb-1 font-medium text-gray-900">
+                      Address
+                    </label>
+                    <textarea
+                      id="address"
+                      name="address"
+                      value={facility?.address || ''}
+                      onChange={handleChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
+                      rows="3"
+                      required
+                      disabled={!['super_admin', 'admin'].includes(userRole)}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="phone_number" className="block mb-1 font-medium text-gray-900">
+                      Phone Number
+                    </label>
+                    <input
+                      id="phone_number"
+                      name="phone_number"
+                      type="tel"
+                      value={facility?.phone_number || ''}
+                      onChange={handleChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
+                      disabled={!['super_admin', 'admin'].includes(userRole)}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="contact_email" className="block mb-1 font-medium text-gray-900">
+                      Contact Email
+                    </label>
+                    <input
+                      id="contact_email"
+                      name="contact_email"
+                      type="email"
+                      value={facility?.contact_email || ''}
+                      onChange={handleChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
+                      disabled={!['super_admin', 'admin'].includes(userRole)}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="billing_email" className="block mb-1 font-medium text-gray-900">
+                      Billing Email
+                    </label>
+                    <input
+                      id="billing_email"
+                      name="billing_email"
+                      type="email"
+                      value={facility?.billing_email || ''}
+                      onChange={handleChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
+                      disabled={!['super_admin', 'admin'].includes(userRole)}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="facility_type" className="block mb-1 font-medium text-gray-900">
+                      Facility Type
+                    </label>
+                    <select
+                      id="facility_type"
+                      name="facility_type"
+                      value={facility?.facility_type || ''}
+                      onChange={handleChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
+                      disabled={!['super_admin', 'admin'].includes(userRole)}
+                    >
+                      <option value="">Select Facility Type</option>
+                      <option value="hospital">Hospital</option>
+                      <option value="nursing_home">Nursing Home</option>
+                      <option value="rehabilitation_center">Rehabilitation Center</option>
+                      <option value="assisted_living">Assisted Living</option>
+                      <option value="dialysis_center">Dialysis Center</option>
+                      <option value="outpatient_clinic">Outpatient Clinic</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  
+                  {['super_admin', 'admin'].includes(userRole) && (
+                    <div className="pt-4">
+                      <button
+                        type="submit"
+                        className="bg-[#7CCFD0] hover:bg-[#60BFC0] text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={saving}
+                      >
+                        {saving ? 'Saving...' : 'Save Settings'}
+                      </button>
+                    </div>
+                  )}
+                  
+                  {userRole === 'scheduler' && (
+                    <div className="pt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        <strong>Note:</strong> Only facility administrators can modify facility information. 
+                        Contact your facility admin if changes are needed.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </form>
             </div>
-            
-            <div className="border-t border-[#DDE5E7] dark:border-[#E0E0E0] pt-4">
-              <h3 className="text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">Account Information</h3>
-              <div className="text-sm text-[#2E4F54]/70 text-gray-900/70">
-                <p><strong>Email:</strong> {session?.user?.email || 'Not available'}</p>
-                <p><strong>Account ID:</strong> {session?.user?.id?.substring(0, 8)}...</p>
-                <p><strong>Last Sign In:</strong> {session?.user?.last_sign_in_at ? new Date(session.user.last_sign_in_at).toLocaleDateString() : 'Not available'}</p>
+          )}
+          
+          {/* User Management Tab */}
+          {activeTab === 'users' && (
+            <FacilityUserManagement 
+              user={session?.user} 
+              facilityId={facility?.id}
+            />
+          )}
+          
+          {/* Contracts Tab */}
+          {activeTab === 'contracts' && (
+            <ContractViewer 
+              user={session?.user} 
+              facilityId={facility?.id}
+              userRole={userRole}
+            />
+          )}
+          
+          {/* Security Tab */}
+          {activeTab === 'security' && (
+            <div>
+              <h2 className="text-xl font-semibold mb-6 text-gray-900">Account Security</h2>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900 mb-2">Password</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Update your password to keep your account secure. You'll need to sign in again after changing your password.
+                  </p>
+                  <a
+                    href="/update-password"
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-900 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7CCFD0] transition-colors"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m0 0a2 2 0 012 2v6a2 2 0 01-2 2H7a2 2 0 01-2-2v-6a2 2 0 012-2m0 0V7a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    Update Password
+                  </a>
+                </div>
+                
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="text-sm font-medium text-gray-900 mb-2">Account Information</h3>
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <p><strong>Email:</strong> {session?.user?.email || 'Not available'}</p>
+                    <p><strong>Role:</strong> {userRole ? userRole.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Not available'}</p>
+                    <p><strong>Account ID:</strong> {session?.user?.id?.substring(0, 8)}...</p>
+                    <p><strong>Last Sign In:</strong> {session?.user?.last_sign_in_at ? new Date(session.user.last_sign_in_at).toLocaleDateString() : 'Not available'}</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
