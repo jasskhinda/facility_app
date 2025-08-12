@@ -26,7 +26,8 @@ export default function FacilityUserManagement({ user, facilityId }) {
     removeUser,
     canInviteUsers,
     canUpdateUser,
-    canRemoveUser
+    canRemoveUser,
+    isOwner
   } = useFacilityUsers(facilityId, user);
 
 
@@ -154,6 +155,9 @@ export default function FacilityUserManagement({ user, facilityId }) {
           <div><strong>Super Admin:</strong> Can add admins and schedulers. Full access to all features.</div>
           <div><strong>Admin:</strong> Can add schedulers (but not admins). Full access to all features.</div>
           <div><strong>Scheduler:</strong> Can book rides and add clients. Limited access.</div>
+          <div className="mt-2 pt-2 border-t border-blue-200">
+            <strong>Owner:</strong> The main facility account holder. Always has Super Admin role and cannot be changed or removed.
+          </div>
         </div>
       </div>
 
@@ -183,9 +187,16 @@ export default function FacilityUserManagement({ user, facilityId }) {
               
               <div className="flex items-center space-x-3">
                 {/* Role Badge */}
-                <span className={`px-3 py-1 text-xs font-medium rounded-full ${getRoleColor(facilityUser.role)}`}>
-                  {getRoleLabel(facilityUser.role)}
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className={`px-3 py-1 text-xs font-medium rounded-full ${getRoleColor(facilityUser.role)}`}>
+                    {getRoleLabel(facilityUser.role)}
+                  </span>
+                  {facilityUser.is_owner && (
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                      Owner
+                    </span>
+                  )}
+                </div>
                 
                 {/* Status Badge */}
                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -199,7 +210,7 @@ export default function FacilityUserManagement({ user, facilityId }) {
                 {/* Actions */}
                 <div className="flex items-center space-x-2">
                   {/* Role Change Dropdown */}
-                  {canUpdateUser(facilityUser.role) && (
+                  {canUpdateUser(facilityUser.role) && !facilityUser.is_owner && (
                     <select
                       value={facilityUser.role}
                       onChange={(e) => handleUpdateUserRole(facilityUser.user_id, e.target.value)}
@@ -212,8 +223,15 @@ export default function FacilityUserManagement({ user, facilityId }) {
                     </select>
                   )}
                   
+                  {/* Show locked message for owner */}
+                  {facilityUser.is_owner && (
+                    <span className="text-xs text-gray-500 italic">
+                      Role locked (Owner)
+                    </span>
+                  )}
+                  
                   {/* Remove Button */}
-                  {canRemoveUser(facilityUser.user_id, facilityUser.role) && (
+                  {canRemoveUser(facilityUser.user_id, facilityUser.role) && !facilityUser.is_owner && (
                     <button
                       onClick={() => handleRemoveUser(facilityUser.user_id)}
                       disabled={actionLoading === facilityUser.user_id}
@@ -221,6 +239,13 @@ export default function FacilityUserManagement({ user, facilityId }) {
                     >
                       {actionLoading === facilityUser.user_id ? 'Removing...' : 'Remove'}
                     </button>
+                  )}
+                  
+                  {/* Show protected message for owner */}
+                  {facilityUser.is_owner && (
+                    <span className="text-xs text-gray-500 italic">
+                      Protected
+                    </span>
                   )}
                 </div>
               </div>

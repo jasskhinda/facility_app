@@ -11,6 +11,7 @@ The Facility User Management system allows healthcare facilities to manage multi
 - **User Management**: Can add/remove admins and schedulers
 - **Permissions**: All tabs and features available
 - **Typical Role**: Facility owner, primary administrator
+- **Owner Protection**: The facility owner (first Super Admin) cannot have their role changed or be removed
 
 ### Admin  
 - **Limited User Management**: Can add/remove schedulers (but not other admins)
@@ -32,6 +33,7 @@ The Facility User Management system allows healthcare facilities to manage multi
 - facility_id: UUID (Foreign Key to facilities)
 - user_id: UUID (Foreign Key to auth.users)
 - role: TEXT ('super_admin', 'admin', 'scheduler')
+- is_owner: BOOLEAN (Marks facility owner - protected from changes)
 - status: TEXT ('active', 'inactive', 'pending')
 - invited_by: UUID (Foreign Key to auth.users)
 - invited_at: TIMESTAMPTZ

@@ -7,12 +7,17 @@ CREATE TABLE facility_users (
   facility_id UUID REFERENCES facilities(id) ON DELETE CASCADE NOT NULL,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('super_admin', 'admin', 'scheduler')),
+  is_owner BOOLEAN DEFAULT FALSE,
   invited_by UUID REFERENCES auth.users(id),
   invited_at TIMESTAMPTZ DEFAULT NOW(),
   status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'pending')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(facility_id, user_id)
+  UNIQUE(facility_id, user_id),
+  -- Ensure only one owner per facility
+  CONSTRAINT unique_facility_owner UNIQUE(facility_id) WHERE is_owner = TRUE,
+  -- Ensure owner is always super_admin
+  CONSTRAINT owner_must_be_super_admin CHECK (NOT is_owner OR role = 'super_admin')
 );
 
 -- Create facility_contracts table for contract management
@@ -28,11 +33,39 @@ CREATE TABLE facility_contracts (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Add triggers for updated_at
+-- Function to protect facility owner
+CREATE OR REPLACE FUNCTION protect_facility_owner()
+RETURNS TRIGGER AS $
+BEGIN
+  -- Prevent changing owner's role
+  IF OLD.is_owner = TRUE AND NEW.role != 'super_admin' THEN
+    RAISE EXCEPTION 'Cannot change facility owner role from super_admin';
+  END IF;
+  
+  -- Prevent removing owner status
+  IF OLD.is_owner = TRUE AND NEW.is_owner = FALSE THEN
+    RAISE EXCEPTION 'Cannot remove owner status from facility owner';
+  END IF;
+  
+  -- Prevent deactivating owner
+  IF OLD.is_owner = TRUE AND NEW.status != 'active' THEN
+    RAISE EXCEPTION 'Cannot deactivate facility owner';
+  END IF;
+  
+  RETURN NEW;
+END;
+$ LANGUAGE plpgsql;
+
+-- Add triggers for updated_at and owner protection
 CREATE TRIGGER update_facility_users_updated_at
 BEFORE UPDATE ON facility_users
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER protect_facility_owner_trigger
+BEFORE UPDATE ON facility_users
+FOR EACH ROW
+EXECUTE FUNCTION protect_facility_owner();
 
 CREATE TRIGGER update_facility_contracts_updated_at
 BEFORE UPDATE ON facility_contracts
@@ -92,7 +125,7 @@ USING (
   ) AND role = 'scheduler')
 );
 
--- Only super admins can delete users
+-- Only super admins can delete users, but not the facility owner
 CREATE POLICY "Super admins can remove users" 
 ON facility_users FOR DELETE 
 USING (
@@ -102,7 +135,7 @@ USING (
     WHERE user_id = auth.uid() 
     AND role = 'super_admin'
     AND status = 'active'
-  )
+  ) AND is_owner = FALSE  -- Cannot delete facility owner
 );
 
 -- Policies for facility_contracts table

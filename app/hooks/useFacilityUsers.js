@@ -47,7 +47,8 @@ export function useFacilityUsers(facilityId, currentUser) {
           role,
           status,
           invited_at,
-          invited_by
+          invited_by,
+          is_owner
         `)
         .eq('facility_id', facilityId)
         .order('invited_at', { ascending: false });
@@ -73,9 +74,20 @@ export function useFacilityUsers(facilityId, currentUser) {
           ...user,
           firstName: profile?.first_name || 'Unknown',
           lastName: profile?.last_name || 'User',
-          email: profile?.email || `user-${user.user_id.slice(0, 8)}@example.com`
+          email: profile?.email || `user-${user.user_id.slice(0, 8)}@example.com`,
+          is_owner: user.is_owner || false
         };
       });
+
+      // Temporary: Mark the earliest super_admin as owner if no is_owner field exists
+      if (transformedUsers.length > 0 && !transformedUsers.some(u => u.is_owner)) {
+        const superAdmins = transformedUsers.filter(u => u.role === 'super_admin' && u.status === 'active');
+        if (superAdmins.length > 0) {
+          // Sort by invited_at or created_at to find the earliest
+          superAdmins.sort((a, b) => new Date(a.invited_at) - new Date(b.invited_at));
+          superAdmins[0].is_owner = true;
+        }
+      }
 
       setUsers(transformedUsers);
     } catch (error) {
@@ -214,11 +226,15 @@ export function useFacilityUsers(facilityId, currentUser) {
     return false;
   }
 
+  // Check if current user is the facility owner
+  const isOwner = users.find(u => u.user_id === user?.id)?.is_owner || false;
+
   return {
     users,
     loading,
     error,
     currentUserRole,
+    isOwner,
     fetchUsers,
     addUser,
     updateUserRole,
