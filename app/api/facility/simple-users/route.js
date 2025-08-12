@@ -17,6 +17,16 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Prevent test users in production
+    const testPatterns = ['test', 'example.com', 'curl-', 'direct-', 'owner-test'];
+    const isTestEmail = testPatterns.some(pattern => email.toLowerCase().includes(pattern.toLowerCase()));
+    
+    if (isTestEmail && process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ 
+        error: 'Test email addresses are not allowed in production' 
+      }, { status: 400 });
+    }
+
     // Create admin client
     const adminSupabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
