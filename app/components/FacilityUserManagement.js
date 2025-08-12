@@ -191,7 +191,7 @@ export default function FacilityUserManagement({ user, facilityId }) {
                   <span className={`px-3 py-1 text-xs font-medium rounded-full ${getRoleColor(facilityUser.role)}`}>
                     {getRoleLabel(facilityUser.role)}
                   </span>
-                  {facilityUser.is_owner && (
+                  {facilityUser.is_owner === true && (
                     <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
                       Owner
                     </span>
@@ -210,7 +210,7 @@ export default function FacilityUserManagement({ user, facilityId }) {
                 {/* Actions */}
                 <div className="flex items-center space-x-2">
                   {/* Role Change Dropdown */}
-                  {canUpdateUser(facilityUser.role) && !facilityUser.is_owner && (
+                  {canUpdateUser(facilityUser.role) && facilityUser.is_owner !== true && (
                     <select
                       value={facilityUser.role}
                       onChange={(e) => handleUpdateUserRole(facilityUser.user_id, e.target.value)}
@@ -224,14 +224,14 @@ export default function FacilityUserManagement({ user, facilityId }) {
                   )}
                   
                   {/* Show locked message for owner */}
-                  {facilityUser.is_owner && (
+                  {facilityUser.is_owner === true && (
                     <span className="text-xs text-gray-500 italic">
                       Role locked (Owner)
                     </span>
                   )}
                   
                   {/* Remove Button */}
-                  {canRemoveUser(facilityUser.user_id, facilityUser.role) && !facilityUser.is_owner && (
+                  {canRemoveUser(facilityUser.user_id, facilityUser.role) && facilityUser.is_owner !== true && (
                     <button
                       onClick={() => handleRemoveUser(facilityUser.user_id)}
                       disabled={actionLoading === facilityUser.user_id}
@@ -242,7 +242,7 @@ export default function FacilityUserManagement({ user, facilityId }) {
                   )}
                   
                   {/* Show protected message for owner */}
-                  {facilityUser.is_owner && (
+                  {facilityUser.is_owner === true && (
                     <span className="text-xs text-gray-500 italic">
                       Protected
                     </span>
