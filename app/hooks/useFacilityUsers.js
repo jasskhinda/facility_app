@@ -150,16 +150,16 @@ export function useFacilityUsers(facilityId, currentUser) {
     try {
       setError(null);
       
-      const response = await fetch('/api/facility/users', {
-        method: 'PATCH',
+      const response = await fetch('/api/facility/update-user-role', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           facilityId,
           userId,
-          role: newRole,
-          action: 'update_role'
+          newRole,
+          currentUserRole
         }),
       });
 

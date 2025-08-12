@@ -54,19 +54,40 @@ export default function FacilityUserManagement({ user, facilityId }) {
   }
 
   async function handleUpdateUserRole(userId, newRole) {
+    // Find the user being updated
+    const targetUser = users.find(u => u.user_id === userId);
+    if (!targetUser) return;
+
+    // Professional confirmation dialog
+    const roleNames = {
+      'super_admin': 'Super Admin',
+      'admin': 'Admin', 
+      'scheduler': 'Scheduler'
+    };
+
+    const confirmMessage = `Are you sure you want to change ${targetUser.firstName} ${targetUser.lastName}'s role to ${roleNames[newRole]}?\n\nThis will ${newRole === 'super_admin' ? 'give them full administrative access' : newRole === 'admin' ? 'allow them to manage schedulers' : 'limit them to booking and client management'}.`;
+
+    if (!confirm(confirmMessage)) {
+      return; // User cancelled
+    }
+
     try {
       setActionLoading(userId);
       
       const result = await updateUserRole(userId, newRole);
       
       if (result.success) {
-        alert('User role updated successfully');
+        alert(`✅ ${targetUser.firstName} ${targetUser.lastName}'s role has been updated to ${roleNames[newRole]}.`);
       } else {
-        alert(result.error || 'Failed to update user role');
+        alert(`❌ ${result.error || 'Failed to update user role'}`);
       }
     } catch (error) {
       console.error('Error updating user role:', error);
-      alert('Failed to update user role');
+      if (error.message.includes('owner')) {
+        alert('❌ Cannot change facility owner role. The owner must always remain Super Admin for security reasons.');
+      } else {
+        alert('❌ Failed to update user role. Please try again.');
+      }
     } finally {
       setActionLoading(null);
     }
@@ -152,11 +173,14 @@ export default function FacilityUserManagement({ user, facilityId }) {
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="font-semibold text-blue-900 mb-2">Permission Levels:</h3>
         <div className="space-y-1 text-sm text-blue-800">
-          <div><strong>Super Admin:</strong> Can add admins and schedulers. Full access to all features.</div>
-          <div><strong>Admin:</strong> Can add schedulers (but not admins). Full access to all features.</div>
-          <div><strong>Scheduler:</strong> Can book rides and add clients. Limited access.</div>
+          <div><strong>Super Admin:</strong> Full administrative access. Can manage all users and facility settings.</div>
+          <div><strong>Admin:</strong> Can manage schedulers and facility operations. Cannot manage other admins.</div>
+          <div><strong>Scheduler:</strong> Can book rides and manage clients. Limited administrative access.</div>
           <div className="mt-2 pt-2 border-t border-blue-200">
-            <strong>Owner:</strong> The main facility account holder. Always has Super Admin role and cannot be changed or removed.
+            <strong>Owner:</strong> The facility account holder. Protected Super Admin status that cannot be changed.
+          </div>
+          <div className="mt-2 pt-2 border-t border-blue-200 text-xs">
+            <strong>Note:</strong> Role changes require confirmation and take effect immediately.
           </div>
         </div>
       </div>
