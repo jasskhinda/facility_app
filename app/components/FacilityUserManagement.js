@@ -58,17 +58,33 @@ export default function FacilityUserManagement({ user, facilityId }) {
     const targetUser = users.find(u => u.user_id === userId);
     if (!targetUser) return;
 
-    // Professional confirmation dialog
+    // Professional confirmation with typed confirmation
     const roleNames = {
-      'super_admin': 'Super Admin',
-      'admin': 'Admin', 
-      'scheduler': 'Scheduler'
+      'super_admin': 'SUPER ADMIN',
+      'admin': 'ADMIN', 
+      'scheduler': 'SCHEDULER'
     };
 
-    const confirmMessage = `Are you sure you want to change ${targetUser.firstName} ${targetUser.lastName}'s role to ${roleNames[newRole]}?\n\nThis will ${newRole === 'super_admin' ? 'give them full administrative access' : newRole === 'admin' ? 'allow them to manage schedulers' : 'limit them to booking and client management'}.`;
+    const currentRoleName = roleNames[targetUser.role];
+    const newRoleName = roleNames[newRole];
 
-    if (!confirm(confirmMessage)) {
-      return; // User cancelled
+    // Create professional confirmation message
+    const permissions = {
+      'super_admin': 'Full administrative access - can manage all users and settings',
+      'admin': 'Administrative access - can manage schedulers and operations', 
+      'scheduler': 'Limited access - can book rides and manage clients only'
+    };
+
+    const warningMessage = `⚠️  ROLE CHANGE CONFIRMATION\n\nUser: ${targetUser.firstName} ${targetUser.lastName}\nCurrent Role: ${currentRoleName}\nNew Role: ${newRoleName}\n\nNew Permissions: ${permissions[newRole]}\n\nThis change takes effect immediately and will modify the user's access level.\n\nTo confirm this role change, please type: ${newRoleName}`;
+
+    const userInput = prompt(warningMessage);
+
+    // Check if user typed the correct role name
+    if (userInput !== newRoleName) {
+      if (userInput !== null) { // null means they cancelled
+        alert('❌ Role change cancelled. You must type the exact role name to confirm.');
+      }
+      return;
     }
 
     try {
@@ -77,16 +93,16 @@ export default function FacilityUserManagement({ user, facilityId }) {
       const result = await updateUserRole(userId, newRole);
       
       if (result.success) {
-        alert(`✅ ${targetUser.firstName} ${targetUser.lastName}'s role has been updated to ${roleNames[newRole]}.`);
+        alert(`✅ SUCCESS\n\n${targetUser.firstName} ${targetUser.lastName}'s role has been changed to ${newRoleName}.\n\nThey will have ${permissions[newRole].toLowerCase()} when they next log in.`);
       } else {
-        alert(`❌ ${result.error || 'Failed to update user role'}`);
+        alert(`❌ FAILED\n\n${result.error || 'Failed to update user role'}`);
       }
     } catch (error) {
       console.error('Error updating user role:', error);
       if (error.message.includes('owner')) {
-        alert('❌ Cannot change facility owner role. The owner must always remain Super Admin for security reasons.');
+        alert('❌ PERMISSION DENIED\n\nCannot change facility owner role. The owner must always remain Super Admin for security and compliance reasons.');
       } else {
-        alert('❌ Failed to update user role. Please try again.');
+        alert('❌ ERROR\n\nFailed to update user role. Please check your connection and try again.');
       }
     } finally {
       setActionLoading(null);
@@ -180,7 +196,7 @@ export default function FacilityUserManagement({ user, facilityId }) {
             <strong>Owner:</strong> The facility account holder. Protected Super Admin status that cannot be changed.
           </div>
           <div className="mt-2 pt-2 border-t border-blue-200 text-xs">
-            <strong>Note:</strong> Role changes require confirmation and take effect immediately.
+            <strong>Security:</strong> Role changes require typing the target role name to confirm. Changes take effect immediately.
           </div>
         </div>
       </div>
@@ -235,16 +251,20 @@ export default function FacilityUserManagement({ user, facilityId }) {
                 <div className="flex items-center space-x-2">
                   {/* Role Change Dropdown */}
                   {canUpdateUser(facilityUser.role) && facilityUser.is_owner !== true && (
-                    <select
-                      value={facilityUser.role}
-                      onChange={(e) => handleUpdateUserRole(facilityUser.user_id, e.target.value)}
-                      disabled={actionLoading === facilityUser.user_id}
-                      className="text-xs border border-gray-300 rounded px-2 py-1 disabled:opacity-50"
-                    >
-                      <option value="scheduler">Scheduler</option>
-                      {currentUserRole === 'super_admin' && <option value="admin">Admin</option>}
-                      {currentUserRole === 'super_admin' && <option value="super_admin">Super Admin</option>}
-                    </select>
+                    <div className="flex items-center space-x-1">
+                      <select
+                        value={facilityUser.role}
+                        onChange={(e) => handleUpdateUserRole(facilityUser.user_id, e.target.value)}
+                        disabled={actionLoading === facilityUser.user_id}
+                        className="text-xs border border-gray-300 rounded px-2 py-1 disabled:opacity-50"
+                        title="Role changes require confirmation"
+                      >
+                        <option value="scheduler">Scheduler</option>
+                        {currentUserRole === 'super_admin' && <option value="admin">Admin</option>}
+                        {currentUserRole === 'super_admin' && <option value="super_admin">Super Admin</option>}
+                      </select>
+                      <span className="text-xs text-gray-400" title="Role changes require typing confirmation">🔒</span>
+                    </div>
                   )}
                   
                   {/* Show locked message for owner */}
