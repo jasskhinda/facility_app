@@ -193,15 +193,15 @@ export default function FacilityUserManagement({ user, facilityId }) {
         </div>
         <div className="space-y-2 text-sm text-blue-800">
           <div className="flex items-start">
-            <span className="inline-block w-20 font-semibold text-purple-700">Super Admin:</span>
+            <span className="inline-block w-28 font-semibold text-purple-700 flex-shrink-0">Super Admin:</span>
             <span>Full administrative access. Can manage all users and facility settings.</span>
           </div>
           <div className="flex items-start">
-            <span className="inline-block w-20 font-semibold text-blue-700">Admin:</span>
+            <span className="inline-block w-28 font-semibold text-blue-700 flex-shrink-0">Admin:</span>
             <span>Can manage schedulers and facility operations. Cannot manage other admins.</span>
           </div>
           <div className="flex items-start">
-            <span className="inline-block w-20 font-semibold text-green-700">Scheduler:</span>
+            <span className="inline-block w-28 font-semibold text-green-700 flex-shrink-0">Scheduler:</span>
             <span>Can book rides and manage clients. Limited administrative access.</span>
           </div>
           
