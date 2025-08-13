@@ -186,17 +186,46 @@ export default function FacilityUserManagement({ user, facilityId }) {
       )}
 
       {/* Permission Levels Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="font-semibold text-blue-900 mb-2">Permission Levels:</h3>
-        <div className="space-y-1 text-sm text-blue-800">
-          <div><strong>Super Admin:</strong> Full administrative access. Can manage all users and facility settings.</div>
-          <div><strong>Admin:</strong> Can manage schedulers and facility operations. Cannot manage other admins.</div>
-          <div><strong>Scheduler:</strong> Can book rides and manage clients. Limited administrative access.</div>
-          <div className="mt-2 pt-2 border-t border-blue-200">
-            <strong>Owner:</strong> The facility account holder. Protected Super Admin status that cannot be changed.
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-5">
+        <div className="flex items-center mb-3">
+          <span className="text-blue-600 mr-2">🛡️</span>
+          <h3 className="font-semibold text-blue-900">Access Control & Permission Levels</h3>
+        </div>
+        <div className="space-y-2 text-sm text-blue-800">
+          <div className="flex items-start">
+            <span className="inline-block w-20 font-semibold text-purple-700">Super Admin:</span>
+            <span>Full administrative access. Can manage all users and facility settings.</span>
           </div>
-          <div className="mt-2 pt-2 border-t border-blue-200 text-xs">
-            <strong>Security:</strong> Role changes require typing the target role name to confirm. Changes take effect immediately.
+          <div className="flex items-start">
+            <span className="inline-block w-20 font-semibold text-blue-700">Admin:</span>
+            <span>Can manage schedulers and facility operations. Cannot manage other admins.</span>
+          </div>
+          <div className="flex items-start">
+            <span className="inline-block w-20 font-semibold text-green-700">Scheduler:</span>
+            <span>Can book rides and manage clients. Limited administrative access.</span>
+          </div>
+          
+          <div className="mt-4 pt-3 border-t border-blue-200 bg-blue-100 rounded-md p-3">
+            <div className="flex items-start">
+              <span className="text-purple-600 mr-2">👑</span>
+              <div>
+                <div className="font-semibold text-purple-800">Facility Owner</div>
+                <div className="text-xs text-purple-700 mt-1">
+                  By default, the facility account holder is assigned Super Admin status as the facility owner. 
+                  This role is protected and cannot be changed to ensure continuous facility management and compliance with security protocols.
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-3 pt-2 border-t border-blue-200">
+            <div className="flex items-start text-xs">
+              <span className="text-blue-600 mr-2">🔒</span>
+              <div>
+                <span className="font-semibold">Security Protocol:</span> Role changes require typing the target role name to confirm. 
+                All changes take effect immediately and are logged for audit purposes.
+              </div>
+            </div>
           </div>
         </div>
       </div>
