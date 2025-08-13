@@ -85,7 +85,15 @@ export default function FacilitySettings() {
           
         if (facilityError) {
           console.error('❌ Error loading facility:', facilityError);
-          throw facilityError;
+          if (facilityError.code === 'PGRST116') {
+            throw new Error('Facility not found. Please contact support to set up your facility.');
+          } else {
+            throw new Error(`Failed to load facility: ${facilityError.message}`);
+          }
+        }
+        
+        if (!facilityData) {
+          throw new Error('Facility data not found. Please contact support.');
         }
         
         console.log('✅ Facility data loaded:', facilityData);
