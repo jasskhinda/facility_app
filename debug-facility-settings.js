@@ -13,6 +13,22 @@ async function debugFacilitySettings() {
     }
   );
 
+  // Check for the specific user ID from the error logs
+  const problemUserId = '2bdcb312-8076-4704-a3dc-37250a5b34e5';
+  console.log('=== Checking Problem User ===');
+  
+  const { data: problemUser, error: problemUserError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', problemUserId)
+    .single();
+    
+  if (problemUserError) {
+    console.log('❌ Problem user not found in profiles:', problemUserError.message);
+  } else {
+    console.log('📋 Problem user profile:', problemUser);
+  }
+
   console.log('=== Debugging Facility Settings Error ===\n');
 
   try {

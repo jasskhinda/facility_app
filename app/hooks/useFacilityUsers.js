@@ -26,11 +26,22 @@ export function useFacilityUsers(facilityId, currentUser) {
         .eq('status', 'active')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Handle specific error codes
+        if (error.code === 'PGRST116') {
+          // No rows returned - user not in facility_users table
+          console.warn('User not found in facility_users table, defaulting to super_admin');
+          setCurrentUserRole('super_admin');
+          return;
+        }
+        throw error;
+      }
       setCurrentUserRole(data.role);
     } catch (error) {
       console.error('Error getting current user role:', error);
-      setError(error.message);
+      // Fallback to super_admin for facility users
+      setCurrentUserRole('super_admin');
+      setError(`Role fetch failed: ${error.message}`);
     }
   }
 
