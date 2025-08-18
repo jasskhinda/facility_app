@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import FacilityUserManagement from './FacilityUserManagement';
 import ContractViewer from './ContractViewer';
+import PasswordChange from './PasswordChange';
 
 export default function FacilitySettings() {
   const supabase = createBrowserClient(
@@ -161,7 +162,8 @@ export default function FacilitySettings() {
     { id: 'facility', label: 'Facility Info', icon: '🏥' },
     { id: 'users', label: 'User Management', icon: '👥' },
     { id: 'contracts', label: 'Contracts', icon: '📋' },
-    { id: 'security', label: 'Security', icon: '🔒' }
+    { id: 'security', label: 'Security', icon: '🔒' },
+    { id: 'password', label: 'Change Password', icon: '🔑' }
   ];
 
   return (
@@ -359,15 +361,15 @@ export default function FacilitySettings() {
                   <p className="text-sm text-gray-600 mb-4">
                     Update your password to keep your account secure. You'll need to sign in again after changing your password.
                   </p>
-                  <a
-                    href="/update-password"
+                  <button
+                    onClick={() => setActiveTab('password')}
                     className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-900 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7CCFD0] transition-colors"
                   >
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m0 0a2 2 0 012 2v6a2 2 0 01-2 2H7a2 2 0 01-2-2v-6a2 2 0 012-2m0 0V7a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
                     Update Password
-                  </a>
+                  </button>
                 </div>
                 
                 <div className="border-t border-gray-200 pt-6">
@@ -381,6 +383,11 @@ export default function FacilitySettings() {
                 </div>
               </div>
             </div>
+          )}
+          
+          {/* Password Change Tab */}
+          {activeTab === 'password' && (
+            <PasswordChange user={session?.user} />
           )}
         </div>
       </div>

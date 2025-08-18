@@ -8,9 +8,9 @@ export async function POST(request) {
     console.log('🔍 Request headers:', Object.fromEntries(request.headers.entries()));
     
     const body = await request.json();
-    const { facilityId, email, password, firstName, lastName, role } = body;
+    const { facilityId, email, password, firstName, lastName, phoneNumber, role } = body;
 
-    console.log('📝 Request data:', { facilityId, email, firstName, lastName, role });
+    console.log('📝 Request data:', { facilityId, email, firstName, lastName, phoneNumber, role });
     console.log('📝 Full body:', body);
 
     if (!facilityId || !email || !password || !firstName || !lastName || !role) {
@@ -66,6 +66,7 @@ export async function POST(request) {
       .update({
         first_name: firstName,
         last_name: lastName,
+        phone_number: phoneNumber || null,
         facility_id: facilityId,
         role: 'facility',
         email: email,

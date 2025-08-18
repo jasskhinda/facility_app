@@ -127,6 +127,7 @@ export function useFacilityUsers(facilityId, currentUser) {
         password: userData.password,
         firstName: userData.firstName,
         lastName: userData.lastName,
+        phoneNumber: userData.phoneNumber,
         role: userData.role
       };
       
