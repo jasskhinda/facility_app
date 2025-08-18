@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import DashboardLayout from '@/app/components/DashboardLayout';
@@ -36,6 +36,7 @@ export default function UserDetailsPage({ params }) {
 
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const hasLoadedRef = useRef(false);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -43,15 +44,16 @@ export default function UserDetailsPage({ params }) {
   );
 
   useEffect(() => {
-    if (userId) {
+    if (userId && !hasLoadedRef.current) {
       console.log('🔄 useEffect triggered for userId:', userId);
+      hasLoadedRef.current = true;
       // Immediately hide global loading to prevent interference
       hideLoading();
       loadUserData();
     }
-  }, [userId, hideLoading]);
+  }, [userId, loadUserData, hideLoading]);
 
-  async function loadUserData() {
+  const loadUserData = useCallback(async () => {
     try {
       console.log('🔍 Starting loadUserData for userId:', userId);
       setLoading(true);
@@ -155,12 +157,10 @@ export default function UserDetailsPage({ params }) {
         role: targetFacilityUser.role || ''
       });
       
-      // Force loading to false and hide global loading
-      setTimeout(() => {
-        setLoading(false);
-        hideLoading(); // Hide global loading overlay
-        console.log('🏁 Loading forced to false and global loading hidden');
-      }, 100);
+      // Set loading to false and hide global loading
+      setLoading(false);
+      hideLoading(); // Hide global loading overlay
+      console.log('🏁 Loading set to false and global loading hidden');
 
     } catch (error) {
       console.error('💥 Error loading user:', error);
@@ -170,7 +170,7 @@ export default function UserDetailsPage({ params }) {
       setLoading(false);
       hideLoading(); // Always hide global loading even on error
     }
-  }
+  }, [userId, hideLoading]);
 
   function canEditUser() {
     if (currentUserRole === 'super_admin') return true;
@@ -362,7 +362,7 @@ export default function UserDetailsPage({ params }) {
 
   if (error && !user) {
     return (
-      <DashboardLayout>
+      <div className="min-h-screen bg-gray-50">
         <div className="max-w-4xl mx-auto p-6">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-red-800 mb-2">Error Loading User</h2>
@@ -371,6 +371,7 @@ export default function UserDetailsPage({ params }) {
               <button
                 onClick={() => {
                   setError(null);
+                  hasLoadedRef.current = false;
                   loadUserData();
                 }}
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium"
@@ -386,12 +387,12 @@ export default function UserDetailsPage({ params }) {
             </div>
           </div>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -734,6 +735,6 @@ export default function UserDetailsPage({ params }) {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
