@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import DashboardLayout from '@/app/components/DashboardLayout';
+import { useLoading } from '@/app/components/LoadingProvider';
 
 export default function UserDetailsPage({ params }) {
   const router = useRouter();
   const { userId } = params;
+  const { hideLoading } = useLoading();
   const [user, setUser] = useState(null);
   const [facilityUser, setFacilityUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -43,9 +45,11 @@ export default function UserDetailsPage({ params }) {
   useEffect(() => {
     if (userId) {
       console.log('🔄 useEffect triggered for userId:', userId);
+      // Immediately hide global loading to prevent interference
+      hideLoading();
       loadUserData();
     }
-  }, [userId]);
+  }, [userId, hideLoading]);
 
   async function loadUserData() {
     try {
@@ -150,6 +154,13 @@ export default function UserDetailsPage({ params }) {
         phoneNumber: profile.phone_number || '',
         role: targetFacilityUser.role || ''
       });
+      
+      // Force loading to false and hide global loading
+      setTimeout(() => {
+        setLoading(false);
+        hideLoading(); // Hide global loading overlay
+        console.log('🏁 Loading forced to false and global loading hidden');
+      }, 100);
 
     } catch (error) {
       console.error('💥 Error loading user:', error);
@@ -157,6 +168,7 @@ export default function UserDetailsPage({ params }) {
     } finally {
       console.log('🏁 Loading finished');
       setLoading(false);
+      hideLoading(); // Always hide global loading even on error
     }
   }
 
@@ -335,11 +347,16 @@ export default function UserDetailsPage({ params }) {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <div className="min-h-screen bg-gray-50">
         <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#7CCFD0]"></div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#7CCFD0]"></div>
+              <p className="text-gray-600">Loading user details...</p>
+            </div>
+          </div>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
