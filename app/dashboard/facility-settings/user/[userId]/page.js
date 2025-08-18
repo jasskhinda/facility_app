@@ -12,7 +12,7 @@ export default function UserDetailsPage({ params }) {
   const { hideLoading } = useLoading();
   const [user, setUser] = useState(null);
   const [facilityUser, setFacilityUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with false to avoid initial loading state
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -36,6 +36,7 @@ export default function UserDetailsPage({ params }) {
 
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [forceRender, setForceRender] = useState(0); // Force re-render counter
   const hasLoadedRef = useRef(false);
   const isMountedRef = useRef(true);
 
@@ -47,7 +48,10 @@ export default function UserDetailsPage({ params }) {
   async function loadUserData() {
     try {
       console.log('🔍 Starting loadUserData for userId:', userId);
-      setLoading(true);
+      // Don't set loading to true if we already have data
+      if (!user) {
+        setLoading(true);
+      }
       setError(null);
 
       // Get current session
@@ -151,11 +155,14 @@ export default function UserDetailsPage({ params }) {
       // Set loading to false and hide global loading
       setLoading(false);
       hideLoading(); // Hide global loading overlay
+      // Force a re-render
+      setForceRender(prev => prev + 1);
       // Force hide again after a brief delay to ensure it's dismissed
       setTimeout(() => {
         setLoading(false);
         hideLoading();
-        console.log('🏁 Force dismissed global loading');
+        setForceRender(prev => prev + 1); // Force another re-render
+        console.log('🏁 Force dismissed global loading and re-rendered');
       }, 100);
       console.log('🏁 Loading set to false and global loading hidden');
 
@@ -369,12 +376,22 @@ export default function UserDetailsPage({ params }) {
         setLoading(false);
         hideLoading();
       }
-    }, 3000); // 3 second timeout
+    }, 2000); // 2 second timeout
     
     return () => clearTimeout(timeout);
   }, [loading]);
 
-  if (loading && !user) {
+  // Force a re-render when user data is available
+  useEffect(() => {
+    if (user && facilityUser) {
+      console.log('📊 User data available, forcing render');
+      setLoading(false);
+      hideLoading();
+    }
+  }, [user, facilityUser]);
+
+  // Only show loading if we don't have user data yet
+  if (loading && !user && !facilityUser) {
     return (
       <DashboardLayout>
         <div className="flex justify-center items-center py-12">
