@@ -192,6 +192,39 @@ export function useFacilityUsers(facilityId, currentUser) {
     }
   }
 
+  async function updateUser(userId, userData) {
+    try {
+      setError(null);
+      
+      const response = await fetch('/api/facility/update-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          facilityId,
+          userId,
+          ...userData
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update user');
+      }
+
+      // Refresh users list
+      await fetchUsers();
+
+      return { success: true, message: result.message };
+    } catch (error) {
+      console.error('Error updating user:', error);
+      setError(error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
   async function removeUser(userId) {
     try {
       setError(null);
@@ -254,6 +287,7 @@ export function useFacilityUsers(facilityId, currentUser) {
     isOwner,
     fetchUsers,
     addUser,
+    updateUser,
     updateUserRole,
     removeUser,
     canInviteUsers,

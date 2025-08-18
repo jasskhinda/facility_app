@@ -6,6 +6,8 @@ import { useFacilityUsers } from '@/app/hooks/useFacilityUsers';
 export default function FacilityUserManagement({ user, facilityId }) {
   console.log('🏢 FacilityUserManagement received facilityId:', facilityId);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
   const [addUserForm, setAddUserForm] = useState({
     email: '',
     password: '',
@@ -14,7 +16,15 @@ export default function FacilityUserManagement({ user, facilityId }) {
     phoneNumber: '',
     role: 'scheduler'
   });
+  const [editUserForm, setEditUserForm] = useState({
+    email: '',
+    firstName: '',
+    lastName: '',
+    phoneNumber: '',
+    role: ''
+  });
   const [addUserLoading, setAddUserLoading] = useState(false);
+  const [editUserLoading, setEditUserLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(null);
 
   const {
@@ -23,6 +33,7 @@ export default function FacilityUserManagement({ user, facilityId }) {
     error,
     currentUserRole,
     addUser,
+    updateUser,
     updateUserRole,
     removeUser,
     canInviteUsers,
@@ -51,6 +62,43 @@ export default function FacilityUserManagement({ user, facilityId }) {
       alert('Failed to create user. Please try again.');
     } finally {
       setAddUserLoading(false);
+    }
+  }
+
+  function handleEditClick(facilityUser) {
+    // Get profile data from the user
+    const profile = users.find(u => u.user_id === facilityUser.user_id);
+    
+    setEditingUser(facilityUser);
+    setEditUserForm({
+      email: facilityUser.email || '',
+      firstName: facilityUser.firstName || '',
+      lastName: facilityUser.lastName || '',
+      phoneNumber: profile?.phone_number || '',
+      role: facilityUser.role
+    });
+    setShowEditModal(true);
+  }
+
+  async function handleEditUser() {
+    try {
+      setEditUserLoading(true);
+      
+      const result = await updateUser(editingUser.user_id, editUserForm);
+      
+      if (result.success) {
+        alert('User details updated successfully!');
+        setShowEditModal(false);
+        setEditingUser(null);
+        setEditUserForm({ email: '', firstName: '', lastName: '', phoneNumber: '', role: '' });
+      } else {
+        alert(result.error || 'Failed to update user');
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+      alert('Failed to update user. Please try again.');
+    } finally {
+      setEditUserLoading(false);
     }
   }
 
@@ -279,6 +327,16 @@ export default function FacilityUserManagement({ user, facilityId }) {
                 
                 {/* Actions */}
                 <div className="flex items-center space-x-2">
+                  {/* Edit Button */}
+                  {canUpdateUser(facilityUser.role) && (
+                    <button
+                      onClick={() => handleEditClick(facilityUser)}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  
                   {/* Role Change Dropdown */}
                   {canUpdateUser(facilityUser.role) && facilityUser.is_owner !== true && (
                     <div className="flex items-center space-x-1">
@@ -439,6 +497,109 @@ export default function FacilityUserManagement({ user, facilityId }) {
                 className="px-4 py-2 bg-[#7CCFD0] text-white rounded-md hover:bg-[#60BFC0] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {addUserLoading ? 'Creating...' : 'Create User'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Edit User</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={editUserForm.email}
+                  onChange={(e) => setEditUserForm({...editUserForm, email: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editUserForm.firstName}
+                    onChange={(e) => setEditUserForm({...editUserForm, firstName: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editUserForm.lastName}
+                    onChange={(e) => setEditUserForm({...editUserForm, lastName: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={editUserForm.phoneNumber}
+                  onChange={(e) => setEditUserForm({...editUserForm, phoneNumber: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  placeholder="(123) 456-7890"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Role
+                </label>
+                <select
+                  value={editUserForm.role}
+                  onChange={(e) => setEditUserForm({...editUserForm, role: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  disabled={editingUser?.is_owner === true}
+                >
+                  <option value="scheduler">Scheduler</option>
+                  <option value="admin">Admin</option>
+                  {currentUserRole === 'super_admin' && (
+                    <option value="super_admin">Super Admin</option>
+                  )}
+                </select>
+                {editingUser?.is_owner === true && (
+                  <p className="text-xs text-gray-500 mt-1">Owner role cannot be changed</p>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingUser(null);
+                  setEditUserForm({ email: '', firstName: '', lastName: '', phoneNumber: '', role: '' });
+                }}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEditUser}
+                disabled={editUserLoading || !editUserForm.email || !editUserForm.firstName || !editUserForm.lastName}
+                className="px-4 py-2 bg-[#7CCFD0] text-white rounded-md hover:bg-[#60BFC0] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {editUserLoading ? 'Updating...' : 'Update User'}
               </button>
             </div>
           </div>
