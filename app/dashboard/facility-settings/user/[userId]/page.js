@@ -1,0 +1,664 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createBrowserClient } from '@supabase/ssr';
+import DashboardLayout from '@/app/components/DashboardLayout';
+
+export default function UserDetailsPage({ params }) {
+  const router = useRouter();
+  const { userId } = params;
+  const [user, setUser] = useState(null);
+  const [facilityUser, setFacilityUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null);
+  const [session, setSession] = useState(null);
+  const [currentUserRole, setCurrentUserRole] = useState(null);
+  const [facilityId, setFacilityId] = useState(null);
+
+  const [editForm, setEditForm] = useState({
+    email: '',
+    firstName: '',
+    lastName: '',
+    phoneNumber: '',
+    role: ''
+  });
+
+  const [passwordForm, setPasswordForm] = useState({
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+
+  useEffect(() => {
+    loadUserData();
+  }, [userId]);
+
+  async function loadUserData() {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Get current session
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      setSession(currentSession);
+
+      if (!currentSession?.user) {
+        router.push('/login');
+        return;
+      }
+
+      // Get current user's facility and role
+      const { data: currentFacilityUser, error: facilityUserError } = await supabase
+        .from('facility_users')
+        .select('role, facility_id')
+        .eq('user_id', currentSession.user.id)
+        .eq('status', 'active')
+        .single();
+
+      if (facilityUserError) {
+        throw new Error('Access denied: You are not authorized to view this page');
+      }
+
+      setCurrentUserRole(currentFacilityUser.role);
+      setFacilityId(currentFacilityUser.facility_id);
+
+      // Load the target user's profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) {
+        throw new Error('User not found');
+      }
+
+      // Load facility user data
+      const { data: targetFacilityUser, error: targetFacilityError } = await supabase
+        .from('facility_users')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('facility_id', currentFacilityUser.facility_id)
+        .single();
+
+      if (targetFacilityError) {
+        throw new Error('User not found in your facility');
+      }
+
+      setUser(profile);
+      setFacilityUser(targetFacilityUser);
+      setEditForm({
+        email: profile.email || '',
+        firstName: profile.first_name || '',
+        lastName: profile.last_name || '',
+        phoneNumber: profile.phone_number || '',
+        role: targetFacilityUser.role || ''
+      });
+
+    } catch (error) {
+      console.error('Error loading user:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function canEditUser() {
+    if (currentUserRole === 'super_admin') return true;
+    if (currentUserRole === 'admin' && facilityUser?.role === 'scheduler') return true;
+    return false;
+  }
+
+  function canManagePassword() {
+    return currentUserRole === 'super_admin';
+  }
+
+  function canDeleteUser() {
+    return currentUserRole === 'super_admin' && !facilityUser?.is_owner;
+  }
+
+  function handleInputChange(e) {
+    const { name, value } = e.target;
+    setEditForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    setMessage(null);
+    setError(null);
+  }
+
+  function handlePasswordChange(e) {
+    const { name, value } = e.target;
+    setPasswordForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    setMessage(null);
+    setError(null);
+  }
+
+  async function handleChangePassword() {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+      setError(null);
+
+      const response = await fetch('/api/facility/change-user-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          newPassword: passwordForm.newPassword
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to change password');
+      }
+
+      setMessage('Password changed successfully!');
+      setShowPasswordChange(false);
+      setPasswordForm({ newPassword: '', confirmPassword: '' });
+
+    } catch (error) {
+      console.error('Error changing password:', error);
+      setError(error.message);
+    } finally {
+      setChangingPassword(false);
+    }
+  }
+
+  async function handleDeleteUser() {
+    const confirmMessage = `Are you sure you want to delete ${user?.first_name} ${user?.last_name}?\n\nThis action cannot be undone. Type "DELETE" to confirm.`;
+    const confirmation = prompt(confirmMessage);
+
+    if (confirmation !== 'DELETE') {
+      if (confirmation !== null) {
+        alert('User deletion cancelled. You must type "DELETE" to confirm.');
+      }
+      return;
+    }
+
+    try {
+      setError(null);
+
+      const response = await fetch('/api/facility/delete-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          facilityId,
+          userId
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete user');
+      }
+
+      alert('User deleted successfully');
+      router.push('/dashboard/facility-settings');
+
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      setError(error.message);
+    }
+  }
+
+  async function handleSaveChanges() {
+    try {
+      setSaving(true);
+      setError(null);
+
+      const response = await fetch('/api/facility/update-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          facilityId,
+          userId,
+          ...editForm
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update user');
+      }
+
+      setMessage('User details updated successfully!');
+      setEditMode(false);
+      
+      // Reload user data
+      await loadUserData();
+
+    } catch (error) {
+      console.error('Error updating user:', error);
+      setError(error.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function getRoleLabel(role) {
+    switch (role) {
+      case 'super_admin': return 'Super Admin';
+      case 'admin': return 'Admin';
+      case 'scheduler': return 'Scheduler';
+      default: return role;
+    }
+  }
+
+  function getRoleColor(role) {
+    switch (role) {
+      case 'super_admin': return 'bg-purple-100 text-purple-800';
+      case 'admin': return 'bg-blue-100 text-blue-800';
+      case 'scheduler': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  }
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#7CCFD0]"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error && !user) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-4xl mx-auto p-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-800">{error}</p>
+            <button
+              onClick={() => router.back()}
+              className="mt-3 text-red-600 hover:text-red-800 font-medium"
+            >
+              ← Go Back
+            </button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="max-w-4xl mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => router.back()}
+              className="text-gray-600 hover:text-gray-800"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">User Details</h1>
+              <p className="text-gray-600">View and manage user information</p>
+            </div>
+          </div>
+          
+          <div className="flex space-x-3">
+            {canEditUser() && !editMode && (
+              <button
+                onClick={() => setEditMode(true)}
+                className="bg-[#7CCFD0] hover:bg-[#60BFC0] text-white px-4 py-2 rounded-lg font-medium transition-colors"
+              >
+                Edit User
+              </button>
+            )}
+            
+            {canManagePassword() && !editMode && (
+              <button
+                onClick={() => setShowPasswordChange(true)}
+                className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+              >
+                Change Password
+              </button>
+            )}
+            
+            {canDeleteUser() && !editMode && (
+              <button
+                onClick={handleDeleteUser}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+              >
+                Delete User
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Messages */}
+        {message && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-green-800">{message}</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-800">{error}</p>
+          </div>
+        )}
+
+        {/* User Information Card */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="p-6">
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-center space-x-4">
+                <div className="bg-gray-100 rounded-full p-3">
+                  <span className="text-2xl">👤</span>
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    {user?.first_name} {user?.last_name}
+                  </h2>
+                  <p className="text-gray-600">{user?.email}</p>
+                  <div className="flex items-center space-x-3 mt-2">
+                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${getRoleColor(facilityUser?.role)}`}>
+                      {getRoleLabel(facilityUser?.role)}
+                    </span>
+                    {facilityUser?.is_owner && (
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                        Owner
+                      </span>
+                    )}
+                    <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                      {facilityUser?.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* User Details */}
+            {editMode ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={editForm.email}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      name="phoneNumber"
+                      value={editForm.phoneNumber}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-transparent"
+                      placeholder="(123) 456-7890"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      name="firstName"
+                      value={editForm.firstName}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      name="lastName"
+                      value={editForm.lastName}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Role
+                    </label>
+                    <select
+                      name="role"
+                      value={editForm.role}
+                      onChange={handleInputChange}
+                      disabled={facilityUser?.is_owner}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-transparent disabled:bg-gray-100"
+                    >
+                      <option value="scheduler">Scheduler</option>
+                      <option value="admin">Admin</option>
+                      {currentUserRole === 'super_admin' && (
+                        <option value="super_admin">Super Admin</option>
+                      )}
+                    </select>
+                    {facilityUser?.is_owner && (
+                      <p className="text-xs text-gray-500 mt-1">Owner role cannot be changed</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Edit Actions */}
+                <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      setEditMode(false);
+                      setEditForm({
+                        email: user?.email || '',
+                        firstName: user?.first_name || '',
+                        lastName: user?.last_name || '',
+                        phoneNumber: user?.phone_number || '',
+                        role: facilityUser?.role || ''
+                      });
+                      setError(null);
+                      setMessage(null);
+                    }}
+                    className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveChanges}
+                    disabled={saving || !editForm.email || !editForm.firstName || !editForm.lastName}
+                    className="px-4 py-2 bg-[#7CCFD0] text-white rounded-md hover:bg-[#60BFC0] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-1">Email Address</h3>
+                  <p className="text-gray-900">{user?.email || 'Not provided'}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-1">Phone Number</h3>
+                  <p className="text-gray-900">{user?.phone_number || 'Not provided'}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-1">First Name</h3>
+                  <p className="text-gray-900">{user?.first_name || 'Not provided'}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-1">Last Name</h3>
+                  <p className="text-gray-900">{user?.last_name || 'Not provided'}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-1">Role</h3>
+                  <p className="text-gray-900">{getRoleLabel(facilityUser?.role)}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-1">Member Since</h3>
+                  <p className="text-gray-900">
+                    {facilityUser?.invited_at ? new Date(facilityUser.invited_at).toLocaleDateString() : 'Unknown'}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Account Information */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 mb-1">User ID</h4>
+                <p className="text-gray-900 font-mono text-sm">{userId}</p>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 mb-1">Status</h4>
+                <p className="text-gray-900">{facilityUser?.status}</p>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 mb-1">Invited By</h4>
+                <p className="text-gray-900">{facilityUser?.invited_by || 'System'}</p>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 mb-1">Last Updated</h4>
+                <p className="text-gray-900">
+                  {user?.updated_at ? new Date(user.updated_at).toLocaleDateString() : 'Never'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Password Change Modal */}
+        {showPasswordChange && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Change Password for {user?.first_name} {user?.last_name}
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    New Password
+                  </label>
+                  <input
+                    type="password"
+                    name="newPassword"
+                    value={passwordForm.newPassword}
+                    onChange={handlePasswordChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                    placeholder="Enter new password"
+                    minLength="6"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Confirm New Password
+                  </label>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={passwordForm.confirmPassword}
+                    onChange={handlePasswordChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                    placeholder="Confirm new password"
+                    minLength="6"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowPasswordChange(false);
+                    setPasswordForm({ newPassword: '', confirmPassword: '' });
+                    setError(null);
+                    setMessage(null);
+                  }}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleChangePassword}
+                  disabled={changingPassword || !passwordForm.newPassword || !passwordForm.confirmPassword}
+                  className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {changingPassword ? 'Changing...' : 'Change Password'}
+                </button>
+              </div>
+
+              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <div className="flex items-start">
+                  <span className="text-yellow-600 mr-2">⚠️</span>
+                  <div className="text-sm text-yellow-800">
+                    <p className="font-semibold mb-1">Important:</p>
+                    <p>The user will need to sign in again with their new password. Make sure to communicate the new password securely.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </DashboardLayout>
+  );
+}

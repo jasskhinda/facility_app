@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useFacilityUsers } from '@/app/hooks/useFacilityUsers';
 
 export default function FacilityUserManagement({ user, facilityId }) {
   console.log('🏢 FacilityUserManagement received facilityId:', facilityId);
+  const router = useRouter();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -327,15 +329,13 @@ export default function FacilityUserManagement({ user, facilityId }) {
                 
                 {/* Actions */}
                 <div className="flex items-center space-x-2">
-                  {/* Edit Button */}
-                  {canUpdateUser(facilityUser.role) && (
-                    <button
-                      onClick={() => handleEditClick(facilityUser)}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                    >
-                      Edit
-                    </button>
-                  )}
+                  {/* View User Button */}
+                  <button
+                    onClick={() => router.push(`/dashboard/facility-settings/user/${facilityUser.user_id}`)}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  >
+                    View User
+                  </button>
                   
                   {/* Role Change Dropdown */}
                   {canUpdateUser(facilityUser.role) && facilityUser.is_owner !== true && (
