@@ -41,24 +41,32 @@ export default function UserDetailsPage({ params }) {
   );
 
   useEffect(() => {
-    loadUserData();
+    if (userId) {
+      console.log('🔄 useEffect triggered for userId:', userId);
+      loadUserData();
+    }
   }, [userId]);
 
   async function loadUserData() {
     try {
+      console.log('🔍 Starting loadUserData for userId:', userId);
       setLoading(true);
       setError(null);
 
       // Get current session
+      console.log('🔑 Getting current session...');
       const { data: { session: currentSession } } = await supabase.auth.getSession();
+      console.log('👤 Current session:', currentSession?.user?.email);
       setSession(currentSession);
 
       if (!currentSession?.user) {
+        console.log('❌ No session found, redirecting to login');
         router.push('/login');
         return;
       }
 
       // Get current user's facility and role
+      console.log('🏢 Getting current user facility data...');
       const { data: currentFacilityUser, error: facilityUserError } = await supabase
         .from('facility_users')
         .select('role, facility_id')
@@ -66,36 +74,73 @@ export default function UserDetailsPage({ params }) {
         .eq('status', 'active')
         .single();
 
+      console.log('🏢 Current facility user data:', currentFacilityUser);
+      console.log('❌ Current facility user error:', facilityUserError);
+
+      let targetFacilityId = null;
+
       if (facilityUserError) {
-        throw new Error('Access denied: You are not authorized to view this page');
+        // Try fallback to profiles table for legacy users
+        console.log('🔄 Trying fallback to profiles table...');
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('role, facility_id')
+          .eq('id', currentSession.user.id)
+          .single();
+
+        console.log('👤 Profile fallback data:', profileData);
+        console.log('❌ Profile fallback error:', profileError);
+
+        if (profileError || !profileData || profileData.role !== 'facility') {
+          throw new Error('Access denied: You are not authorized to view this page');
+        }
+
+        setCurrentUserRole('super_admin'); // Default for legacy users
+        setFacilityId(profileData.facility_id);
+        targetFacilityId = profileData.facility_id;
+      } else {
+        setCurrentUserRole(currentFacilityUser.role);
+        setFacilityId(currentFacilityUser.facility_id);
+        targetFacilityId = currentFacilityUser.facility_id;
+      }
+      console.log('🎯 Target facility ID:', targetFacilityId);
+
+      if (!targetFacilityId) {
+        throw new Error('No facility associated with your account');
       }
 
-      setCurrentUserRole(currentFacilityUser.role);
-      setFacilityId(currentFacilityUser.facility_id);
-
       // Load the target user's profile
+      console.log('👤 Loading target user profile...');
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
+      console.log('👤 Target user profile:', profile);
+      console.log('❌ Target user profile error:', profileError);
+
       if (profileError) {
-        throw new Error('User not found');
+        throw new Error('User not found: ' + profileError.message);
       }
 
       // Load facility user data
+      console.log('🏢 Loading target user facility data...');
       const { data: targetFacilityUser, error: targetFacilityError } = await supabase
         .from('facility_users')
         .select('*')
         .eq('user_id', userId)
-        .eq('facility_id', currentFacilityUser.facility_id)
+        .eq('facility_id', targetFacilityId)
         .single();
 
+      console.log('🏢 Target facility user data:', targetFacilityUser);
+      console.log('❌ Target facility user error:', targetFacilityError);
+
       if (targetFacilityError) {
-        throw new Error('User not found in your facility');
+        throw new Error('User not found in your facility: ' + targetFacilityError.message);
       }
 
+      console.log('✅ All data loaded successfully');
       setUser(profile);
       setFacilityUser(targetFacilityUser);
       setEditForm({
@@ -107,9 +152,10 @@ export default function UserDetailsPage({ params }) {
       });
 
     } catch (error) {
-      console.error('Error loading user:', error);
+      console.error('💥 Error loading user:', error);
       setError(error.message);
     } finally {
+      console.log('🏁 Loading finished');
       setLoading(false);
     }
   }
@@ -301,14 +347,26 @@ export default function UserDetailsPage({ params }) {
     return (
       <DashboardLayout>
         <div className="max-w-4xl mx-auto p-6">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800">{error}</p>
-            <button
-              onClick={() => router.back()}
-              className="mt-3 text-red-600 hover:text-red-800 font-medium"
-            >
-              ← Go Back
-            </button>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold text-red-800 mb-2">Error Loading User</h2>
+            <p className="text-red-700 mb-4">{error}</p>
+            <div className="space-x-3">
+              <button
+                onClick={() => {
+                  setError(null);
+                  loadUserData();
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => router.back()}
+                className="text-red-600 hover:text-red-800 font-medium"
+              >
+                ← Go Back
+              </button>
+            </div>
           </div>
         </div>
       </DashboardLayout>
