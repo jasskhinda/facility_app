@@ -347,7 +347,7 @@ export default function UserDetailsPage({ params }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <DashboardLayout>
         <div className="flex justify-center items-center py-12">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
             <div className="flex flex-col items-center space-y-4">
@@ -356,13 +356,13 @@ export default function UserDetailsPage({ params }) {
             </div>
           </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   if (error && !user) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <DashboardLayout>
         <div className="max-w-4xl mx-auto p-6">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-red-800 mb-2">Error Loading User</h2>
@@ -379,36 +379,37 @@ export default function UserDetailsPage({ params }) {
                 Try Again
               </button>
               <button
-                onClick={() => router.back()}
+                onClick={() => router.push('/dashboard/facility-settings')}
                 className="text-red-600 hover:text-red-800 font-medium"
               >
-                ← Go Back
+                ← Back to User Management
               </button>
             </div>
           </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <DashboardLayout>
       <div className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => router.back()}
-              className="text-gray-600 hover:text-gray-800"
+              onClick={() => router.push('/dashboard/facility-settings')}
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 font-medium"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
+              <span>Back to User Management</span>
             </button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">User Details</h1>
-              <p className="text-gray-600">View and manage user information</p>
-            </div>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">User Details</h1>
+            <p className="text-gray-600">View and manage user information</p>
           </div>
           
           <div className="flex space-x-3">
@@ -735,6 +736,6 @@ export default function UserDetailsPage({ params }) {
           </div>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
