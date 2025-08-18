@@ -43,17 +43,7 @@ export default function UserDetailsPage({ params }) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
 
-  useEffect(() => {
-    if (userId && !hasLoadedRef.current) {
-      console.log('🔄 useEffect triggered for userId:', userId);
-      hasLoadedRef.current = true;
-      // Immediately hide global loading to prevent interference
-      hideLoading();
-      loadUserData();
-    }
-  }, [userId, loadUserData, hideLoading]);
-
-  const loadUserData = useCallback(async () => {
+  async function loadUserData() {
     try {
       console.log('🔍 Starting loadUserData for userId:', userId);
       setLoading(true);
@@ -170,7 +160,17 @@ export default function UserDetailsPage({ params }) {
       setLoading(false);
       hideLoading(); // Always hide global loading even on error
     }
-  }, [userId, hideLoading]);
+  }
+
+  useEffect(() => {
+    if (userId && !hasLoadedRef.current) {
+      console.log('🔄 useEffect triggered for userId:', userId);
+      hasLoadedRef.current = true;
+      // Immediately hide global loading to prevent interference
+      hideLoading();
+      loadUserData();
+    }
+  }, [userId]);
 
   function canEditUser() {
     if (currentUserRole === 'super_admin') return true;
