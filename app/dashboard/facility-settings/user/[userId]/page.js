@@ -37,6 +37,7 @@ export default function UserDetailsPage({ params }) {
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const hasLoadedRef = useRef(false);
+  const isMountedRef = useRef(true);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -150,6 +151,12 @@ export default function UserDetailsPage({ params }) {
       // Set loading to false and hide global loading
       setLoading(false);
       hideLoading(); // Hide global loading overlay
+      // Force hide again after a brief delay to ensure it's dismissed
+      setTimeout(() => {
+        setLoading(false);
+        hideLoading();
+        console.log('🏁 Force dismissed global loading');
+      }, 100);
       console.log('🏁 Loading set to false and global loading hidden');
 
     } catch (error) {
@@ -166,10 +173,19 @@ export default function UserDetailsPage({ params }) {
     if (userId && !hasLoadedRef.current) {
       console.log('🔄 useEffect triggered for userId:', userId);
       hasLoadedRef.current = true;
-      // Immediately hide global loading to prevent interference
+      // Force hide global loading multiple times to ensure it's dismissed
       hideLoading();
+      setTimeout(() => hideLoading(), 100);
+      setTimeout(() => hideLoading(), 500);
+      setTimeout(() => hideLoading(), 1000);
       loadUserData();
     }
+    
+    // Cleanup on unmount
+    return () => {
+      isMountedRef.current = false;
+      hideLoading();
+    };
   }, [userId]);
 
   function canEditUser() {
@@ -345,7 +361,20 @@ export default function UserDetailsPage({ params }) {
     }
   }
 
-  if (loading) {
+  // Add a timeout fallback - if loading takes too long, show the page anyway
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn('⚠️ Loading timeout - forcing page render');
+        setLoading(false);
+        hideLoading();
+      }
+    }, 3000); // 3 second timeout
+    
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
+  if (loading && !user) {
     return (
       <DashboardLayout>
         <div className="flex justify-center items-center py-12">
