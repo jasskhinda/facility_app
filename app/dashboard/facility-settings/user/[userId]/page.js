@@ -54,11 +54,16 @@ export default function UserDetailsPage({ params }) {
       }
       setError(null);
 
-      // Get current session
+      // Get current session first and set it immediately
       console.log('🔑 Getting current session...');
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       console.log('👤 Current session:', currentSession?.user?.email);
-      setSession(currentSession);
+      
+      // Set session immediately so DashboardLayout has user data and won't show loading
+      if (currentSession) {
+        setSession(currentSession);
+        console.log('✅ Session set for DashboardLayout');
+      }
 
       if (!currentSession?.user) {
         console.log('❌ No session found, redirecting to login');
@@ -176,15 +181,12 @@ export default function UserDetailsPage({ params }) {
     }
   }
 
+  // Load data immediately on mount
   useEffect(() => {
     if (userId && !hasLoadedRef.current) {
       console.log('🔄 useEffect triggered for userId:', userId);
       hasLoadedRef.current = true;
-      // Force hide global loading multiple times to ensure it's dismissed
-      hideLoading();
-      setTimeout(() => hideLoading(), 100);
-      setTimeout(() => hideLoading(), 500);
-      setTimeout(() => hideLoading(), 1000);
+      hideLoading(); // Hide global loading immediately
       loadUserData();
     }
     
@@ -390,10 +392,19 @@ export default function UserDetailsPage({ params }) {
     }
   }, [user, facilityUser]);
 
-  // Only show loading if we don't have user data yet
+  // Wait for session to be loaded before rendering anything
+  if (session === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#7CCFD0]"></div>
+      </div>
+    );
+  }
+
+  // Only show loading if we don't have user data yet and we have a session
   if (loading && !user && !facilityUser) {
     return (
-      <DashboardLayout>
+      <DashboardLayout user={session?.user}>
         <div className="flex justify-center items-center py-12">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
             <div className="flex flex-col items-center space-y-4">
@@ -408,7 +419,7 @@ export default function UserDetailsPage({ params }) {
 
   if (error && !user) {
     return (
-      <DashboardLayout>
+      <DashboardLayout user={session?.user}>
         <div className="max-w-4xl mx-auto p-6">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-red-800 mb-2">Error Loading User</h2>
@@ -437,8 +448,9 @@ export default function UserDetailsPage({ params }) {
     );
   }
 
+  // Always provide session user to DashboardLayout to prevent its internal loading state
   return (
-    <DashboardLayout>
+    <DashboardLayout user={session?.user || user}>
       <div className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
