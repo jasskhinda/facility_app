@@ -169,7 +169,7 @@ export default function PricingTestPage() {
 
             {/* Detailed Breakdown */}
             <div className="space-y-2">
-              {createPricingBreakdown(pricing).map((item, index) => (
+              {createPricingBreakdown(pricing, { isInFranklinCounty: true, countiesOut: 0, pickup: 'Franklin', destination: 'Franklin' }).map((item, index) => (
                 <div 
                   key={index}
                   className={`flex justify-between py-2 ${

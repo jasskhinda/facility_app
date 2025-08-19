@@ -55,6 +55,12 @@ function ProfessionalCostBreakdown({ trip }) {
               duration: 'N/A',
               distanceText: trip.distance ? `${trip.distance} mi` : '',
               isEstimated: false
+            },
+            countyInfo: {
+              isInFranklinCounty: true, // Default assumption for stored trips
+              countiesOut: 0,
+              pickup: 'Franklin',
+              destination: 'Franklin'
             }
           };
           
@@ -112,7 +118,7 @@ function ProfessionalCostBreakdown({ trip }) {
     );
   }
 
-  const breakdownItems = createPricingBreakdown(pricingBreakdown.pricing);
+  const breakdownItems = createPricingBreakdown(pricingBreakdown.pricing, pricingBreakdown.countyInfo);
 
   return (
     <>
