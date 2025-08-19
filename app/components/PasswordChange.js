@@ -75,7 +75,7 @@ export default function PasswordChange({ user }) {
   };
 
   return (
-    <div className="max-w-md">
+    <div className="max-w-md mx-auto">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Change Password</h2>
         <p className="text-gray-600 mt-1">Update your account password</p>
