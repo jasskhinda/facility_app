@@ -14,66 +14,9 @@ function ProfessionalCostBreakdown({ trip }) {
 
   useEffect(() => {
     const useSamePricingAsBooking = () => {
-      try {
-        // If trip has stored pricing breakdown, use that for consistency
-        if (trip.total_fare || trip.price) {
-          // Create consistent breakdown using stored values or reasonable calculations
-          const storedPrice = trip.total_fare || trip.price;
-          const basePrice = trip.base_price || 50; // Default base price if not stored
-          const roundTripPrice = trip.is_round_trip ? 50 : 0;
-          
-          // Calculate distance charge as difference between total and other known charges
-          let distancePrice = storedPrice - basePrice - roundTripPrice;
-          
-          // Subtract known surcharges
-          if (trip.county_surcharge) distancePrice -= trip.county_surcharge;
-          if (trip.time_surcharge) distancePrice -= trip.time_surcharge;
-          if (trip.emergency_fee) distancePrice -= trip.emergency_fee;
-          if (trip.wheelchair_rental) distancePrice -= trip.wheelchair_rental;
-          
-          // Ensure distance price is reasonable (non-negative)
-          distancePrice = Math.max(0, distancePrice);
-          
-          const mockPricing = {
-            basePrice: basePrice,
-            roundTripPrice: roundTripPrice,
-            distancePrice: distancePrice,
-            countyPrice: trip.county_surcharge || 0,
-            weekendAfterHoursSurcharge: trip.time_surcharge || 0,
-            emergencyFee: trip.emergency_fee || 0,
-            wheelchairPrice: trip.wheelchair_rental || 0,
-            veteranDiscount: trip.veteran_discount || 0,
-            total: storedPrice,
-            distance: trip.distance || 0
-          };
-          
-          const mockResult = {
-            success: true,
-            pricing: mockPricing,
-            distance: {
-              distance: trip.distance || 0,
-              duration: 'N/A',
-              distanceText: trip.distance ? `${trip.distance} mi` : '',
-              isEstimated: false
-            },
-            countyInfo: {
-              isInFranklinCounty: true, // Default assumption for stored trips
-              countiesOut: 0,
-              pickup: 'Franklin',
-              destination: 'Franklin'
-            }
-          };
-          
-          setPricingBreakdown(mockResult);
-          return;
-        }
-        
-        // Fallback: recalculate if no stored pricing (this ensures we always show something)
-        calculateFallbackPricing();
-      } catch (error) {
-        console.error('Error using stored pricing:', error);
-        calculateFallbackPricing();
-      }
+      // ALWAYS use the professional pricing calculation for accuracy
+      // This ensures trip details match booking page exactly
+      calculateFallbackPricing();
     };
 
     const calculateFallbackPricing = async () => {
