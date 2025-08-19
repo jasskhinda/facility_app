@@ -709,7 +709,12 @@ Website: https://compassionatecaretransportation.com
             {trip.distance && (
               <div>
                 <p className="text-sm font-medium text-[#2E4F54] text-gray-900">Estimated Distance</p>
-                <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">{trip.distance} miles</p>
+                <p className="text-sm text-[#2E4F54]/90 text-gray-900/90">
+                  {trip.is_round_trip ? (trip.distance * 2).toFixed(1) : trip.distance} miles
+                  {trip.is_round_trip && (
+                    <span className="text-xs text-gray-500 ml-1">({trip.distance} mi each way)</span>
+                  )}
+                </p>
               </div>
             )}
             

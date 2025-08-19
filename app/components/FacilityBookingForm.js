@@ -318,7 +318,9 @@ export default function FacilityBookingForm({ user }) {
           }
           
           // Mileage calculation ($3 per mile)
-          basePrice += miles * 3;
+          // For round trips, double the distance
+          const effectiveDistance = formData.isRoundTrip ? miles * 2 : miles;
+          basePrice += effectiveDistance * 3;
           
           // Weekend adjustment
           const pickupDate = new Date(formData.pickupTime);
@@ -565,7 +567,9 @@ export default function FacilityBookingForm({ user }) {
     }
     
     // Mileage calculation ($3 per mile)
-    basePrice += miles * 3;
+    // For round trips, double the distance
+    const effectiveDistance = formData.isRoundTrip ? miles * 2 : miles;
+    basePrice += effectiveDistance * 3;
     
     // Weekend adjustment
     const pickupDate = new Date(formData.pickupTime);
