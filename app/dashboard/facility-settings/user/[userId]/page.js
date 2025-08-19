@@ -727,6 +727,19 @@ export default function UserDetailsPage({ params }) {
                 Change Password for {user?.first_name} {user?.last_name}
               </h3>
               
+              {/* Error and Success Messages */}
+              {error && (
+                <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-red-800 text-sm">{error}</p>
+                </div>
+              )}
+              
+              {message && (
+                <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p className="text-green-800 text-sm">{message}</p>
+                </div>
+              )}
+              
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
