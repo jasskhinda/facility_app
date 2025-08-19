@@ -24,7 +24,8 @@ export default function WheelchairSelectionFlow({
       setNeedsWheelchair(false);
       setShowCustomInput(false);
     } else {
-      setShowProvideOption(true);
+      // FACILITY APP: No wheelchair rental option - never show provide option
+      setShowProvideOption(false);
     }
   }, [wheelchairType]);
 
@@ -38,8 +39,8 @@ export default function WheelchairSelectionFlow({
       type: wheelchairType,
       needsProvided: needsWheelchair,
       customType: customWheelchairType,
-      hasWheelchairFee: hasWheelchairFee,
-      fee: hasWheelchairFee ? WHEELCHAIR_PRICE : 0,
+      hasWheelchairFee: false, // FACILITY APP: Never charge wheelchair fees
+      fee: 0, // FACILITY APP: Always $0 wheelchair fee
       isTransportChair: isTransportChair,
       isValidSelection: !isTransportChair
     };
@@ -53,7 +54,7 @@ export default function WheelchairSelectionFlow({
     setWheelchairType(type);
     
     if (type === 'none') {
-      setShowProvideOption(true);
+      setShowProvideOption(false); // FACILITY APP: Never show provide option
       setShowCustomInput(false);
       setCustomWheelchairType('');
     } else {
