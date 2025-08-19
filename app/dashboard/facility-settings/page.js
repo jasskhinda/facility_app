@@ -63,13 +63,9 @@ export default function FacilitySettingsPage() {
 
   return (
     <DashboardLayout user={user} activeTab="settings">
-      <div className="py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-          <h1 className="text-2xl font-semibold text-gray-900">Facility Settings</h1>
-        </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-4">
-          <FacilitySettings />
-        </div>
+      <div className="w-full">
+        <h1 className="text-2xl font-semibold text-gray-900 mb-6">Facility Settings</h1>
+        <FacilitySettings />
       </div>
     </DashboardLayout>
   );

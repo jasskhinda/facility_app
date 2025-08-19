@@ -115,7 +115,7 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
     <div className="min-h-screen flex flex-col">
       {/* Top Navigation Bar */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="px-6 lg:px-8">
           <div className="flex justify-between h-20">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
@@ -229,13 +229,13 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
       </header>
 
       {/* Main content */}
-      <main className="flex-grow container mx-auto px-4 py-8 bg-gray-50 min-h-screen">
+      <main className="flex-grow px-6 lg:px-8 py-8 bg-gray-50 min-h-screen">
         {children}
       </main>
 
       {/* Footer */}
       <footer className="bg-white py-6 border-t border-gray-200">
-        <div className="container mx-auto px-4">
+        <div className="px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-600 text-sm">
               &copy; 2025 Compassionate Care Transportation. All rights reserved.

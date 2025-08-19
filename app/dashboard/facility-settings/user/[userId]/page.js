@@ -420,7 +420,7 @@ export default function UserDetailsPage({ params }) {
   if (error && !user) {
     return (
       <DashboardLayout user={session?.user}>
-        <div className="max-w-4xl mx-auto p-6">
+        <div className="w-full">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-red-800 mb-2">Error Loading User</h2>
             <p className="text-red-700 mb-4">{error}</p>
@@ -451,7 +451,7 @@ export default function UserDetailsPage({ params }) {
   // Always provide session user to DashboardLayout to prevent its internal loading state
   return (
     <DashboardLayout user={session?.user || user}>
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
