@@ -14,8 +14,8 @@ export default function WheelchairSelectionFlow({
   const [showProvideOption, setShowProvideOption] = useState(false);
   const [showCustomInput, setShowCustomInput] = useState(false);
 
-  // Wheelchair pricing
-  const WHEELCHAIR_PRICE = 25;
+  // Wheelchair pricing - FACILITY APP: Free wheelchair service
+  const WHEELCHAIR_PRICE = 0;
 
   useEffect(() => {
     // Reset states when wheelchair type changes
@@ -24,8 +24,8 @@ export default function WheelchairSelectionFlow({
       setNeedsWheelchair(false);
       setShowCustomInput(false);
     } else {
-      // FACILITY APP: No wheelchair rental option - never show provide option
-      setShowProvideOption(false);
+      // FACILITY APP: Show provide option but with $0 fee
+      setShowProvideOption(true);
     }
   }, [wheelchairType]);
 
@@ -54,7 +54,7 @@ export default function WheelchairSelectionFlow({
     setWheelchairType(type);
     
     if (type === 'none') {
-      setShowProvideOption(false); // FACILITY APP: Never show provide option
+      setShowProvideOption(true); // FACILITY APP: Show provide option with $0 fee
       setShowCustomInput(false);
       setCustomWheelchairType('');
     } else {
