@@ -1130,7 +1130,7 @@ export default function FacilityBookingForm({ user }) {
                 {/* Holiday Pricing Check */}
                 <div className="col-span-1 md:col-span-2">
                   <HolidayPricingChecker
-                    pickupDate={formData.pickupTime?.split('T')[0] || ''}
+                    pickupDate={formData.pickupTime?.split('T')[0] || (selectedDate ? selectedDate.toISOString().split('T')[0] : '')}
                     onHolidayChange={handleHolidayChange}
                     className="mt-2"
                   />
