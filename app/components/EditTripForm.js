@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic';
 import { createClientSupabase } from '@/lib/client-supabase';
 import PricingDisplay from './PricingDisplay';
 import WheelchairSelectionFlow from './WheelchairSelectionFlow';
+import EnhancedClientInfoForm from './EnhancedClientInfoForm';
+import HolidayPricingChecker from './HolidayPricingChecker';
 
 // Dynamically import Google Maps components to prevent SSR issues
 const SuperSimpleMap = dynamic(() => import('./SuperSimpleMap'), {
@@ -32,6 +34,24 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
   const [routeInfo, setRouteInfo] = useState(null);
   const [selectedClient, setSelectedClient] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [holidayInfo, setHolidayInfo] = useState({ isHoliday: false, holidayName: '', surcharge: 0 });
+  
+  // Client information state
+  const [clientInfo, setClientInfo] = useState({
+    weight: '',
+    height_feet: '',
+    height_inches: '',
+    date_of_birth: '',
+    email: '',
+    phone_number: '',
+    emergency_contact_name: '',
+    emergency_contact_phone: '',
+    medical_conditions: '',
+    allergies: '',
+    medications: '',
+    mobility_aids: '',
+    special_instructions: ''
+  });
   
   // Form state
   const [formData, setFormData] = useState({
@@ -85,12 +105,68 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
     };
     getCurrentUser();
 
-    // Set up a mock client for pricing calculations
+    // Load existing client data if available
+    const loadClientData = async () => {
+      if (trip?.user_id) {
+        // Load user profile data
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', trip.user_id)
+          .single();
+        
+        if (profile) {
+          setClientInfo({
+            weight: profile.weight || '',
+            height_feet: profile.height_feet || '',
+            height_inches: profile.height_inches || '',
+            date_of_birth: profile.date_of_birth || '',
+            email: profile.email || '',
+            phone_number: profile.phone_number || '',
+            emergency_contact_name: profile.emergency_contact_name || '',
+            emergency_contact_phone: profile.emergency_contact_phone || '',
+            medical_conditions: profile.medical_conditions || '',
+            allergies: profile.allergies || '',
+            medications: profile.medications || '',
+            mobility_aids: profile.mobility_aids || '',
+            special_instructions: profile.special_instructions || ''
+          });
+        }
+      } else if (trip?.managed_client_id) {
+        // Load managed client data
+        const { data: managedClient } = await supabase
+          .from('facility_managed_clients')
+          .select('*')
+          .eq('id', trip.managed_client_id)
+          .single();
+        
+        if (managedClient) {
+          setClientInfo({
+            weight: managedClient.weight || '',
+            height_feet: managedClient.height_feet || '',
+            height_inches: managedClient.height_inches || '',
+            date_of_birth: managedClient.date_of_birth || '',
+            email: managedClient.email || '',
+            phone_number: managedClient.phone_number || '',
+            emergency_contact_name: managedClient.emergency_contact_name || '',
+            emergency_contact_phone: managedClient.emergency_contact_phone || '',
+            medical_conditions: managedClient.medical_conditions || '',
+            allergies: managedClient.allergies || '',
+            medications: managedClient.medications || '',
+            mobility_aids: managedClient.mobility_aids || '',
+            special_instructions: managedClient.special_instructions || ''
+          });
+        }
+      }
+    };
+
+    // Set up client for pricing calculations
     if (trip) {
       setSelectedClient({
         client_type: 'facility', // Since this is from facility app
         id: trip.user_id || trip.managed_client_id
       });
+      loadClientData();
     }
   }, [trip]);
 
@@ -195,6 +271,58 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
 
       if (updateError) {
         throw updateError;
+      }
+
+      // Update client information if available
+      if (trip?.user_id) {
+        // Update user profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            weight: clientInfo.weight || null,
+            height_feet: clientInfo.height_feet || null,
+            height_inches: clientInfo.height_inches || null,
+            date_of_birth: clientInfo.date_of_birth || null,
+            phone_number: clientInfo.phone_number || null,
+            emergency_contact_name: clientInfo.emergency_contact_name || null,
+            emergency_contact_phone: clientInfo.emergency_contact_phone || null,
+            medical_conditions: clientInfo.medical_conditions || null,
+            allergies: clientInfo.allergies || null,
+            medications: clientInfo.medications || null,
+            mobility_aids: clientInfo.mobility_aids || null,
+            special_instructions: clientInfo.special_instructions || null
+          })
+          .eq('id', trip.user_id);
+
+        if (profileError) {
+          console.warn('Failed to update user profile:', profileError);
+          // Don't throw error for profile update failure
+        }
+      } else if (trip?.managed_client_id) {
+        // Update managed client
+        const { error: clientError } = await supabase
+          .from('facility_managed_clients')
+          .update({
+            weight: clientInfo.weight || null,
+            height_feet: clientInfo.height_feet || null,
+            height_inches: clientInfo.height_inches || null,
+            date_of_birth: clientInfo.date_of_birth || null,
+            email: clientInfo.email || null,
+            phone_number: clientInfo.phone_number || null,
+            emergency_contact_name: clientInfo.emergency_contact_name || null,
+            emergency_contact_phone: clientInfo.emergency_contact_phone || null,
+            medical_conditions: clientInfo.medical_conditions || null,
+            allergies: clientInfo.allergies || null,
+            medications: clientInfo.medications || null,
+            mobility_aids: clientInfo.mobility_aids || null,
+            special_instructions: clientInfo.special_instructions || null
+          })
+          .eq('id', trip.managed_client_id);
+
+        if (clientError) {
+          console.warn('Failed to update managed client:', clientError);
+          // Don't throw error for client update failure
+        }
       }
 
       setSuccessMessage('Trip updated successfully!');
@@ -359,6 +487,22 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
               </div>
             )}
 
+            {/* Holiday Pricing Checker */}
+            <HolidayPricingChecker
+              pickupDate={formData.pickupDate && formData.pickupTime ? 
+                `${formData.pickupDate}T${formData.pickupTime}` : 
+                formData.pickupDate}
+              onHolidayChange={setHolidayInfo}
+              className="mb-4"
+            />
+
+            {/* Enhanced Client Information */}
+            <EnhancedClientInfoForm
+              clientInfo={clientInfo}
+              onClientInfoChange={setClientInfo}
+              className="mb-6"
+            />
+
             {/* Round Trip */}
             <div>
               <label className="flex items-center space-x-3">
@@ -456,9 +600,16 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
 
             {/* Pricing Display */}
             <PricingDisplay 
-              formData={formData}
+              formData={{
+                ...formData,
+                clientWeight: clientInfo.weight,
+                isEmergency: formData.isEmergency,
+                wheelchairType: formData.wheelchairType
+              }}
               selectedClient={selectedClient}
               routeInfo={routeInfo}
+              holidayInfo={holidayInfo}
+              clientInfo={clientInfo}
               onPricingCalculated={setCurrentPricing}
             />
 

@@ -8,47 +8,141 @@ import DashboardLayout from '@/app/components/DashboardLayout';
 import EditTripForm from '@/app/components/EditTripForm';
 import { getPricingEstimate, createPricingBreakdown, formatCurrency } from '@/lib/pricing';
 
-// Professional Cost Breakdown Component that uses stored pricing data to ensure consistency
+// Professional Cost Breakdown Component that shows the original booking price
 function ProfessionalCostBreakdown({ trip }) {
   const [pricingBreakdown, setPricingBreakdown] = useState(null);
 
   useEffect(() => {
-    const useSamePricingAsBooking = () => {
-      // ALWAYS use the professional pricing calculation for accuracy
-      // This ensures trip details match booking page exactly
-      calculateFallbackPricing();
-    };
-
-    const calculateFallbackPricing = async () => {
+    // CRITICAL FIX: Use stored trip price data instead of recalculating
+    // This ensures trip details exactly match the original booking price
+    const useStoredPricingData = () => {
       try {
-        console.log('Using fallback pricing calculation');
-        // Use the same professional pricing calculation as the booking page
-        const pricingResult = await getPricingEstimate({
-          pickupAddress: trip.pickup_address,
-          destinationAddress: trip.destination_address || trip.dropoff_address,
-          isRoundTrip: trip.is_round_trip,
-          pickupDateTime: trip.pickup_time,
-          wheelchairType: trip.wheelchair_type || 'no_wheelchair',
-          clientType: 'facility',
-          additionalPassengers: trip.additional_passengers || 0,
-          isEmergency: trip.emergency || false,
-          preCalculatedDistance: {
-            distance: trip.distance || 0,
-            miles: trip.distance || 0,
-            text: trip.distance ? `${trip.distance} mi` : '',
-            duration: 'N/A'
-          }
+        console.log('Using stored trip pricing data to match booking exactly');
+        
+        // Create pricing breakdown from stored trip data
+        const pricing = {
+          baseFare: trip.base_fare || (trip.price * 0.7) || 25.00, // Estimate if not stored
+          distanceFee: trip.distance_fee || 0,
+          wheelchairFee: trip.wheelchair_type === 'wheelchair' ? (trip.wheelchair_fee || 25.00) : 0,
+          holidayFee: trip.holiday_fee || 0,
+          deadMileageFee: trip.dead_mileage_fee || 0,
+          roundTripFee: trip.is_round_trip ? (trip.round_trip_fee || 0) : 0,
+          bariatricFee: trip.bariatric_fee || 0,
+          emergencyFee: trip.emergency_fee || 0,
+          discount: trip.discount || 0,
+          subtotal: trip.subtotal || trip.price || 0,
+          total: trip.price || 0
+        };
+
+        // Create breakdown items matching the booking format
+        const breakdownItems = [];
+        
+        // Base fare
+        if (pricing.baseFare > 0) {
+          breakdownItems.push({
+            label: 'Base Transportation Fee',
+            amount: pricing.baseFare,
+            type: 'base'
+          });
+        }
+        
+        // Distance fee
+        if (pricing.distanceFee > 0) {
+          breakdownItems.push({
+            label: `Distance Fee (${trip.distance || 'N/A'} miles)`,
+            amount: pricing.distanceFee,
+            type: 'fee'
+          });
+        }
+        
+        // Dead mileage fee
+        if (pricing.deadMileageFee > 0) {
+          breakdownItems.push({
+            label: 'Dead Mileage Fee (2+ counties)',
+            amount: pricing.deadMileageFee,
+            type: 'premium'
+          });
+        }
+        
+        // Wheelchair fee
+        if (pricing.wheelchairFee > 0) {
+          breakdownItems.push({
+            label: 'Wheelchair Rental Fee',
+            amount: pricing.wheelchairFee,
+            type: 'premium'
+          });
+        }
+        
+        // Holiday fee
+        if (pricing.holidayFee > 0) {
+          breakdownItems.push({
+            label: 'Holiday Surcharge',
+            amount: pricing.holidayFee,
+            type: 'premium'
+          });
+        }
+        
+        // Bariatric fee
+        if (pricing.bariatricFee > 0) {
+          breakdownItems.push({
+            label: 'Bariatric Transportation Fee',
+            amount: pricing.bariatricFee,
+            type: 'premium'
+          });
+        }
+        
+        // Round trip fee
+        if (pricing.roundTripFee > 0) {
+          breakdownItems.push({
+            label: 'Round Trip Surcharge',
+            amount: pricing.roundTripFee,
+            type: 'premium'
+          });
+        }
+        
+        // Emergency fee
+        if (pricing.emergencyFee > 0) {
+          breakdownItems.push({
+            label: 'Emergency Service Fee',
+            amount: pricing.emergencyFee,
+            type: 'premium'
+          });
+        }
+        
+        // Discount
+        if (pricing.discount > 0) {
+          breakdownItems.push({
+            label: 'Facility Discount (10%)',
+            amount: -pricing.discount,
+            type: 'discount'
+          });
+        }
+        
+        // Total
+        breakdownItems.push({
+          label: 'Total Amount',
+          amount: pricing.total,
+          type: 'total'
         });
 
-        if (pricingResult.success) {
-          setPricingBreakdown(pricingResult);
-        }
+        setPricingBreakdown({ breakdownItems });
+        
       } catch (error) {
-        console.error('Error calculating fallback pricing:', error);
+        console.error('Error using stored pricing data:', error);
+        // Fallback to simple display if breakdown fails
+        setPricingBreakdown({
+          breakdownItems: [
+            {
+              label: 'Total Trip Cost',
+              amount: trip.price || 0,
+              type: 'total'
+            }
+          ]
+        });
       }
     };
 
-    useSamePricingAsBooking();
+    useStoredPricingData();
   }, [trip]);
 
   if (!pricingBreakdown) {
@@ -61,7 +155,7 @@ function ProfessionalCostBreakdown({ trip }) {
     );
   }
 
-  const breakdownItems = createPricingBreakdown(pricingBreakdown.pricing, pricingBreakdown.countyInfo);
+  const breakdownItems = pricingBreakdown.breakdownItems || [];
 
   return (
     <>
