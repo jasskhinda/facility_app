@@ -161,7 +161,11 @@ export default function UltraSimpleMap({
       provideRouteAlternatives: true, // Request alternative routes
       optimizeWaypoints: false,
       avoidHighways: false,
-      avoidTolls: false
+      avoidTolls: false,
+      drivingOptions: {
+        departureTime: new Date(), // Use current time for traffic-aware routing
+        trafficModel: window.google.maps.TrafficModel.BEST_GUESS
+      }
     };
 
     directionsServiceRef.current.route(request, (result, status) => {

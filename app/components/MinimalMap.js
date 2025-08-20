@@ -53,7 +53,11 @@ export default function MinimalMap({
           provideRouteAlternatives: true, // Request alternative routes
           optimizeWaypoints: false,
           avoidHighways: false,
-          avoidTolls: false
+          avoidTolls: false,
+          drivingOptions: {
+            departureTime: new Date(), // Use current time for traffic-aware routing
+            trafficModel: window.google.maps.TrafficModel.BEST_GUESS
+          }
         }, (result, status) => {
           if (status === 'OK' && result && result.routes && result.routes.length > 0) {
             console.log(`MinimalMap: Found ${result.routes.length} routes`);

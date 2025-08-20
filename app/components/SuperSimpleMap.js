@@ -107,7 +107,12 @@ export default function SuperSimpleMap({
           provideRouteAlternatives: true, // Request alternative routes
           optimizeWaypoints: false,
           avoidHighways: false,
-          avoidTolls: false
+          avoidTolls: false,
+          drivingOptions: {
+            departureTime: new Date(), // Use current time for traffic-aware routing
+            trafficModel: window.google.maps.TrafficModel.BEST_GUESS
+          },
+          unitSystem: window.google.maps.UnitSystem.IMPERIAL
         };
 
         console.log('SuperSimpleMap: Calculating route...');

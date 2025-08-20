@@ -138,6 +138,10 @@ export default function RouteMapDisplay({
         optimizeWaypoints: false,
         avoidHighways: false,
         avoidTolls: false,
+        drivingOptions: {
+          departureTime: new Date(), // Use current time for traffic-aware routing
+          trafficModel: window.google.maps.TrafficModel.BEST_GUESS
+        }
       };
 
       directionsService.route(request, (result, status) => {
