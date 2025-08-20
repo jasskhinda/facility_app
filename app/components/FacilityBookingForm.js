@@ -288,12 +288,30 @@ export default function FacilityBookingForm({ user }) {
       origin,
       destination,
       travelMode: window.google.maps.TravelMode.DRIVING,
+      provideRouteAlternatives: true, // Request alternative routes
     }, (result, status) => {
       if (status === window.google.maps.DirectionsStatus.OK) {
-        directionsRenderer.setDirections(result);
+        // Find the fastest route (shortest duration)
+        let fastestRoute = result.routes[0];
+        let shortestDuration = result.routes[0].legs[0].duration.value;
         
-        // Calculate estimated values based on route data
-        const route = result.routes[0];
+        for (let i = 1; i < result.routes.length; i++) {
+          const routeDuration = result.routes[i].legs[0].duration.value;
+          if (routeDuration < shortestDuration) {
+            shortestDuration = routeDuration;
+            fastestRoute = result.routes[i];
+          }
+        }
+        
+        // Display only the fastest route
+        const fastestResult = {
+          ...result,
+          routes: [fastestRoute]
+        };
+        directionsRenderer.setDirections(fastestResult);
+        
+        // Calculate estimated values based on fastest route
+        const route = fastestRoute;
         if (route && route.legs && route.legs[0]) {
           const duration = route.legs[0].duration.text;
           
