@@ -90,7 +90,7 @@ export default function WheelchairSelectionFlow({
           </label>
           
           <div className="space-y-3">
-            {/* None Option */}
+            {/* None Option - Updated per team feedback */}
             <label className="flex items-center p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg hover:bg-[#F8F9FA] dark:hover:bg-[#F8F9FA] cursor-pointer transition-colors">
               <input
                 type="radio"
@@ -102,15 +102,15 @@ export default function WheelchairSelectionFlow({
               />
               <div className="ml-3 flex-1">
                 <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
-                  None
+                  None (I don't have a wheelchair)
                 </span>
                 <p className="text-xs text-[#2E4F54]/70 text-gray-900/70">
-                  No wheelchair needed
+                  Client doesn't currently have their own wheelchair
                 </p>
               </div>
             </label>
 
-            {/* Manual Wheelchair */}
+            {/* Manual Wheelchair - Updated per team feedback */}
             <label className="flex items-center p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg hover:bg-[#F8F9FA] dark:hover:bg-[#F8F9FA] cursor-pointer transition-colors">
               <input
                 type="radio"
@@ -131,6 +131,25 @@ export default function WheelchairSelectionFlow({
                   <span className="text-xs font-semibold text-green-600 dark:text-green-400">
                     No additional fee
                   </span>
+                </div>
+                <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="wheelchairWidth"
+                      className="mr-2 text-amber-600 focus:ring-amber-500"
+                      onChange={(e) => {
+                        // Handle width confirmation - this doesn't affect pricing
+                        console.log('Wheelchair width confirmed:', e.target.checked);
+                      }}
+                    />
+                    <label htmlFor="wheelchairWidth">
+                      My wheelchair is not wider than 36 inches from wheel to wheel
+                    </label>
+                  </div>
+                  <p className="mt-1 text-amber-700">
+                    If your wheelchair is wider than 36 inches, please contact us to ensure we can accommodate your needs.
+                  </p>
                 </div>
               </div>
             </label>
@@ -244,43 +263,25 @@ export default function WheelchairSelectionFlow({
                   </div>
                 </div>
               </label>
-              
-              <label className="flex items-center p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg hover:bg-white dark:hover:bg-[#FFFFFF] cursor-pointer transition-colors">
-                <input
-                  type="radio"
-                  name="provideWheelchair"
-                  checked={needsWheelchair === false}
-                  onChange={() => handleProvideWheelchairChange(false)}
-                  className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] dark:border-[#E0E0E0] focus:ring-[#7CCFD0] focus:ring-2"
-                />
-                <div className="ml-3 flex-1">
-                  <span className="text-sm text-[#2E4F54] text-gray-900">
-                    No, wheelchair not needed
-                  </span>
-                  <p className="text-xs text-[#2E4F54]/70 text-gray-900/70 mt-1">
-                    Passenger can walk or transfer independently
-                  </p>
-                </div>
-              </label>
             </div>
           </div>
         )}
 
-        {/* Custom Wheelchair Type Input */}
+        {/* Custom Wheelchair Type Input - Enhanced per team feedback */}
         {showCustomInput && (
           <div className="mt-4">
             <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
-              Please specify the type of wheelchair you need:
+              Please specify wheelchair requirements:
             </label>
-            <input
-              type="text"
+            <textarea
               value={customWheelchairType}
               onChange={(e) => setCustomWheelchairType(e.target.value)}
-              placeholder="e.g., Standard manual wheelchair, Lightweight transport chair..."
+              placeholder="Please specify equipment needs: step stool, smaller ramp, larger ramp, bariatric ramp, wider vehicle, etc."
               className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white text-[#2E4F54] text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0]"
+              rows="3"
             />
             <p className="text-xs text-[#2E4F54]/70 text-gray-900/70 mt-1">
-              This helps us ensure we provide the most suitable wheelchair for your needs.
+              We have regular-sized/standard manual wheelchairs and one bariatric wheelchair available. Transport chairs are not recommended for safety reasons.
             </p>
           </div>
         )}

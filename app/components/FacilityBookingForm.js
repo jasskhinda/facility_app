@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import WheelchairSelectionFlow from './WheelchairSelectionFlow';
+import EnhancedClientInfoForm from './EnhancedClientInfoForm';
+import HolidayPricingChecker from './HolidayPricingChecker';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import DashboardLayout from './DashboardLayout';
@@ -84,6 +86,24 @@ export default function FacilityBookingForm({ user }) {
     customType: '',
     hasWheelchairFee: false,
     fee: 0
+  });
+  
+  // Enhanced client information data
+  const [clientInfoData, setClientInfoData] = useState({
+    weight: '',
+    height_feet: '',
+    height_inches: '',
+    date_of_birth: '',
+    email: '',
+    isBariatric: false,
+    bariatricRate: 50
+  });
+  
+  // Holiday pricing data
+  const [holidayData, setHolidayData] = useState({
+    isHoliday: false,
+    holidayName: '',
+    surcharge: 0
   });
   
   const [isLoading, setIsLoading] = useState(false);
@@ -552,7 +572,6 @@ export default function FacilityBookingForm({ user }) {
   };
 
   // Handle wheelchair selection changes
-  // Handle wheelchair selection changes
   const handleWheelchairChange = useCallback((newWheelchairData) => {
     setWheelchairData(newWheelchairData);
     
@@ -573,13 +592,37 @@ export default function FacilityBookingForm({ user }) {
     }
   }, [pickupLocation, destinationLocation, distanceMiles]);
 
+  // Handle enhanced client info changes
+  const handleClientInfoChange = useCallback((newClientInfo) => {
+    setClientInfoData(newClientInfo);
+    // Recalculate pricing if bariatric status changed
+    if (pickupLocation && destinationLocation && distanceMiles > 0) {
+      calculatePricingWithEnhancements(distanceMiles, wheelchairData, newClientInfo, holidayData);
+    }
+  }, [pickupLocation, destinationLocation, distanceMiles, wheelchairData, holidayData]);
+
+  // Handle holiday pricing changes
+  const handleHolidayChange = useCallback((newHolidayData) => {
+    setHolidayData(newHolidayData);
+    // Recalculate pricing with holiday surcharge
+    if (pickupLocation && destinationLocation && distanceMiles > 0) {
+      calculatePricingWithEnhancements(distanceMiles, wheelchairData, clientInfoData, newHolidayData);
+    }
+  }, [pickupLocation, destinationLocation, distanceMiles, wheelchairData, clientInfoData]);
+
   // Calculate pricing including wheelchair fee
   const calculatePricingWithWheelchair = (miles, wheelchairInfo) => {
-    let basePrice = 50; // Base price
+    calculatePricingWithEnhancements(miles, wheelchairInfo, clientInfoData, holidayData);
+  };
+
+  // Enhanced pricing calculation with all improvements
+  const calculatePricingWithEnhancements = (miles, wheelchairInfo, clientInfo, holiday) => {
+    // Use bariatric rate if client weighs 300+ lbs, otherwise regular rate
+    let basePrice = clientInfo.isBariatric ? 150 : 50; // $150 for bariatric, $50 regular
 
     // Round trip adjustment
     if (formData.isRoundTrip) {
-      basePrice = 100;
+      basePrice = clientInfo.isBariatric ? 300 : 100; // Double the rate for round trip
     }
     
     // Mileage calculation ($3 per mile)
@@ -600,9 +643,14 @@ export default function FacilityBookingForm({ user }) {
       basePrice += 40;
     }
     
-    // Wheelchair accessibility fee
+    // Wheelchair accessibility fee (facility app = $0)
     if (wheelchairInfo.hasWheelchairFee) {
-      basePrice += wheelchairInfo.fee;
+      basePrice += wheelchairInfo.fee; // Should be 0 for facility app
+    }
+    
+    // Holiday surcharge (applied to total bill)
+    if (holiday.isHoliday) {
+      basePrice += holiday.surcharge; // +$100 for holidays
     }
     
     const finalPrice = Math.round(basePrice);
@@ -1129,6 +1177,25 @@ export default function FacilityBookingForm({ user }) {
                   />
                 </div>
                 
+                {/* Enhanced Client Information */}
+                <div className="col-span-1 md:col-span-2">
+                  <EnhancedClientInfoForm
+                    onClientInfoChange={handleClientInfoChange}
+                    initialData={clientInfoData}
+                    selectedClient={clientProfile}
+                    className="mt-2"
+                  />
+                </div>
+                
+                {/* Holiday Pricing Check */}
+                <div className="col-span-1 md:col-span-2">
+                  <HolidayPricingChecker
+                    pickupDate={formData.pickupTime}
+                    onHolidayChange={handleHolidayChange}
+                    className="mt-2"
+                  />
+                </div>
+                
                 {/* Client Notes */}
                 <div className="col-span-1 md:col-span-2">
                   <label htmlFor="clientNotes" className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-1">
@@ -1237,11 +1304,31 @@ export default function FacilityBookingForm({ user }) {
                     )}
                   </div>
                   <div>
-                    <p className="text-sm text-[#2E4F54]/70 text-gray-900/70">Estimated Fare</p>
+                    <p className="text-sm text-[#2E4F54]/70 text-gray-900/70">
+                      Estimated Fare 
+                      {clientInfoData.isBariatric && (
+                        <span className="text-amber-600 text-xs font-medium ml-1">(Bariatric Rate)</span>
+                      )}
+                      {holidayData.isHoliday && (
+                        <span className="text-amber-600 text-xs font-medium ml-1">(Holiday)</span>
+                      )}
+                    </p>
                     {pickupLocation && destinationLocation ? (
-                      <p className="font-medium text-[#2E4F54] text-gray-900">
-                        {estimatedFare ? `$${estimatedFare}`.replace('$$', '$') : 'Calculating...'}
-                      </p>
+                      <div>
+                        <p className="font-medium text-[#2E4F54] text-gray-900">
+                          {estimatedFare ? `$${estimatedFare}`.replace('$$', '$') : 'Calculating...'}
+                        </p>
+                        {clientInfoData.isBariatric && (
+                          <p className="text-xs text-amber-700 font-medium">
+                            Bariatric transportation: $150/leg (vs $50 regular)
+                          </p>
+                        )}
+                        {holidayData.isHoliday && (
+                          <p className="text-xs text-amber-700 font-medium">
+                            {holidayData.holidayName}: +$100 holiday surcharge
+                          </p>
+                        )}
+                      </div>
                     ) : (
                       <p className="font-medium text-[#2E4F54]/50 text-gray-900/50">Enter addresses</p>
                     )}
