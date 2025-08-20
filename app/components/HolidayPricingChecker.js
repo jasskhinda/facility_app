@@ -2,27 +2,20 @@
 
 import { useState, useEffect } from 'react';
 
-// Comprehensive US Federal Holiday definitions
+// Specific holidays with $100 surcharge (as per requirements)
 const US_FEDERAL_HOLIDAYS = [
   // Fixed date holidays
   { name: "New Year's Day", date: "01-01", surcharge: 100, federal: true },
+  { name: "New Year's Eve", date: "12-31", surcharge: 100, federal: false },
   { name: "Independence Day", date: "07-04", surcharge: 100, federal: true },
-  { name: "Veterans Day", date: "11-11", surcharge: 100, federal: true },
+  { name: "Christmas Eve", date: "12-24", surcharge: 100, federal: false },
   { name: "Christmas Day", date: "12-25", surcharge: 100, federal: true },
   
-  // Additional important holidays
-  { name: "New Year's Eve", date: "12-31", surcharge: 100, federal: false },
-  { name: "Christmas Eve", date: "12-24", surcharge: 100, federal: false },
-  
   // Variable date holidays (calculated dynamically)
-  { name: "Martin Luther King Jr. Day", isVariable: true, surcharge: 100, federal: true }, // 3rd Monday in January
-  { name: "Presidents' Day", isVariable: true, surcharge: 100, federal: true }, // 3rd Monday in February
   { name: "Easter Sunday", isVariable: true, surcharge: 100, federal: false }, // Variable date
   { name: "Memorial Day", isVariable: true, surcharge: 100, federal: true }, // Last Monday in May
   { name: "Labor Day", isVariable: true, surcharge: 100, federal: true }, // First Monday in September
-  { name: "Columbus Day", isVariable: true, surcharge: 100, federal: true }, // 2nd Monday in October
   { name: "Thanksgiving Day", isVariable: true, surcharge: 100, federal: true }, // 4th Thursday in November
-  { name: "Black Friday", isVariable: true, surcharge: 100, federal: false } // Day after Thanksgiving
 ];
 
 export default function HolidayPricingChecker({ 
@@ -56,39 +49,9 @@ export default function HolidayPricingChecker({
     return `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   };
 
-  // Calculate comprehensive variable holidays for a given year
+  // Calculate variable holidays for a given year (only the ones we need)
   const calculateAllVariableHolidays = (year) => {
     const holidays = {};
-    
-    // Martin Luther King Jr. Day - 3rd Monday in January
-    const thirdMondayJan = new Date(year, 0, 1); // January 1st
-    let mondayCount = 0;
-    while (mondayCount < 3) {
-      if (thirdMondayJan.getDay() === 1) { // Monday is 1
-        mondayCount++;
-        if (mondayCount < 3) {
-          thirdMondayJan.setDate(thirdMondayJan.getDate() + 7);
-        }
-      } else {
-        thirdMondayJan.setDate(thirdMondayJan.getDate() + 1);
-      }
-    }
-    holidays.mlkDay = `${String(thirdMondayJan.getMonth() + 1).padStart(2, '0')}-${String(thirdMondayJan.getDate()).padStart(2, '0')}`;
-    
-    // Presidents' Day - 3rd Monday in February
-    const thirdMondayFeb = new Date(year, 1, 1); // February 1st
-    mondayCount = 0;
-    while (mondayCount < 3) {
-      if (thirdMondayFeb.getDay() === 1) { // Monday is 1
-        mondayCount++;
-        if (mondayCount < 3) {
-          thirdMondayFeb.setDate(thirdMondayFeb.getDate() + 7);
-        }
-      } else {
-        thirdMondayFeb.setDate(thirdMondayFeb.getDate() + 1);
-      }
-    }
-    holidays.presidentsDay = `${String(thirdMondayFeb.getMonth() + 1).padStart(2, '0')}-${String(thirdMondayFeb.getDate()).padStart(2, '0')}`;
     
     // Easter Sunday
     holidays.easter = calculateEaster(year);
@@ -107,21 +70,6 @@ export default function HolidayPricingChecker({
     }
     holidays.laborDay = `${String(firstMondaySept.getMonth() + 1).padStart(2, '0')}-${String(firstMondaySept.getDate()).padStart(2, '0')}`;
     
-    // Columbus Day - 2nd Monday in October
-    const secondMondayOct = new Date(year, 9, 1); // October 1st
-    mondayCount = 0;
-    while (mondayCount < 2) {
-      if (secondMondayOct.getDay() === 1) { // Monday is 1
-        mondayCount++;
-        if (mondayCount < 2) {
-          secondMondayOct.setDate(secondMondayOct.getDate() + 7);
-        }
-      } else {
-        secondMondayOct.setDate(secondMondayOct.getDate() + 1);
-      }
-    }
-    holidays.columbusDay = `${String(secondMondayOct.getMonth() + 1).padStart(2, '0')}-${String(secondMondayOct.getDate()).padStart(2, '0')}`;
-    
     // Thanksgiving - Fourth Thursday in November
     const fourthThursdayNov = new Date(year, 10, 1); // November 1st
     let thursdayCount = 0;
@@ -136,11 +84,6 @@ export default function HolidayPricingChecker({
       }
     }
     holidays.thanksgiving = `${String(fourthThursdayNov.getMonth() + 1).padStart(2, '0')}-${String(fourthThursdayNov.getDate()).padStart(2, '0')}`;
-    
-    // Black Friday - Day after Thanksgiving
-    const blackFriday = new Date(fourthThursdayNov);
-    blackFriday.setDate(blackFriday.getDate() + 1);
-    holidays.blackFriday = `${String(blackFriday.getMonth() + 1).padStart(2, '0')}-${String(blackFriday.getDate()).padStart(2, '0')}`;
     
     return holidays;
   };
@@ -193,23 +136,15 @@ export default function HolidayPricingChecker({
     console.log('🔍 Variable holidays calculated:', variableHolidays);
     let matchedHoliday = null;
     
-    // Check all variable holidays
-    if (monthDay === variableHolidays.mlkDay) {
-      matchedHoliday = { name: "Martin Luther King Jr. Day", surcharge: 100, federal: true };
-    } else if (monthDay === variableHolidays.presidentsDay) {
-      matchedHoliday = { name: "Presidents' Day", surcharge: 100, federal: true };
-    } else if (monthDay === variableHolidays.easter) {
+    // Check all variable holidays (only the ones we need)
+    if (monthDay === variableHolidays.easter) {
       matchedHoliday = { name: "Easter Sunday", surcharge: 100, federal: false };
     } else if (monthDay === variableHolidays.memorialDay) {
       matchedHoliday = { name: "Memorial Day", surcharge: 100, federal: true };
     } else if (monthDay === variableHolidays.laborDay) {
       matchedHoliday = { name: "Labor Day", surcharge: 100, federal: true };
-    } else if (monthDay === variableHolidays.columbusDay) {
-      matchedHoliday = { name: "Columbus Day", surcharge: 100, federal: true };
     } else if (monthDay === variableHolidays.thanksgiving) {
       matchedHoliday = { name: "Thanksgiving Day", surcharge: 100, federal: true };
-    } else if (monthDay === variableHolidays.blackFriday) {
-      matchedHoliday = { name: "Black Friday", surcharge: 100, federal: false };
     }
 
     if (matchedHoliday) {
@@ -313,36 +248,6 @@ export const checkHolidaySurcharge = (pickupDate) => {
   const calculateAllVariableHolidays = (year) => {
     const holidays = {};
     
-    // Martin Luther King Jr. Day - 3rd Monday in January
-    const thirdMondayJan = new Date(year, 0, 1);
-    let mondayCount = 0;
-    while (mondayCount < 3) {
-      if (thirdMondayJan.getDay() === 1) {
-        mondayCount++;
-        if (mondayCount < 3) {
-          thirdMondayJan.setDate(thirdMondayJan.getDate() + 7);
-        }
-      } else {
-        thirdMondayJan.setDate(thirdMondayJan.getDate() + 1);
-      }
-    }
-    holidays.mlkDay = `${String(thirdMondayJan.getMonth() + 1).padStart(2, '0')}-${String(thirdMondayJan.getDate()).padStart(2, '0')}`;
-    
-    // Presidents' Day - 3rd Monday in February
-    const thirdMondayFeb = new Date(year, 1, 1);
-    mondayCount = 0;
-    while (mondayCount < 3) {
-      if (thirdMondayFeb.getDay() === 1) {
-        mondayCount++;
-        if (mondayCount < 3) {
-          thirdMondayFeb.setDate(thirdMondayFeb.getDate() + 7);
-        }
-      } else {
-        thirdMondayFeb.setDate(thirdMondayFeb.getDate() + 1);
-      }
-    }
-    holidays.presidentsDay = `${String(thirdMondayFeb.getMonth() + 1).padStart(2, '0')}-${String(thirdMondayFeb.getDate()).padStart(2, '0')}`;
-    
     // Easter Sunday
     holidays.easter = calculateEaster(year);
     
@@ -360,21 +265,6 @@ export const checkHolidaySurcharge = (pickupDate) => {
     }
     holidays.laborDay = `${String(firstMondaySept.getMonth() + 1).padStart(2, '0')}-${String(firstMondaySept.getDate()).padStart(2, '0')}`;
     
-    // Columbus Day - 2nd Monday in October
-    const secondMondayOct = new Date(year, 9, 1);
-    mondayCount = 0;
-    while (mondayCount < 2) {
-      if (secondMondayOct.getDay() === 1) {
-        mondayCount++;
-        if (mondayCount < 2) {
-          secondMondayOct.setDate(secondMondayOct.getDate() + 7);
-        }
-      } else {
-        secondMondayOct.setDate(secondMondayOct.getDate() + 1);
-      }
-    }
-    holidays.columbusDay = `${String(secondMondayOct.getMonth() + 1).padStart(2, '0')}-${String(secondMondayOct.getDate()).padStart(2, '0')}`;
-    
     // Thanksgiving - Fourth Thursday in November
     const fourthThursdayNov = new Date(year, 10, 1);
     let thursdayCount = 0;
@@ -390,34 +280,21 @@ export const checkHolidaySurcharge = (pickupDate) => {
     }
     holidays.thanksgiving = `${String(fourthThursdayNov.getMonth() + 1).padStart(2, '0')}-${String(fourthThursdayNov.getDate()).padStart(2, '0')}`;
     
-    // Black Friday - Day after Thanksgiving
-    const blackFriday = new Date(fourthThursdayNov);
-    blackFriday.setDate(blackFriday.getDate() + 1);
-    holidays.blackFriday = `${String(blackFriday.getMonth() + 1).padStart(2, '0')}-${String(blackFriday.getDate()).padStart(2, '0')}`;
-    
     return holidays;
   };
 
   const variableHolidays = calculateAllVariableHolidays(year);
   let matchedHoliday = null;
   
-  // Check all variable holidays
-  if (monthDay === variableHolidays.mlkDay) {
-    matchedHoliday = { name: "Martin Luther King Jr. Day", surcharge: 100, federal: true };
-  } else if (monthDay === variableHolidays.presidentsDay) {
-    matchedHoliday = { name: "Presidents' Day", surcharge: 100, federal: true };
-  } else if (monthDay === variableHolidays.easter) {
+  // Check all variable holidays (only the ones we need)
+  if (monthDay === variableHolidays.easter) {
     matchedHoliday = { name: "Easter Sunday", surcharge: 100, federal: false };
   } else if (monthDay === variableHolidays.memorialDay) {
     matchedHoliday = { name: "Memorial Day", surcharge: 100, federal: true };
   } else if (monthDay === variableHolidays.laborDay) {
     matchedHoliday = { name: "Labor Day", surcharge: 100, federal: true };
-  } else if (monthDay === variableHolidays.columbusDay) {
-    matchedHoliday = { name: "Columbus Day", surcharge: 100, federal: true };
   } else if (monthDay === variableHolidays.thanksgiving) {
     matchedHoliday = { name: "Thanksgiving Day", surcharge: 100, federal: true };
-  } else if (monthDay === variableHolidays.blackFriday) {
-    matchedHoliday = { name: "Black Friday", surcharge: 100, federal: false };
   }
 
   if (matchedHoliday) {
