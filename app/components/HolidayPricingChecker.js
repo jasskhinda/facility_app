@@ -93,8 +93,8 @@ export default function HolidayPricingChecker({
     console.log('📅 pickupDate prop:', pickupDate);
     console.log('🔗 onHolidayChange callback:', typeof onHolidayChange);
     
-    if (!pickupDate) {
-      console.log('❌ No pickup date provided, setting no holiday');
+    if (!pickupDate || pickupDate === '') {
+      console.log('❌ No pickup date provided (empty or undefined), setting no holiday');
       setHolidayInfo({ isHoliday: false, holidayName: '', surcharge: 0 });
       if (onHolidayChange) onHolidayChange({ isHoliday: false, holidayName: '', surcharge: 0 });
       return;

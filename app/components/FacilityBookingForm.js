@@ -1132,13 +1132,31 @@ export default function FacilityBookingForm({ user }) {
                   />
                 </div>
                 
-                {/* Holiday Pricing Check */}
+                {/* Holiday Pricing Check - Only show when date is selected */}
                 <div className="col-span-1 md:col-span-2">
-                  <HolidayPricingChecker
-                    pickupDate={formData.pickupTime?.split('T')[0] || (selectedDate ? selectedDate.toISOString().split('T')[0] : '')}
-                    onHolidayChange={handleHolidayChange}
-                    className="mt-2"
-                  />
+                  {(() => {
+                    // Extract date from either pickupTime or selectedDate
+                    let dateForHoliday = '';
+                    if (formData.pickupTime) {
+                      dateForHoliday = formData.pickupTime.split('T')[0];
+                    } else if (selectedDate) {
+                      dateForHoliday = selectedDate.toISOString().split('T')[0];
+                    }
+                    
+                    console.log('Holiday Check Debug:', {
+                      formDataPickupTime: formData.pickupTime,
+                      selectedDate: selectedDate,
+                      dateForHoliday: dateForHoliday
+                    });
+                    
+                    return (
+                      <HolidayPricingChecker
+                        pickupDate={dateForHoliday}
+                        onHolidayChange={handleHolidayChange}
+                        className="mt-2"
+                      />
+                    );
+                  })()}
                 </div>
                 
                 {/* Client Notes */}
