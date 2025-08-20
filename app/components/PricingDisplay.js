@@ -8,7 +8,10 @@ export default function PricingDisplay({
   selectedClient,
   routeInfo = null,
   isVisible = true,
-  onPricingCalculated = null 
+  onPricingCalculated = null,
+  wheelchairData = null,
+  clientInfoData = null,
+  holidayData = null
 }) {
   const [pricing, setPricing] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -34,7 +37,10 @@ export default function PricingDisplay({
     formData.isEmergency,
     selectedClient?.client_type,
     routeInfo,
-    isVisible
+    isVisible,
+    wheelchairData,
+    clientInfoData,
+    holidayData
   ]);
 
   const calculatePricing = async () => {
@@ -67,9 +73,46 @@ export default function PricingDisplay({
       });
 
       if (result.success) {
-        setPricing(result);
+        // Apply enhanced pricing modifications
+        let enhancedResult = { ...result };
+        
+        // Apply bariatric rate enhancement if client weighs 300+ lbs
+        if (clientInfoData?.isBariatric) {
+          // Replace base rate with bariatric rate ($150 vs $50)
+          enhancedResult.pricing.basePrice = 150; // Set to bariatric rate
+          if (formData.isRoundTrip) {
+            enhancedResult.pricing.roundTripPrice = 150; // Second leg also at bariatric rate
+          }
+          
+          // Update the total
+          enhancedResult.pricing.total = enhancedResult.pricing.basePrice + 
+                                       enhancedResult.pricing.roundTripPrice +
+                                       enhancedResult.pricing.distancePrice + 
+                                       enhancedResult.pricing.countyPrice +
+                                       enhancedResult.pricing.weekendAfterHoursSurcharge +
+                                       enhancedResult.pricing.emergencyFee +
+                                       enhancedResult.pricing.wheelchairPrice -
+                                       enhancedResult.pricing.veteranDiscount;
+        }
+        
+        // Apply holiday surcharge
+        if (holidayData?.isHoliday && holidayData.surcharge > 0) {
+          enhancedResult.pricing.total += holidayData.surcharge;
+          enhancedResult.pricing.holidaySurcharge = holidayData.surcharge;
+        } else {
+          enhancedResult.pricing.holidaySurcharge = 0;
+        }
+        
+        // Update summary to reflect enhancements
+        if (enhancedResult.summary) {
+          enhancedResult.summary.isBariatric = clientInfoData?.isBariatric || false;
+          enhancedResult.summary.hasHolidaySurcharge = holidayData?.isHoliday || false;
+          enhancedResult.summary.estimatedTotal = formatCurrency(enhancedResult.pricing.total);
+        }
+        
+        setPricing(enhancedResult);
         if (onPricingCalculated) {
-          onPricingCalculated(result);
+          onPricingCalculated(enhancedResult);
         }
       } else {
         setError(result.error || 'Unable to calculate pricing');
@@ -206,6 +249,12 @@ export default function PricingDisplay({
             )}
             {pricing.summary.hasDiscounts && (
               <p>• 10% discount applied for individual client</p>
+            )}
+            {pricing.summary?.isBariatric && (
+              <p>• Enhanced bariatric rate ($150 vs $50) applied based on client weight</p>
+            )}
+            {pricing.summary?.hasHolidaySurcharge && (
+              <p>• Holiday surcharge (+$100) applied for special holiday dates</p>
             )}
             <p>• Final fare may vary based on actual route and traffic conditions</p>
           </div>

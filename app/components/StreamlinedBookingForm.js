@@ -8,6 +8,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from './DashboardLayout';
 import PricingDisplay from './PricingDisplay';
 import WheelchairSelectionFlow from './WheelchairSelectionFlow';
+import EnhancedClientInfoForm from './EnhancedClientInfoForm';
+import HolidayPricingChecker from './HolidayPricingChecker';
 import { getTodayISO } from '../utils/dateUtils';
 
 // Dynamically import Google Maps components to prevent SSR issues
@@ -66,6 +68,24 @@ export default function StreamlinedBookingForm({ user }) {
     customType: '',
     hasWheelchairFee: false,
     fee: 0
+  });
+
+  // Enhanced client information state
+  const [clientInfoData, setClientInfoData] = useState({
+    weight: '',
+    height_feet: '',
+    height_inches: '',
+    date_of_birth: '',
+    email: '',
+    isBariatric: false,
+    bariatricRate: 50
+  });
+
+  // Holiday pricing state
+  const [holidayData, setHolidayData] = useState({
+    isHoliday: false,
+    holidayName: '',
+    surcharge: 0
   });
 
   useEffect(() => {
@@ -207,6 +227,16 @@ export default function StreamlinedBookingForm({ user }) {
       ...prev,
       wheelchairType: wheelchairType
     }));
+  }, []);
+
+  // Handle enhanced client info changes
+  const handleClientInfoChange = useCallback((newClientInfo) => {
+    setClientInfoData(newClientInfo);
+  }, []);
+
+  // Handle holiday pricing changes
+  const handleHolidayChange = useCallback((newHolidayData) => {
+    setHolidayData(newHolidayData);
   }, []);
 
   const handleSubmit = async (e) => {
@@ -580,6 +610,26 @@ export default function StreamlinedBookingForm({ user }) {
               />
             </div>
 
+            {/* Enhanced Client Information */}
+            <div className="col-span-1 md:col-span-2">
+              <EnhancedClientInfoForm
+                onClientInfoChange={handleClientInfoChange}
+                initialData={clientInfoData}
+                selectedClient={selectedClient}
+                className="mt-2"
+              />
+            </div>
+
+            {/* Holiday Pricing Checker */}
+            <div className="col-span-1 md:col-span-2">
+              <HolidayPricingChecker
+                onHolidayChange={handleHolidayChange}
+                selectedDate={formData.pickupDate}
+                holidayData={holidayData}
+                className="mt-2"
+              />
+            </div>
+
             {/* Additional Passengers */}
             <div>
               <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
@@ -615,6 +665,9 @@ export default function StreamlinedBookingForm({ user }) {
               selectedClient={selectedClient}
               routeInfo={routeInfo}
               onPricingCalculated={setCurrentPricing}
+              wheelchairData={wheelchairData}
+              clientInfoData={clientInfoData}
+              holidayData={holidayData}
             />
 
             {/* Billing */}
