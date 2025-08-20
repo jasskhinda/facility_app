@@ -1249,8 +1249,8 @@ export default function FacilityBookingForm({ user }) {
                 <PricingDisplay
                   formData={{
                     ...formData,
-                    pickupDate: formData.pickupTime?.split('T')[0],
-                    pickupTime: formData.pickupTime?.split('T')[1]
+                    pickupDate: formData.pickupTime?.split('T')[0] || '',
+                    pickupTime: formData.pickupTime?.split('T')[1] || ''
                   }}
                   selectedClient={clientProfile}
                   routeInfo={routeInfo}
