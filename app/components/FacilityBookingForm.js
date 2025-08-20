@@ -144,6 +144,17 @@ export default function FacilityBookingForm({ user }) {
     setSelectedDate(now);
   }, []);
   
+  // Trigger holiday check when date changes
+  useEffect(() => {
+    if (selectedDate || formData.pickupTime) {
+      const dateStr = formData.pickupTime ? 
+        formData.pickupTime.split('T')[0] : 
+        (selectedDate ? selectedDate.toISOString().split('T')[0] : '');
+      
+      console.log('📅 Date changed, checking holiday:', dateStr);
+    }
+  }, [selectedDate, formData.pickupTime]);
+  
   // Load facility info and clients list
   useEffect(() => {
     async function loadFacilityAndClients() {
@@ -653,6 +664,10 @@ export default function FacilityBookingForm({ user }) {
       ...prev,
       pickupTime: formattedDate
     }));
+    
+    // Immediately trigger holiday check with the complete date
+    const dateForHoliday = newDate.toISOString().split('T')[0];
+    console.log('Time selected, checking holiday for:', dateForHoliday);
     
     // Close the date picker after selection
     setIsDatePickerOpen(false);
