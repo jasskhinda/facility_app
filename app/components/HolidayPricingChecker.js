@@ -89,12 +89,7 @@ export default function HolidayPricingChecker({
   };
 
   useEffect(() => {
-    console.log('🔍 HolidayPricingChecker useEffect triggered');
-    console.log('📅 pickupDate prop:', pickupDate);
-    console.log('🔗 onHolidayChange callback:', typeof onHolidayChange);
-    
     if (!pickupDate || pickupDate === '') {
-      console.log('❌ No pickup date provided (empty or undefined), setting no holiday');
       setHolidayInfo({ isHoliday: false, holidayName: '', surcharge: 0 });
       if (onHolidayChange) onHolidayChange({ isHoliday: false, holidayName: '', surcharge: 0 });
       return;
@@ -117,19 +112,8 @@ export default function HolidayPricingChecker({
     const day = date.getDate();
     const monthDay = `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     
-    console.log('📊 Date parsed:', {
-      originalString: pickupDate,
-      parsedDate: date.toString(),
-      year: year,
-      month: month,
-      day: day,
-      monthDay: monthDay,
-      isValidDate: !isNaN(date.getTime())
-    });
-    
     // Check fixed holidays
     const fixedHoliday = US_FEDERAL_HOLIDAYS.find(holiday => !holiday.isVariable && holiday.date === monthDay);
-    console.log('🔍 Fixed holiday check:', { monthDay, found: fixedHoliday });
     if (fixedHoliday) {
       const info = {
         isHoliday: true,
@@ -137,10 +121,8 @@ export default function HolidayPricingChecker({
         surcharge: fixedHoliday.surcharge,
         isFederal: fixedHoliday.federal
       };
-      console.log('✅ Fixed holiday detected:', info);
       setHolidayInfo(info);
       if (onHolidayChange) {
-        console.log('📞 Calling onHolidayChange with fixed holiday:', info);
         onHolidayChange(info);
       }
       return;
@@ -148,7 +130,6 @@ export default function HolidayPricingChecker({
 
     // Check variable holidays
     const variableHolidays = calculateAllVariableHolidays(year);
-    console.log('🔍 Variable holidays calculated:', variableHolidays);
     let matchedHoliday = null;
     
     // Check all variable holidays (only the ones we need)
@@ -169,18 +150,14 @@ export default function HolidayPricingChecker({
         surcharge: matchedHoliday.surcharge,
         isFederal: matchedHoliday.federal
       };
-      console.log('✅ Variable holiday detected:', info);
       setHolidayInfo(info);
       if (onHolidayChange) {
-        console.log('📞 Calling onHolidayChange with variable holiday:', info);
         onHolidayChange(info);
       }
     } else {
       const info = { isHoliday: false, holidayName: '', surcharge: 0, isFederal: false };
-      console.log('❌ No holiday detected for date:', { monthDay, year });
       setHolidayInfo(info);
       if (onHolidayChange) {
-        console.log('📞 Calling onHolidayChange with no holiday:', info);
         onHolidayChange(info);
       }
     }
