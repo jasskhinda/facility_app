@@ -100,14 +100,29 @@ export default function HolidayPricingChecker({
       return;
     }
 
-    const date = new Date(pickupDate);
+    // Parse date carefully to avoid timezone issues
+    // If pickupDate is in ISO format (YYYY-MM-DD), parse it as local date
+    let date;
+    if (pickupDate.includes('T')) {
+      // Full datetime string
+      date = new Date(pickupDate);
+    } else {
+      // Date only string (YYYY-MM-DD) - parse as local date to avoid timezone shift
+      const [yearStr, monthStr, dayStr] = pickupDate.split('-');
+      date = new Date(parseInt(yearStr), parseInt(monthStr) - 1, parseInt(dayStr));
+    }
+    
     const year = date.getFullYear();
-    const monthDay = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const monthDay = `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     
     console.log('📊 Date parsed:', {
       originalString: pickupDate,
       parsedDate: date.toString(),
       year: year,
+      month: month,
+      day: day,
       monthDay: monthDay,
       isValidDate: !isNaN(date.getTime())
     });
@@ -215,9 +230,21 @@ export default function HolidayPricingChecker({
 export const checkHolidaySurcharge = (pickupDate) => {
   if (!pickupDate) return { isHoliday: false, surcharge: 0 };
   
-  const date = new Date(pickupDate);
+  // Parse date carefully to avoid timezone issues
+  let date;
+  if (pickupDate.includes('T')) {
+    // Full datetime string
+    date = new Date(pickupDate);
+  } else {
+    // Date only string (YYYY-MM-DD) - parse as local date to avoid timezone shift
+    const [yearStr, monthStr, dayStr] = pickupDate.split('-');
+    date = new Date(parseInt(yearStr), parseInt(monthStr) - 1, parseInt(dayStr));
+  }
+  
   const year = date.getFullYear();
-  const monthDay = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const monthDay = `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   
   // Check fixed holidays
   const fixedHoliday = US_FEDERAL_HOLIDAYS.find(holiday => !holiday.isVariable && holiday.date === monthDay);
