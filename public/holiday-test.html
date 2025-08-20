@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Holiday Pricing Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>🎄 Holiday Pricing Debug Test</h1>
+    <div id="results"></div>
+
+    <script>
+        const results = document.getElementById('results');
+        
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = message;
+            results.appendChild(div);
+        }
+
+        // Test 1: Basic holiday detection
+        addResult('<h3>Test 1: Basic Holiday Detection</h3>');
+        
+        const testDate = '2025-12-25T10:00';
+        const date = new Date(testDate);
+        const monthDay = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        
+        addResult(`Testing date: ${testDate}`);
+        addResult(`Parsed month-day: ${monthDay}`);
+        
+        const isChristmas = monthDay === '12-25';
+        addResult(`Is Christmas: ${isChristmas}`, isChristmas ? 'success' : 'error');
+
+        // Test 2: Simulate what happens in the component
+        addResult('<h3>Test 2: Component Simulation</h3>');
+        
+        const US_FEDERAL_HOLIDAYS = [
+            { name: "Christmas Day", date: "12-25", surcharge: 100, federal: true }
+        ];
+        
+        const fixedHoliday = US_FEDERAL_HOLIDAYS.find(holiday => !holiday.isVariable && holiday.date === monthDay);
+        
+        if (fixedHoliday) {
+            addResult(`✅ Holiday found: ${fixedHoliday.name}`, 'success');
+            addResult(`💰 Surcharge: $${fixedHoliday.surcharge}`, 'success');
+            
+            // Test 3: Simulate pricing calculation
+            addResult('<h3>Test 3: Pricing Calculation</h3>');
+            
+            let basePrice = 50; // Base rate
+            basePrice += 30; // Example distance charge
+            
+            // Apply holiday surcharge
+            const holidayInfo = {
+                isHoliday: true,
+                surcharge: fixedHoliday.surcharge
+            };
+            
+            if (holidayInfo && holidayInfo.isHoliday) {
+                basePrice += holidayInfo.surcharge;
+                addResult(`✅ Holiday surcharge applied: +$${holidayInfo.surcharge}`, 'success');
+            }
+            
+            addResult(`Final price: $${basePrice}`, 'success');
+            
+        } else {
+            addResult('❌ No holiday detected - PROBLEM FOUND!', 'error');
+        }
+
+        // Test 4: Check if this is a timing issue
+        addResult('<h3>Test 4: Instructions</h3>');
+        addResult('1. Open the facility booking form');
+        addResult('2. Select Christmas Day (December 25, 2025)');
+        addResult('3. Check if yellow holiday warning appears');
+        addResult('4. Check if pricing shows +$100 surcharge');
+        addResult('5. Open browser console and look for holiday-related logs');
+    </script>
+</body>
+</html>

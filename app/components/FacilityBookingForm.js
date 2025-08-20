@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import WheelchairSelectionFlow from './WheelchairSelectionFlow';
 import EnhancedClientInfoForm from './EnhancedClientInfoForm';
 import HolidayPricingChecker from './HolidayPricingChecker';
+import PricingDisplay from './PricingDisplay';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import DashboardLayout from './DashboardLayout';
@@ -105,6 +106,10 @@ export default function FacilityBookingForm({ user }) {
     holidayName: '',
     surcharge: 0
   });
+  
+  // Route and pricing info for PricingDisplay
+  const [routeInfo, setRouteInfo] = useState(null);
+  const [currentPricing, setCurrentPricing] = useState(null);
   
   const [isLoading, setIsLoading] = useState(false);
   const [bookingStatus, setBookingStatus] = useState('idle'); // idle, loading, submitting, success, error
@@ -345,40 +350,19 @@ export default function FacilityBookingForm({ user }) {
           setDistanceMiles(miles);
           setDistanceMeters(distanceValue);
           
-          // Calculate price using base price logic
-          let basePrice = 50; // Base price
-
-          // Round trip adjustment
-          if (formData.isRoundTrip) {
-            basePrice = 100;
-          }
+          // Store route info for PricingDisplay component
+          setRouteInfo({
+            distance: {
+              miles: miles,
+              text: `${formattedMiles} mi`,
+              meters: distanceValue
+            },
+            duration: {
+              text: duration,
+              seconds: durationValue
+            }
+          });
           
-          // Mileage calculation ($3 per mile)
-          // For round trips, double the distance
-          const effectiveDistance = formData.isRoundTrip ? miles * 2 : miles;
-          basePrice += effectiveDistance * 3;
-          
-          // Weekend adjustment
-          const pickupDate = new Date(formData.pickupTime);
-          const day = pickupDate.getDay();
-          if (day === 0 || day === 6) { // Weekend (0 = Sunday, 6 = Saturday)
-            basePrice += 40;
-          }
-          
-          // Extra hour adjustment (before 8am or after 8pm)
-          const hour = pickupDate.getHours();
-          if (hour <= 8 || hour >= 20) {
-            basePrice += 40;
-          }
-          
-          // Wheelchair accessibility fee
-          if (wheelchairData.hasWheelchairFee) {
-            basePrice += wheelchairData.fee;
-          }
-          
-          // Set the price as an integer without the $ prefix
-          const finalPrice = Math.round(basePrice);
-          setEstimatedFare(finalPrice);
           setEstimatedDuration(duration);
         }
       } else {
@@ -585,78 +569,26 @@ export default function FacilityBookingForm({ user }) {
       ...prev,
       wheelchairType: wheelchairType
     }));
-    
-    // Recalculate pricing if route exists
-    if (pickupLocation && destinationLocation && distanceMiles > 0) {
-      calculatePricingWithWheelchair(distanceMiles, newWheelchairData);
-    }
-  }, [pickupLocation, destinationLocation, distanceMiles]);
+  }, []);
 
   // Handle enhanced client info changes
   const handleClientInfoChange = useCallback((newClientInfo) => {
     setClientInfoData(newClientInfo);
-    // Recalculate pricing if bariatric status changed
-    if (pickupLocation && destinationLocation && distanceMiles > 0) {
-      calculatePricingWithEnhancements(distanceMiles, wheelchairData, newClientInfo, holidayData);
-    }
-  }, [pickupLocation, destinationLocation, distanceMiles, wheelchairData, holidayData]);
+  }, []);
 
   // Handle holiday pricing changes
   const handleHolidayChange = useCallback((newHolidayData) => {
     setHolidayData(newHolidayData);
-    // Recalculate pricing with holiday surcharge
-    if (pickupLocation && destinationLocation && distanceMiles > 0) {
-      calculatePricingWithEnhancements(distanceMiles, wheelchairData, clientInfoData, newHolidayData);
-    }
-  }, [pickupLocation, destinationLocation, distanceMiles, wheelchairData, clientInfoData]);
+  }, []);
 
-  // Calculate pricing including wheelchair fee
-  const calculatePricingWithWheelchair = (miles, wheelchairInfo) => {
-    calculatePricingWithEnhancements(miles, wheelchairInfo, clientInfoData, holidayData);
-  };
+  // Handle pricing updates from PricingDisplay component
+  const handlePricingCalculated = useCallback((pricingResult) => {
+    setCurrentPricing(pricingResult);
+    if (pricingResult?.pricing?.total) {
+      setEstimatedFare(Math.round(pricingResult.pricing.total));
+    }
+  }, []);
 
-  // Enhanced pricing calculation with all improvements
-  const calculatePricingWithEnhancements = (miles, wheelchairInfo, clientInfo, holiday) => {
-    // Use bariatric rate if client weighs 300+ lbs, otherwise regular rate
-    let basePrice = clientInfo.isBariatric ? 150 : 50; // $150 for bariatric, $50 regular
-
-    // Round trip adjustment
-    if (formData.isRoundTrip) {
-      basePrice = clientInfo.isBariatric ? 300 : 100; // Double the rate for round trip
-    }
-    
-    // Mileage calculation ($3 per mile)
-    // For round trips, double the distance
-    const effectiveDistance = formData.isRoundTrip ? miles * 2 : miles;
-    basePrice += effectiveDistance * 3;
-    
-    // Weekend adjustment
-    const pickupDate = new Date(formData.pickupTime);
-    const day = pickupDate.getDay();
-    if (day === 0 || day === 6) { // Weekend
-      basePrice += 40;
-    }
-    
-    // Extra hour adjustment (before 8am or after 8pm)
-    const hour = pickupDate.getHours();
-    if (hour <= 8 || hour >= 20) {
-      basePrice += 40;
-    }
-    
-    // Wheelchair accessibility fee (facility app = $0)
-    if (wheelchairInfo.hasWheelchairFee) {
-      basePrice += wheelchairInfo.fee; // Should be 0 for facility app
-    }
-    
-    // Holiday surcharge (applied to total bill)
-    if (holiday.isHoliday) {
-      basePrice += holiday.surcharge; // +$100 for holidays
-    }
-    
-    const finalPrice = Math.round(basePrice);
-    setEstimatedFare(finalPrice);
-  };
-  
   // Handle client selection
   const handleClientChange = (e) => {
     const clientId = e.target.value;
@@ -1293,73 +1225,42 @@ export default function FacilityBookingForm({ user }) {
                 )}
               </div>
 
+              {/* Enhanced Pricing Display */}
               <div className="col-span-1 md:col-span-2 border-t border-[#DDE5E7] dark:border-[#E0E0E0] pt-4">
-                <h3 className="text-md font-medium text-[#2E4F54] text-gray-900 mb-2">Ride Details</h3>
+                <h3 className="text-md font-medium text-[#2E4F54] text-gray-900 mb-4">Ride Details & Pricing</h3>
                 
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <p className="text-sm text-[#2E4F54]/70 text-gray-900/70">Pickup Time</p>
-                    {formData.pickupTime ? (
-                      <p className="font-medium text-[#2E4F54] text-gray-900">
-                        {new Date(formData.pickupTime).toLocaleDateString('en-US', { 
-                          weekday: 'short', 
-                          month: 'short', 
-                          day: 'numeric'
-                        })}, {formatTimeAmPm(formData.pickupTime)}
-                      </p>
-                    ) : (
-                      <p className="font-medium text-[#2E4F54]/50 text-gray-900/50">Select a time</p>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm text-[#2E4F54]/70 text-gray-900/70">
-                      Estimated Fare 
-                      {clientInfoData.isBariatric && (
-                        <span className="text-amber-600 text-xs font-medium ml-1">(Bariatric Rate)</span>
-                      )}
-                      {holidayData.isHoliday && (
-                        <span className="text-amber-600 text-xs font-medium ml-1">(Holiday)</span>
-                      )}
+                {/* Basic pickup time display */}
+                <div className="mb-4">
+                  <p className="text-sm text-[#2E4F54]/70 text-gray-900/70">Pickup Time</p>
+                  {formData.pickupTime ? (
+                    <p className="font-medium text-[#2E4F54] text-gray-900">
+                      {new Date(formData.pickupTime).toLocaleDateString('en-US', { 
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric'
+                      })}, {formatTimeAmPm(formData.pickupTime)}
                     </p>
-                    {pickupLocation && destinationLocation ? (
-                      <div>
-                        <p className="font-medium text-[#2E4F54] text-gray-900">
-                          {estimatedFare ? `$${estimatedFare}`.replace('$$', '$') : 'Calculating...'}
-                        </p>
-                        {clientInfoData.isBariatric && (
-                          <p className="text-xs text-amber-700 font-medium">
-                            Bariatric transportation: $150/leg (vs $50 regular)
-                          </p>
-                        )}
-                        {holidayData.isHoliday && (
-                          <p className="text-xs text-amber-700 font-medium">
-                            {holidayData.holidayName}: +$100 holiday surcharge
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="font-medium text-[#2E4F54]/50 text-gray-900/50">Enter addresses</p>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm text-[#2E4F54]/70 text-gray-900/70">Estimated Duration</p>
-                    {pickupLocation && destinationLocation ? (
-                      <p className="font-medium text-[#2E4F54] text-gray-900">{formData.isRoundTrip ? `${estimatedDuration} × 2` : estimatedDuration}</p>
-                    ) : (
-                      <p className="font-medium text-[#2E4F54]/50 text-gray-900/50">Enter addresses</p>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm text-[#2E4F54]/70 text-gray-900/70">Distance</p>
-                    {pickupLocation && destinationLocation ? (
-                      <p className="font-medium text-[#2E4F54] text-gray-900">{distanceMiles > 0 ? `${distanceMiles.toFixed(1)} miles` : 'Calculating...'}</p>
-                    ) : (
-                      <p className="font-medium text-[#2E4F54]/50 text-gray-900/50">Enter addresses</p>
-                    )}
-                  </div>
+                  ) : (
+                    <p className="font-medium text-[#2E4F54]/50 text-gray-900/50">Select a time</p>
+                  )}
                 </div>
+
+                {/* Enhanced Pricing Display Component */}
+                <PricingDisplay
+                  formData={{
+                    ...formData,
+                    pickupDate: formData.pickupTime?.split('T')[0],
+                    pickupTime: formData.pickupTime?.split('T')[1]
+                  }}
+                  selectedClient={clientProfile}
+                  routeInfo={routeInfo}
+                  onPricingCalculated={handlePricingCalculated}
+                  wheelchairData={wheelchairData}
+                  clientInfoData={clientInfoData}
+                  holidayData={holidayData}
+                />
                 
-                <div className="bg-[#7CCFD0]/10 dark:bg-[#7CCFD0]/20 p-3 rounded-md text-sm mb-4">
+                <div className="bg-[#7CCFD0]/10 dark:bg-[#7CCFD0]/20 p-3 rounded-md text-sm mt-4">
                   <p className="text-[#2E4F54] text-gray-900">
                     <strong>Note:</strong> Ride request will be reviewed and approved by a dispatcher. Once approved, it will be assigned to a compassionate driver who specializes in supportive transportation.
                   </p>
