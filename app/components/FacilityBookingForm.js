@@ -289,29 +289,27 @@ export default function FacilityBookingForm({ user }) {
       destination,
       travelMode: window.google.maps.TravelMode.DRIVING,
       provideRouteAlternatives: true, // Request alternative routes
+      optimizeWaypoints: false,
+      avoidHighways: false,
+      avoidTolls: false
     }, (result, status) => {
       if (status === window.google.maps.DirectionsStatus.OK) {
-        // Find the fastest route (shortest duration)
-        let fastestRoute = result.routes[0];
-        let shortestDuration = result.routes[0].legs[0].duration.value;
+        console.log(`Route calculation: Found ${result.routes.length} routes`);
         
-        for (let i = 1; i < result.routes.length; i++) {
-          const routeDuration = result.routes[i].legs[0].duration.value;
-          if (routeDuration < shortestDuration) {
-            shortestDuration = routeDuration;
-            fastestRoute = result.routes[i];
-          }
-        }
+        // Log all available routes
+        result.routes.forEach((route, index) => {
+          const leg = route.legs[0];
+          console.log(`Route ${index + 1}: ${leg.distance.text}, ${leg.duration.text}`);
+        });
         
-        // Display only the fastest route
-        const fastestResult = {
-          ...result,
-          routes: [fastestRoute]
-        };
-        directionsRenderer.setDirections(fastestResult);
+        // Use Google's recommended route (first route)
+        const recommendedRoute = result.routes[0];
         
-        // Calculate estimated values based on fastest route
-        const route = fastestRoute;
+        // Display the recommended route
+        directionsRenderer.setDirections(result);
+        
+        // Calculate estimated values based on recommended route
+        const route = recommendedRoute;
         if (route && route.legs && route.legs[0]) {
           const duration = route.legs[0].duration.text;
           
