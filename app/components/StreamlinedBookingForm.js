@@ -275,6 +275,13 @@ export default function StreamlinedBookingForm({ user }) {
       setError('We are unable to accommodate transport wheelchairs due to safety regulations. Please select a different wheelchair option or choose "None" for us to provide suitable accommodation.');
       return;
     }
+
+    // Validate client weight (John's requirement: 400 lbs maximum)
+    if (clientInfoData.weight && parseFloat(clientInfoData.weight) > 400) {
+      setError('Cannot accommodate rides over 400 lbs - Please contact us for alternative arrangements');
+      setLoading(false);
+      return;
+    }
     
     try {
       setLoading(true);

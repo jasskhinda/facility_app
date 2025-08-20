@@ -84,7 +84,12 @@ export default function EnhancedClientInfoForm({
               max="800"
               required
             />
-            {parseFloat(clientInfo.weight) >= 300 && (
+            {parseFloat(clientInfo.weight) >= 400 && (
+              <p className="text-xs text-red-700 mt-1 font-bold">
+                🚫 Cannot accommodate rides over 400 lbs - Please contact us for alternative arrangements
+              </p>
+            )}
+            {parseFloat(clientInfo.weight) >= 300 && parseFloat(clientInfo.weight) < 400 && (
               <p className="text-xs text-amber-700 mt-1 font-medium">
                 ⚠️ Bariatric transportation required ($150 per leg vs $50 regular rate)
               </p>

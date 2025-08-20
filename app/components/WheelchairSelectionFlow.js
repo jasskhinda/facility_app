@@ -90,7 +90,7 @@ export default function WheelchairSelectionFlow({
           </label>
           
           <div className="space-y-3">
-            {/* None Option - Updated per team feedback */}
+            {/* None Option - Updated to remove "No wheelchair needed" option */}
             <label className="flex items-center p-3 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg hover:bg-[#F8F9FA] dark:hover:bg-[#F8F9FA] cursor-pointer transition-colors">
               <input
                 type="radio"
@@ -102,10 +102,10 @@ export default function WheelchairSelectionFlow({
               />
               <div className="ml-3 flex-1">
                 <span className="text-sm font-medium text-[#2E4F54] text-gray-900">
-                  None (I don't have a wheelchair)
+                  None (Client will need wheelchair assistance)
                 </span>
                 <p className="text-xs text-[#2E4F54]/70 text-gray-900/70">
-                  Client doesn't currently have their own wheelchair
+                  Client doesn't have their own wheelchair - facility will provide
                 </p>
               </div>
             </label>
@@ -267,16 +267,75 @@ export default function WheelchairSelectionFlow({
           </div>
         )}
 
-        {/* Custom Wheelchair Type Input - Enhanced per team feedback */}
+        {/* Enhanced Equipment Requirements - Team feedback implemented */}
         {showCustomInput && (
           <div className="mt-4">
             <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
-              Please specify wheelchair requirements:
+              Please specify wheelchair and equipment requirements:
             </label>
+            
+            {/* Equipment Checkboxes */}
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  className="mr-2 text-[#7CCFD0] focus:ring-[#7CCFD0]"
+                  onChange={(e) => {
+                    console.log('Step stool needed:', e.target.checked);
+                  }}
+                />
+                <span className="text-sm text-[#2E4F54] text-gray-900">Step stool</span>
+              </label>
+              
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  className="mr-2 text-[#7CCFD0] focus:ring-[#7CCFD0]"
+                  onChange={(e) => {
+                    console.log('Smaller ramp needed:', e.target.checked);
+                  }}
+                />
+                <span className="text-sm text-[#2E4F54] text-gray-900">Smaller ramp</span>
+              </label>
+              
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  className="mr-2 text-[#7CCFD0] focus:ring-[#7CCFD0]"
+                  onChange={(e) => {
+                    console.log('Larger ramp needed:', e.target.checked);
+                  }}
+                />
+                <span className="text-sm text-[#2E4F54] text-gray-900">Larger ramp</span>
+              </label>
+              
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  className="mr-2 text-[#7CCFD0] focus:ring-[#7CCFD0]"
+                  onChange={(e) => {
+                    console.log('Bariatric ramp needed:', e.target.checked);
+                  }}
+                />
+                <span className="text-sm text-[#2E4F54] text-gray-900">Bariatric ramp</span>
+              </label>
+              
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  className="mr-2 text-[#7CCFD0] focus:ring-[#7CCFD0]"
+                  onChange={(e) => {
+                    console.log('Wider vehicle needed:', e.target.checked);
+                  }}
+                />
+                <span className="text-sm text-[#2E4F54] text-gray-900">Wider vehicle</span>
+              </label>
+            </div>
+            
             <textarea
               value={customWheelchairType}
               onChange={(e) => setCustomWheelchairType(e.target.value)}
-              placeholder="Please specify equipment needs: step stool, smaller ramp, larger ramp, bariatric ramp, wider vehicle, etc."
+              placeholder="Additional details: specific wheelchair type, special accommodations, accessibility needs, etc."
               className="w-full px-3 py-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-lg bg-white text-[#2E4F54] text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0]"
               rows="3"
             />

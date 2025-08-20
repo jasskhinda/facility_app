@@ -793,6 +793,14 @@ export default function FacilityBookingForm({ user }) {
       return;
     }
 
+    // Validate client weight (John's requirement: 400 lbs maximum)
+    if (clientInfoData.weight && parseFloat(clientInfoData.weight) > 400) {
+      setError('Cannot accommodate rides over 400 lbs - Please contact us for alternative arrangements');
+      setIsLoading(false);
+      setBookingStatus('error');
+      return;
+    }
+
     try {
       // Calculate final price (in case route hasn't been calculated yet)
       let calculatedPrice = estimatedFare;
