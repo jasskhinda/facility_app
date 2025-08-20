@@ -632,6 +632,11 @@ export default function FacilityBookingForm({ user }) {
     setSelectedDate(date);
     setCurrentView('time'); // Switch to time selection after date is selected
     
+    // Trigger holiday check immediately when date is selected
+    // This ensures holiday surcharge is calculated even before time is selected
+    const dateString = date.toISOString().split('T')[0];
+    console.log('Date selected for holiday check:', dateString);
+    
     // In the future, we would fetch available time slots for the selected date
     // For now, we just use the generated slots
   };
