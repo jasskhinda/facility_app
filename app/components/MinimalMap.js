@@ -50,9 +50,28 @@ export default function MinimalMap({
           origin: origin,
           destination: destination,
           travelMode: window.google.maps.TravelMode.DRIVING,
+          provideRouteAlternatives: true, // Request alternative routes
+          optimizeWaypoints: false,
+          avoidHighways: false,
+          avoidTolls: false
         }, (result, status) => {
-          if (status === 'OK') {
-            directionsRenderer.setDirections(result);
+          if (status === 'OK' && result && result.routes && result.routes.length > 0) {
+            console.log(`MinimalMap: Found ${result.routes.length} routes`);
+            
+            // Find the fastest route (shortest duration)
+            let fastestRoute = result.routes[0];
+            let shortestDuration = result.routes[0].legs[0].duration.value;
+            
+            for (let i = 1; i < result.routes.length; i++) {
+              const routeDuration = result.routes[i].legs[0].duration.value;
+              if (routeDuration < shortestDuration) {
+                shortestDuration = routeDuration;
+                fastestRoute = result.routes[i];
+              }
+            }
+            
+            console.log('MinimalMap: Selected fastest route (shortest duration)');
+            directionsRenderer.setDirections({...result, routes: [fastestRoute]});
             setStatus('complete');
           } else {
             setError(`Route calculation failed: ${status}`);

@@ -120,17 +120,41 @@ export default function DirectMap({
       origin: origin,
       destination: destination,
       travelMode: window.google.maps.TravelMode.DRIVING,
-      unitSystem: window.google.maps.UnitSystem.IMPERIAL
+      unitSystem: window.google.maps.UnitSystem.IMPERIAL,
+      provideRouteAlternatives: true, // Request alternative routes
+      optimizeWaypoints: false,
+      avoidHighways: false,
+      avoidTolls: false
     };
 
     directionsService.current.route(request, (result, status) => {
       console.log('🛣️ Route result:', status);
       
-      if (status === 'OK' && result) {
-        directionsRenderer.current.setDirections(result);
+      if (status === 'OK' && result && result.routes && result.routes.length > 0) {
+        console.log(`DirectMap: Found ${result.routes.length} routes`);
         
-        const route = result.routes[0];
-        const leg = route.legs[0];
+        // Log all routes for debugging
+        result.routes.forEach((route, index) => {
+          const leg = route.legs[0];
+          console.log(`Route ${index + 1}: ${leg.distance.text} (${(leg.distance.value * 0.000621371).toFixed(2)} mi), ${leg.duration.text} (${leg.duration.value} seconds)`);
+        });
+        
+        // Find the fastest route (shortest duration)
+        let fastestRoute = result.routes[0];
+        let shortestDuration = result.routes[0].legs[0].duration.value;
+        
+        for (let i = 1; i < result.routes.length; i++) {
+          const routeDuration = result.routes[i].legs[0].duration.value;
+          if (routeDuration < shortestDuration) {
+            shortestDuration = routeDuration;
+            fastestRoute = result.routes[i];
+          }
+        }
+        
+        console.log('DirectMap: Selected fastest route (shortest duration)');
+        directionsRenderer.current.setDirections({...result, routes: [fastestRoute]});
+        
+        const leg = fastestRoute.legs[0];
         
         const routeData = {
           distance: {
