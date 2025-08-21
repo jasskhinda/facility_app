@@ -69,6 +69,22 @@ function ProfessionalCostBreakdown({ trip }) {
           
           if (clientData?.weight) {
             clientInfo = { weight: clientData.weight };
+          } else {
+            // If no weight found, but the price suggests bariatric was used, force bariatric weight
+            const expectedBariatricPrice = trip.is_round_trip ? 300 : 150; // Base bariatric fare
+            const actualBaseFare = parseFloat((trip.price / (parseFloat(trip.distance || 1) * 4 + 100)).toFixed(2)) * (trip.is_round_trip ? 300 : 150);
+            
+            // If the price structure suggests bariatric pricing was used during booking
+            if (trip.price >= 600) { // Threshold suggesting bariatric
+              clientInfo = { weight: '350' }; // Force bariatric weight
+              console.log('🚨 FORCING bariatric weight due to high trip price:', trip.price);
+            }
+          }
+        } else {
+          // For non-managed clients, infer weight from price
+          if (trip.price >= 600) { // Threshold suggesting bariatric
+            clientInfo = { weight: '350' }; // Force bariatric weight
+            console.log('🚨 FORCING bariatric weight for non-managed client due to price:', trip.price);
           }
         }
 
