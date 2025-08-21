@@ -470,7 +470,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           managed_client_id
         `)
         .eq('facility_id', facilityId)
-        .in('status', ['completed', 'pending', 'upcoming', 'confirmed', 'approved', 'cancelled', 'canceled', 'rejected', 'no-show'])
+        .in('status', ['completed', 'pending', 'upcoming', 'confirmed', 'approved', 'cancelled', 'canceled', 'rejected', 'no-show', 'awaiting_driver_acceptance'])
         .gte('pickup_time', startISO)
         .lte('pickup_time', endISO)
         .order('pickup_time', { ascending: false });

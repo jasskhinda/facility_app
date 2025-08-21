@@ -162,7 +162,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         .eq('facility_id', facilityId)
         .gte('pickup_time', startISO)
         .lte('pickup_time', endISO)
-        .in('status', ['completed', 'pending', 'upcoming', 'confirmed'])
+        .in('status', ['completed', 'pending', 'upcoming', 'confirmed', 'awaiting_driver_acceptance'])
         .order('pickup_time', { ascending: false });
 
       console.log('🚗 FACILITY TRIPS Query result:', { 
