@@ -8,172 +8,101 @@ import DashboardLayout from '@/app/components/DashboardLayout';
 import EditTripForm from '@/app/components/EditTripForm';
 import { getPricingEstimate, createPricingBreakdown, formatCurrency } from '@/lib/pricing';
 
-// Professional Cost Breakdown Component that shows the original booking price
+// Professional Cost Breakdown Component using the same logic as booking page
 function ProfessionalCostBreakdown({ trip }) {
   const [pricingBreakdown, setPricingBreakdown] = useState(null);
-
+  const [loading, setLoading] = useState(true);
+  
   useEffect(() => {
-    // Calculate the price breakdown based on trip data
-    const calculatePricingBreakdown = async () => {
+    const calculatePricing = async () => {
       try {
-        console.log('Calculating pricing breakdown for trip:', trip);
-        
-        // Import pricing calculation utilities
-        const { getPricingEstimate, createPricingBreakdown } = await import('@/lib/pricing');
-        
         // Parse the pickup date/time
         const pickupDateTime = new Date(trip.pickup_time);
         
-        // Determine if this is a facility trip (for discount calculation)
-        const isFacilityTrip = trip.facility_id ? true : false;
+        // Determine client type and fetch weight if needed
+        let clientWeight = null;
         
-        // Calculate pricing based on trip details
+        if (trip.managed_client_id) {
+          const supabase = createBrowserClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+          );
+          
+          const { data: clientData } = await supabase
+            .from('facility_managed_clients')
+            .select('weight')
+            .eq('id', trip.managed_client_id)
+            .single();
+          
+          if (clientData?.weight) {
+            clientWeight = parseFloat(clientData.weight);
+          }
+        }
+        
+        // If no weight found, try to infer from the price
+        if (!clientWeight) {
+          // Bariatric trips have base fare of $150/leg vs $50/leg
+          // Check if the total price suggests bariatric pricing
+          const baseLegs = trip.is_round_trip ? 2 : 1;
+          const normalBaseFare = baseLegs * 50;
+          const bariatricBaseFare = baseLegs * 150;
+          
+          // If price is significantly higher than normal base fare + reasonable distance fees
+          // it might be bariatric
+          if (trip.price > normalBaseFare + 200) {
+            // Rough estimate - if price suggests bariatric, use 350 lbs
+            clientWeight = 350;
+          }
+        }
+        
+        // Calculate pricing with the same function used in booking
         const pricingResult = await getPricingEstimate({
           pickupAddress: trip.pickup_address,
           destinationAddress: trip.destination_address || trip.dropoff_address,
           isRoundTrip: trip.is_round_trip || false,
           pickupDateTime: pickupDateTime.toISOString(),
           wheelchairType: trip.wheelchair_type || 'none',
-          clientType: isFacilityTrip ? 'facility' : 'individual',
+          clientType: trip.facility_id ? 'facility' : 'individual', 
           additionalPassengers: trip.additional_passengers || 0,
           isEmergency: trip.is_emergency || false,
           preCalculatedDistance: trip.distance ? {
             miles: parseFloat(trip.distance),
             distance: parseFloat(trip.distance),
             text: `${trip.distance} miles`,
-            duration: trip.duration || ''
+            duration: trip.route_duration || ''
           } : null,
-          clientWeight: trip.client_weight || null,
+          clientWeight: clientWeight,
           calculateDeadMileageEnabled: true
         });
         
         if (pricingResult.success && pricingResult.pricing) {
-          // Create the breakdown using the library function
+          // Get the breakdown items
           const breakdownItems = createPricingBreakdown(pricingResult.pricing, pricingResult.countyInfo);
-          
-          // Adjust the total to match the stored trip price if there's a difference
-          const calculatedTotal = pricingResult.pricing.total;
-          const storedTotal = trip.price;
-          
-          if (storedTotal && Math.abs(calculatedTotal - storedTotal) > 0.01) {
-            // Add adjustment line if prices don't match exactly
-            const adjustment = storedTotal - calculatedTotal;
-            const totalIndex = breakdownItems.findIndex(item => item.type === 'total');
-            
-            if (totalIndex > 0) {
-              breakdownItems.splice(totalIndex, 0, {
-                label: 'Price Adjustment',
-                amount: adjustment,
-                type: adjustment > 0 ? 'charge' : 'discount'
-              });
-              
-              // Update the total
-              breakdownItems[breakdownItems.length - 1].amount = storedTotal;
-            }
-          }
-          
           setPricingBreakdown({ breakdownItems });
         } else {
-          // Fallback: Create a basic breakdown from available trip data
-          const breakdownItems = [];
-          
-          // Estimate base fare (typically around 14-20% of total for standard trips)
-          const estimatedBaseFare = trip.is_round_trip ? 100 : 50;
-          breakdownItems.push({
-            label: `Base fare (${trip.is_round_trip ? '2 legs' : '1 leg'})`,
-            amount: estimatedBaseFare,
-            type: 'base'
+          // Fallback
+          setPricingBreakdown({
+            breakdownItems: [
+              { label: 'Total Trip Cost', amount: trip.price || 0, type: 'total' }
+            ]
           });
-          
-          // Distance fee (remaining after base fare and known fees)
-          let remainingAmount = trip.price - estimatedBaseFare;
-          
-          // Wheelchair fee
-          if (trip.wheelchair_type === 'wheelchair') {
-            const wheelchairFee = 25;
-            breakdownItems.push({
-              label: 'Wheelchair rental fee',
-              amount: wheelchairFee,
-              type: 'premium'
-            });
-            remainingAmount -= wheelchairFee;
-          }
-          
-          // Check if trip date is a holiday
-          const tripDate = new Date(trip.pickup_time);
-          const isHoliday = checkIfHoliday(tripDate);
-          if (isHoliday) {
-            const holidayFee = 100;
-            breakdownItems.push({
-              label: 'Holiday surcharge',
-              amount: holidayFee,
-              type: 'premium'
-            });
-            remainingAmount -= holidayFee;
-          }
-          
-          // Distance charge (whatever remains)
-          if (remainingAmount > 0 && trip.distance) {
-            const ratePerMile = remainingAmount / parseFloat(trip.distance);
-            const rateLabel = ratePerMile <= 3.5 ? 'Franklin County' : 'Outside Franklin County';
-            breakdownItems.push({
-              label: `Distance charge (${trip.distance} miles @ $${ratePerMile.toFixed(2)}/mile - ${rateLabel})`,
-              amount: remainingAmount,
-              type: 'charge'
-            });
-          } else if (remainingAmount > 0) {
-            breakdownItems.push({
-              label: 'Distance & service charges',
-              amount: remainingAmount,
-              type: 'charge'
-            });
-          }
-          
-          // Total
-          breakdownItems.push({
-            label: 'Total',
-            amount: trip.price || 0,
-            type: 'total'
-          });
-          
-          setPricingBreakdown({ breakdownItems });
         }
       } catch (error) {
-        console.error('Error calculating pricing breakdown:', error);
-        // Fallback to simple display if breakdown fails
+        console.error('Error calculating pricing:', error);
         setPricingBreakdown({
           breakdownItems: [
-            {
-              label: 'Total Trip Cost',
-              amount: trip.price || 0,
-              type: 'total'
-            }
+            { label: 'Total Trip Cost', amount: trip.price || 0, type: 'total' }
           ]
         });
+      } finally {
+        setLoading(false);
       }
     };
     
-    // Helper function to check if a date is a holiday
-    const checkIfHoliday = (date) => {
-      const month = date.getMonth() + 1;
-      const day = date.getDate();
-      
-      // Check fixed holidays
-      const fixedHolidays = [
-        { month: 1, day: 1 },   // New Year's Day
-        { month: 12, day: 31 }, // New Year's Eve
-        { month: 7, day: 4 },   // Independence Day
-        { month: 12, day: 24 }, // Christmas Eve
-        { month: 12, day: 25 }  // Christmas Day
-      ];
-      
-      return fixedHolidays.some(h => h.month === month && h.day === day);
-    };
-
-    calculatePricingBreakdown();
+    calculatePricing();
   }, [trip]);
 
-  if (!pricingBreakdown) {
+  if (loading) {
     return (
       <div className="animate-pulse">
         <div className="h-4 bg-gray-200 rounded mb-2"></div>
@@ -183,6 +112,8 @@ function ProfessionalCostBreakdown({ trip }) {
     );
   }
 
+  if (!pricingBreakdown) return null;
+
   const breakdownItems = pricingBreakdown.breakdownItems || [];
 
   return (
@@ -190,6 +121,7 @@ function ProfessionalCostBreakdown({ trip }) {
       {breakdownItems.map((item, index) => (
         <div key={index} className={`flex justify-between items-center py-2 ${
           item.type === 'total' ? 'border-t-2 border-[#7CCFD0] pt-3 bg-[#F8F9FA] rounded-lg px-4 mt-4' : 
+          item.type === 'subtotal' ? 'border-t border-[#DDE5E7] dark:border-[#E0E0E0] pt-2' :
           'border-b border-[#DDE5E7] dark:border-[#E0E0E0]'
         }`}>
           <span className={`${item.type === 'total' ? 'text-lg font-semibold' : 'text-sm'} ${
@@ -198,7 +130,7 @@ function ProfessionalCostBreakdown({ trip }) {
             item.type === 'premium' ? 'text-orange-600 dark:text-orange-400' :
             'text-[#2E4F54] text-gray-900'
           }`}>
-            {item.type === 'total' ? 'Total Amount' : item.label}
+            {item.label}
           </span>
           <span className={`${item.type === 'total' ? 'text-lg font-bold text-[#7CCFD0]' : 'text-sm font-medium'} ${
             item.type === 'total' ? '' :
