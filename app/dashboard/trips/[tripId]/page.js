@@ -116,47 +116,63 @@ function ProfessionalCostBreakdown({ trip }) {
     );
   }
 
-  // Use the EXACT same PricingDisplay component as booking page - but styled for breakdown only
+  const [pricingResult, setPricingResult] = useState(null);
+
+  // Use hidden PricingDisplay to get the calculated data
   return (
-    <div className="trip-details-pricing">
-      <PricingDisplay 
-        formData={formData}
-        selectedClient={selectedClient}
-        routeInfo={routeInfo}
-        wheelchairData={wheelchairData}
-        clientInfoData={clientInfoData}
-        holidayData={holidayData}
-        isVisible={true}
-      />
-      <style jsx global>{`
-        .trip-details-pricing .bg-gradient-to-br {
-          background: transparent !important;
-          border: none !important;
-          padding: 0 !important;
-        }
-        .trip-details-pricing h3,
-        .trip-details-pricing .flex.items-center.justify-between.mb-3,
-        .trip-details-pricing .flex.justify-between.items-center.p-3,
-        .trip-details-pricing .text-xs.text-\\[\\#2E4F54\\]\\/60 {
-          display: none !important;
-        }
-        .trip-details-pricing details {
-          display: block !important;
-        }
-        .trip-details-pricing summary {
-          display: none !important;
-        }
-        .trip-details-pricing details[open] .mt-3 {
-          margin-top: 0 !important;
-        }
-        .trip-details-pricing .space-y-3 > div:first-child {
-          display: none !important;
-        }
-        .trip-details-pricing .space-y-3 > div:last-child {
-          display: none !important;
-        }
-      `}</style>
-    </div>
+    <>
+      {/* Hidden PricingDisplay to get the exact calculation */}
+      <div style={{ position: 'absolute', left: '-9999px', visibility: 'hidden', opacity: 0 }}>
+        <PricingDisplay 
+          formData={formData}
+          selectedClient={selectedClient}
+          routeInfo={routeInfo}
+          wheelchairData={wheelchairData}
+          clientInfoData={clientInfoData}
+          holidayData={holidayData}
+          isVisible={true}
+          onPricingCalculated={(pricing) => {
+            if (pricing && !pricingResult) {
+              setPricingResult(pricing);
+            }
+          }}
+        />
+      </div>
+      
+      {/* Display the breakdown manually */}
+      {pricingResult && pricingResult.pricing ? (
+        <>
+          {createPricingBreakdown(pricingResult.pricing, pricingResult.countyInfo).map((item, index) => (
+            <div key={index} className={`flex justify-between items-center py-2 ${
+              item.type === 'total' ? 'border-t-2 border-[#7CCFD0] pt-3 bg-[#F8F9FA] rounded-lg px-4 mt-4' : 
+              item.type === 'subtotal' ? 'border-t border-[#DDE5E7] dark:border-[#E0E0E0] pt-2' :
+              'border-b border-[#DDE5E7] dark:border-[#E0E0E0]'
+            }`}>
+              <span className={`${item.type === 'total' ? 'text-lg font-semibold' : 'text-sm'} ${
+                item.type === 'total' ? 'text-[#2E4F54] text-gray-900' :
+                item.type === 'discount' ? 'text-green-600 dark:text-green-400' :
+                item.type === 'premium' ? 'text-orange-600 dark:text-orange-400' :
+                'text-[#2E4F54] text-gray-900'
+              }`}>
+                {item.label}
+              </span>
+              <span className={`${item.type === 'total' ? 'text-lg font-bold text-[#7CCFD0]' : 'text-sm font-medium'} ${
+                item.type === 'total' ? '' :
+                item.type === 'discount' ? 'text-green-600 dark:text-green-400' :
+                item.type === 'premium' ? 'text-orange-600 dark:text-orange-400' :
+                'text-[#2E4F54] text-gray-900'
+              }`}>
+                {formatCurrency(Math.abs(item.amount))}
+              </span>
+            </div>
+          ))}
+        </>
+      ) : (
+        <div className="text-center py-4 text-gray-500">
+          Calculating pricing breakdown...
+        </div>
+      )}
+    </>
   );
 }
 
