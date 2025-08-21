@@ -470,7 +470,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           managed_client_id
         `)
         .eq('facility_id', facilityId)
-        .in('status', ['completed', 'pending', 'upcoming', 'confirmed', 'approved', 'cancelled', 'canceled', 'rejected', 'no-show', 'awaiting_driver_acceptance'])
+        .in('status', ['completed', 'pending', 'upcoming', 'confirmed', 'approved', 'cancelled', 'canceled', 'rejected', 'no-show'])
         .gte('pickup_time', startISO)
         .lte('pickup_time', endISO)
         .order('pickup_time', { ascending: false });
@@ -1879,6 +1879,15 @@ ${monthlyTrips.map(trip => {
             <p className="text-sm text-gray-600">
               Showing trips for {displayMonth}
             </p>
+            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-700">
+                <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <strong>Monthly Billing Note:</strong> This billing page only shows bookings for the current month. 
+                Bookings scheduled for upcoming months will appear in that month's billing when the time comes.
+              </p>
+            </div>
           </div>
           
           <div className="flex items-center space-x-4">

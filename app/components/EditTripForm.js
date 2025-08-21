@@ -272,6 +272,24 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
         // Add pricing information if available
         price: currentPricing?.pricing?.total || trip?.price || null,
         distance: routeInfo?.distance?.miles || currentPricing?.distance?.distance || trip?.distance || null,
+        // Update pricing breakdown data when editing
+        pricing_breakdown_data: currentPricing ? {
+          pricing: currentPricing.pricing,
+          distance: currentPricing.distance,
+          summary: currentPricing.summary,
+          countyInfo: currentPricing.countyInfo,
+          clientInfo: {
+            weight: clientInfo.weight,
+            isBariatric: currentPricing.pricing?.isBariatric || false
+          },
+          wheelchairInfo: wheelchairData,
+          holidayInfo: holidayInfo,
+          createdAt: trip?.pricing_breakdown_data?.createdAt || new Date().toISOString(), // Keep original creation time
+          updatedAt: new Date().toISOString(),
+          source: trip?.pricing_breakdown_data?.source || 'EditTripForm'
+        } : trip?.pricing_breakdown_data || null, // Keep existing if no new pricing
+        pricing_breakdown_total: currentPricing?.pricing?.total || trip?.pricing_breakdown_total || trip?.price || null,
+        pricing_breakdown_locked_at: currentPricing ? new Date().toISOString() : trip?.pricing_breakdown_locked_at || null,
         // Add route information from map if available
         route_duration: routeInfo?.duration?.text || trip?.route_duration || null,
         route_distance_text: routeInfo?.distance?.text || trip?.route_distance_text || null,
