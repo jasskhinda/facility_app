@@ -9,15 +9,13 @@ import EditTripForm from '@/app/components/EditTripForm';
 import PricingDisplay from '@/app/components/PricingDisplay';
 import { createPricingBreakdown, formatCurrency } from '@/lib/pricing';
 
-// Professional Cost Breakdown Component - Shows EXACT breakdown as displayed during booking
+// Cost Breakdown Component - Uses EXACT PricingDisplay from booking page
 function ProfessionalCostBreakdown({ trip }) {
-  // Use the EXACT same PricingDisplay component but with FORCED stored values
-  // This ensures identical display format and calculations as booking page
-  
-  const [pricingData, setPricingData] = useState(null);
+  const [clientInfoData, setClientInfoData] = useState(null);
+  const [holidayData, setHolidayData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Create formData that matches exactly what was used during booking
+  // Prepare EXACT same data format as booking page
   const formData = {
     pickupAddress: trip.pickup_address,
     destinationAddress: trip.destination_address || trip.dropoff_address,
@@ -33,8 +31,8 @@ function ProfessionalCostBreakdown({ trip }) {
     client_type: trip.facility_id ? 'managed' : 'authenticated'
   };
 
-  // CRITICAL: Use the EXACT stored distance from booking
-  const routeInfo = {
+  // Use EXACT stored distance
+  const routeInfo = trip.distance ? {
     distance: {
       miles: parseFloat(trip.distance),
       text: trip.route_distance_text || `${trip.distance} miles`
@@ -42,7 +40,7 @@ function ProfessionalCostBreakdown({ trip }) {
     duration: {
       text: trip.route_duration_text || trip.route_duration || ''
     }
-  };
+  } : null;
 
   const wheelchairData = {
     type: trip.wheelchair_type || 'none',
@@ -51,16 +49,17 @@ function ProfessionalCostBreakdown({ trip }) {
   };
 
   useEffect(() => {
-    const fetchClientInfo = async () => {
+    const fetchData = async () => {
       try {
-        let clientInfoData = { weight: '250' }; // Default
+        const supabase = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        );
 
+        let clientInfo = { weight: '250' };
+
+        // Fetch client weight if managed client
         if (trip.managed_client_id) {
-          const supabase = createBrowserClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-          );
-          
           const { data: clientData } = await supabase
             .from('facility_managed_clients')
             .select('weight')
@@ -68,37 +67,43 @@ function ProfessionalCostBreakdown({ trip }) {
             .single();
           
           if (clientData?.weight) {
-            clientInfoData = { weight: clientData.weight };
+            clientInfo = { weight: clientData.weight };
           }
         }
 
-        setLoading(false);
+        // Use same holiday detection logic as booking page
+        const pickupDate = new Date(trip.pickup_time);
+        const month = pickupDate.getMonth() + 1;
+        const day = pickupDate.getDate();
         
-        // Simulate what PricingDisplay does internally
-        setTimeout(() => {
-          // Create a mock pricing callback that forces the EXACT stored price
-          const mockPricing = {
-            pricing: {
-              basePrice: trip.is_round_trip ? 100 : 50,
-              roundTripPrice: 0,
-              distancePrice: trip.price - (trip.is_round_trip ? 100 : 50),
-              total: trip.price,
-              isBariatric: parseFloat(clientInfoData.weight || '250') >= 300
-            },
-            countyInfo: {
-              isInFranklinCounty: true // Will be determined by rate
-            }
-          };
-          
-          setPricingData(mockPricing);
-        }, 100);
+        // Check for fixed holidays (same logic as pricing.js)
+        const fixedHolidays = [
+          { month: 1, day: 1, name: "New Year's Day" },
+          { month: 12, day: 31, name: "New Year's Eve" },
+          { month: 7, day: 4, name: "Independence Day" },
+          { month: 12, day: 24, name: "Christmas Eve" },
+          { month: 12, day: 25, name: "Christmas Day" }
+        ];
+        
+        const holiday = fixedHolidays.find(h => h.month === month && h.day === day);
+        const holidayInfo = {
+          isHoliday: !!holiday,
+          holidayName: holiday?.name || '',
+          surcharge: holiday ? 100 : 0
+        };
+
+        setClientInfoData(clientInfo);
+        setHolidayData(holidayInfo);
       } catch (error) {
-        console.error('Error:', error);
+        console.error('Error fetching data:', error);
+        setClientInfoData({ weight: '250' });
+        setHolidayData({ isHoliday: false, holidayName: '', surcharge: 0 });
+      } finally {
         setLoading(false);
       }
     };
 
-    fetchClientInfo();
+    fetchData();
   }, [trip]);
 
   if (loading) {
@@ -111,40 +116,47 @@ function ProfessionalCostBreakdown({ trip }) {
     );
   }
 
-  if (!pricingData) {
-    return <div className="text-center py-4 text-gray-500">Loading pricing...</div>;
-  }
-
-  // Use the same createPricingBreakdown function as booking page
-  const breakdownItems = createPricingBreakdown(pricingData.pricing, pricingData.countyInfo);
-
+  // Use the EXACT same PricingDisplay component as booking page - but styled for breakdown only
   return (
-    <>
-      {breakdownItems.map((item, index) => (
-        <div key={index} className={`flex justify-between items-center py-2 ${
-          item.type === 'total' ? 'border-t-2 border-[#7CCFD0] pt-3 bg-[#F8F9FA] rounded-lg px-4 mt-4' : 
-          item.type === 'subtotal' ? 'border-t border-[#DDE5E7] dark:border-[#E0E0E0] pt-2' :
-          'border-b border-[#DDE5E7] dark:border-[#E0E0E0]'
-        }`}>
-          <span className={`${item.type === 'total' ? 'text-lg font-semibold' : 'text-sm'} ${
-            item.type === 'total' ? 'text-[#2E4F54] text-gray-900' :
-            item.type === 'discount' ? 'text-green-600 dark:text-green-400' :
-            item.type === 'premium' ? 'text-orange-600 dark:text-orange-400' :
-            'text-[#2E4F54] text-gray-900'
-          }`}>
-            {item.label}
-          </span>
-          <span className={`${item.type === 'total' ? 'text-lg font-bold text-[#7CCFD0]' : 'text-sm font-medium'} ${
-            item.type === 'total' ? '' :
-            item.type === 'discount' ? 'text-green-600 dark:text-green-400' :
-            item.type === 'premium' ? 'text-orange-600 dark:text-orange-400' :
-            'text-[#2E4F54] text-gray-900'
-          }`}>
-            {formatCurrency(Math.abs(item.amount))}
-          </span>
-        </div>
-      ))}
-    </>
+    <div className="trip-details-pricing">
+      <PricingDisplay 
+        formData={formData}
+        selectedClient={selectedClient}
+        routeInfo={routeInfo}
+        wheelchairData={wheelchairData}
+        clientInfoData={clientInfoData}
+        holidayData={holidayData}
+        isVisible={true}
+      />
+      <style jsx global>{`
+        .trip-details-pricing .bg-gradient-to-br {
+          background: transparent !important;
+          border: none !important;
+          padding: 0 !important;
+        }
+        .trip-details-pricing h3,
+        .trip-details-pricing .flex.items-center.justify-between.mb-3,
+        .trip-details-pricing .flex.justify-between.items-center.p-3,
+        .trip-details-pricing .text-xs.text-\\[\\#2E4F54\\]\\/60 {
+          display: none !important;
+        }
+        .trip-details-pricing details {
+          display: block !important;
+        }
+        .trip-details-pricing summary {
+          display: none !important;
+        }
+        .trip-details-pricing details[open] .mt-3 {
+          margin-top: 0 !important;
+        }
+        .trip-details-pricing .space-y-3 > div:first-child {
+          display: none !important;
+        }
+        .trip-details-pricing .space-y-3 > div:last-child {
+          display: none !important;
+        }
+      `}</style>
+    </div>
   );
 }
 
