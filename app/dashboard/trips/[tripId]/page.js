@@ -14,6 +14,7 @@ function ProfessionalCostBreakdown({ trip }) {
   const [clientInfoData, setClientInfoData] = useState(null);
   const [holidayData, setHolidayData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pricingResult, setPricingResult] = useState(null);
 
   // Prepare EXACT same data format as booking page
   const formData = {
@@ -115,8 +116,6 @@ function ProfessionalCostBreakdown({ trip }) {
       </div>
     );
   }
-
-  const [pricingResult, setPricingResult] = useState(null);
 
   // Use hidden PricingDisplay to get the calculated data
   return (
