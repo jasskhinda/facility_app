@@ -13,122 +13,133 @@ function ProfessionalCostBreakdown({ trip }) {
   const [pricingBreakdown, setPricingBreakdown] = useState(null);
 
   useEffect(() => {
-    // CRITICAL FIX: Use stored trip price data instead of recalculating
-    // This ensures trip details exactly match the original booking price
-    const useStoredPricingData = () => {
+    // Calculate the price breakdown based on trip data
+    const calculatePricingBreakdown = async () => {
       try {
-        console.log('Using stored trip pricing data to match booking exactly');
+        console.log('Calculating pricing breakdown for trip:', trip);
         
-        // Create pricing breakdown from stored trip data
-        const pricing = {
-          baseFare: trip.base_fare || (trip.price * 0.7) || 25.00, // Estimate if not stored
-          distanceFee: trip.distance_fee || 0,
-          wheelchairFee: trip.wheelchair_type === 'wheelchair' ? (trip.wheelchair_fee || 25.00) : 0,
-          holidayFee: trip.holiday_fee || 0,
-          deadMileageFee: trip.dead_mileage_fee || 0,
-          roundTripFee: trip.is_round_trip ? (trip.round_trip_fee || 0) : 0,
-          bariatricFee: trip.bariatric_fee || 0,
-          emergencyFee: trip.emergency_fee || 0,
-          discount: trip.discount || 0,
-          subtotal: trip.subtotal || trip.price || 0,
-          total: trip.price || 0
-        };
-
-        // Create breakdown items matching the booking format
-        const breakdownItems = [];
+        // Import pricing calculation utilities
+        const { getPricingEstimate, createPricingBreakdown } = await import('@/lib/pricing');
         
-        // Base fare
-        if (pricing.baseFare > 0) {
+        // Parse the pickup date/time
+        const pickupDateTime = new Date(trip.pickup_time);
+        
+        // Determine if this is a facility trip (for discount calculation)
+        const isFacilityTrip = trip.facility_id ? true : false;
+        
+        // Calculate pricing based on trip details
+        const pricingResult = await getPricingEstimate({
+          pickupAddress: trip.pickup_address,
+          destinationAddress: trip.destination_address || trip.dropoff_address,
+          isRoundTrip: trip.is_round_trip || false,
+          pickupDateTime: pickupDateTime.toISOString(),
+          wheelchairType: trip.wheelchair_type || 'none',
+          clientType: isFacilityTrip ? 'facility' : 'individual',
+          additionalPassengers: trip.additional_passengers || 0,
+          isEmergency: trip.is_emergency || false,
+          preCalculatedDistance: trip.distance ? {
+            miles: parseFloat(trip.distance),
+            distance: parseFloat(trip.distance),
+            text: `${trip.distance} miles`,
+            duration: trip.duration || ''
+          } : null,
+          clientWeight: trip.client_weight || null,
+          calculateDeadMileageEnabled: true
+        });
+        
+        if (pricingResult.success && pricingResult.pricing) {
+          // Create the breakdown using the library function
+          const breakdownItems = createPricingBreakdown(pricingResult.pricing, pricingResult.countyInfo);
+          
+          // Adjust the total to match the stored trip price if there's a difference
+          const calculatedTotal = pricingResult.pricing.total;
+          const storedTotal = trip.price;
+          
+          if (storedTotal && Math.abs(calculatedTotal - storedTotal) > 0.01) {
+            // Add adjustment line if prices don't match exactly
+            const adjustment = storedTotal - calculatedTotal;
+            const totalIndex = breakdownItems.findIndex(item => item.type === 'total');
+            
+            if (totalIndex > 0) {
+              breakdownItems.splice(totalIndex, 0, {
+                label: 'Price Adjustment',
+                amount: adjustment,
+                type: adjustment > 0 ? 'charge' : 'discount'
+              });
+              
+              // Update the total
+              breakdownItems[breakdownItems.length - 1].amount = storedTotal;
+            }
+          }
+          
+          setPricingBreakdown({ breakdownItems });
+        } else {
+          // Fallback: Create a basic breakdown from available trip data
+          const breakdownItems = [];
+          
+          // Estimate base fare (typically around 14-20% of total for standard trips)
+          const estimatedBaseFare = trip.is_round_trip ? 100 : 50;
           breakdownItems.push({
-            label: 'Base Transportation Fee',
-            amount: pricing.baseFare,
+            label: `Base fare (${trip.is_round_trip ? '2 legs' : '1 leg'})`,
+            amount: estimatedBaseFare,
             type: 'base'
           });
-        }
-        
-        // Distance fee
-        if (pricing.distanceFee > 0) {
+          
+          // Distance fee (remaining after base fare and known fees)
+          let remainingAmount = trip.price - estimatedBaseFare;
+          
+          // Wheelchair fee
+          if (trip.wheelchair_type === 'wheelchair') {
+            const wheelchairFee = 25;
+            breakdownItems.push({
+              label: 'Wheelchair rental fee',
+              amount: wheelchairFee,
+              type: 'premium'
+            });
+            remainingAmount -= wheelchairFee;
+          }
+          
+          // Check if trip date is a holiday
+          const tripDate = new Date(trip.pickup_time);
+          const isHoliday = checkIfHoliday(tripDate);
+          if (isHoliday) {
+            const holidayFee = 100;
+            breakdownItems.push({
+              label: 'Holiday surcharge',
+              amount: holidayFee,
+              type: 'premium'
+            });
+            remainingAmount -= holidayFee;
+          }
+          
+          // Distance charge (whatever remains)
+          if (remainingAmount > 0 && trip.distance) {
+            const ratePerMile = remainingAmount / parseFloat(trip.distance);
+            const rateLabel = ratePerMile <= 3.5 ? 'Franklin County' : 'Outside Franklin County';
+            breakdownItems.push({
+              label: `Distance charge (${trip.distance} miles @ $${ratePerMile.toFixed(2)}/mile - ${rateLabel})`,
+              amount: remainingAmount,
+              type: 'charge'
+            });
+          } else if (remainingAmount > 0) {
+            breakdownItems.push({
+              label: 'Distance & service charges',
+              amount: remainingAmount,
+              type: 'charge'
+            });
+          }
+          
+          // Total
           breakdownItems.push({
-            label: `Distance Fee (${trip.distance || 'N/A'} miles)`,
-            amount: pricing.distanceFee,
-            type: 'fee'
+            label: 'Total',
+            amount: trip.price || 0,
+            type: 'total'
           });
+          
+          setPricingBreakdown({ breakdownItems });
         }
-        
-        // Dead mileage fee
-        if (pricing.deadMileageFee > 0) {
-          breakdownItems.push({
-            label: 'Dead Mileage Fee (2+ counties)',
-            amount: pricing.deadMileageFee,
-            type: 'premium'
-          });
-        }
-        
-        // Wheelchair fee
-        if (pricing.wheelchairFee > 0) {
-          breakdownItems.push({
-            label: 'Wheelchair Rental Fee',
-            amount: pricing.wheelchairFee,
-            type: 'premium'
-          });
-        }
-        
-        // Holiday fee
-        if (pricing.holidayFee > 0) {
-          breakdownItems.push({
-            label: 'Holiday Surcharge',
-            amount: pricing.holidayFee,
-            type: 'premium'
-          });
-        }
-        
-        // Bariatric fee
-        if (pricing.bariatricFee > 0) {
-          breakdownItems.push({
-            label: 'Bariatric Transportation Fee',
-            amount: pricing.bariatricFee,
-            type: 'premium'
-          });
-        }
-        
-        // Round trip fee
-        if (pricing.roundTripFee > 0) {
-          breakdownItems.push({
-            label: 'Round Trip Surcharge',
-            amount: pricing.roundTripFee,
-            type: 'premium'
-          });
-        }
-        
-        // Emergency fee
-        if (pricing.emergencyFee > 0) {
-          breakdownItems.push({
-            label: 'Emergency Service Fee',
-            amount: pricing.emergencyFee,
-            type: 'premium'
-          });
-        }
-        
-        // Discount
-        if (pricing.discount > 0) {
-          breakdownItems.push({
-            label: 'Facility Discount (10%)',
-            amount: -pricing.discount,
-            type: 'discount'
-          });
-        }
-        
-        // Total
-        breakdownItems.push({
-          label: 'Total Amount',
-          amount: pricing.total,
-          type: 'total'
-        });
-
-        setPricingBreakdown({ breakdownItems });
-        
       } catch (error) {
-        console.error('Error using stored pricing data:', error);
+        console.error('Error calculating pricing breakdown:', error);
         // Fallback to simple display if breakdown fails
         setPricingBreakdown({
           breakdownItems: [
@@ -141,8 +152,25 @@ function ProfessionalCostBreakdown({ trip }) {
         });
       }
     };
+    
+    // Helper function to check if a date is a holiday
+    const checkIfHoliday = (date) => {
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      
+      // Check fixed holidays
+      const fixedHolidays = [
+        { month: 1, day: 1 },   // New Year's Day
+        { month: 12, day: 31 }, // New Year's Eve
+        { month: 7, day: 4 },   // Independence Day
+        { month: 12, day: 24 }, // Christmas Eve
+        { month: 12, day: 25 }  // Christmas Day
+      ];
+      
+      return fixedHolidays.some(h => h.month === month && h.day === day);
+    };
 
-    useStoredPricingData();
+    calculatePricingBreakdown();
   }, [trip]);
 
   if (!pricingBreakdown) {
