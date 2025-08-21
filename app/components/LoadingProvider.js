@@ -38,81 +38,10 @@ export default function LoadingProvider({ children }) {
     };
   }, []);
 
-  // Route change loading
+  // Route change loading - simplified to not interfere with navigation
   useEffect(() => {
-    let timeoutId;
-    let globalTimeoutId;
-    
-    // Force clear loading state when pathname changes
+    // Only force clear loading state when pathname changes, no other interference
     setIsLoading(false);
-    
-    const handleStart = () => {
-      setLoadingMessage('Navigating...');
-      setIsLoading(true);
-      
-      // Auto-hide after 800ms for route changes (faster for better UX)
-      timeoutId = setTimeout(() => {
-        setIsLoading(false);
-      }, 800);
-      
-      // Global timeout protection - force hide after 3 seconds maximum
-      globalTimeoutId = setTimeout(() => {
-        console.warn('🚨 Global navigation timeout reached, forcing hide');
-        setIsLoading(false);
-      }, 3000);
-    };
-
-    const handleComplete = () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      if (globalTimeoutId) {
-        clearTimeout(globalTimeoutId);
-      }
-      setIsLoading(false);
-    };
-
-    // Listen for popstate events (back/forward navigation)
-    const handlePopState = () => {
-      handleStart();
-    };
-
-    // Override Next.js router push/replace to show loading
-    const originalPush = window.history.pushState;
-    const originalReplace = window.history.replaceState;
-
-    if (originalPush) {
-      window.history.pushState = function(...args) {
-        handleStart();
-        return originalPush.apply(this, args);
-      };
-    }
-
-    if (originalReplace) {
-      window.history.replaceState = function(...args) {
-        handleStart();
-        return originalReplace.apply(this, args);
-      };
-    }
-
-    window.addEventListener('popstate', handlePopState);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      if (globalTimeoutId) {
-        clearTimeout(globalTimeoutId);
-      }
-      // Restore original methods
-      if (originalPush) {
-        window.history.pushState = originalPush;
-      }
-      if (originalReplace) {
-        window.history.replaceState = originalReplace;
-      }
-    };
   }, [pathname]);
 
   const showLoading = (message = 'Loading...') => {

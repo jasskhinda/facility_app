@@ -7,59 +7,36 @@ export default function NavigationLoader() {
   const { showLoading, hideLoading } = useLoading();
 
   useEffect(() => {
-    // Handle Next.js Link clicks
-    const handleLinkClick = (e) => {
-      const target = e.target.closest('a');
-      if (target && target.href && target.href !== window.location.href) {
-        // Only show loading for internal navigation
-        if (target.href.startsWith(window.location.origin)) {
-          showLoading('Navigating...');
-          
-          // Auto-hide after 600ms as fallback (faster)
-          setTimeout(() => {
-            hideLoading();
-          }, 600);
-        }
-      }
-    };
-
-    // Handle form submissions
+    // Only handle form submissions to avoid interfering with navigation
     const handleFormSubmit = (e) => {
       const form = e.target;
       if (form.tagName === 'FORM') {
         showLoading('Processing...');
         
-        // Auto-hide after 1 second as fallback (faster)
+        // Auto-hide after 1 second as fallback
         setTimeout(() => {
           hideLoading();
         }, 1000);
       }
     };
 
-    // Handle button clicks that might trigger navigation
+    // Only handle submit button clicks, not all button clicks
     const handleButtonClick = (e) => {
       const button = e.target.closest('button');
-      if (button && (
-        button.textContent.includes('Sign') ||
-        button.textContent.includes('Login') ||
-        button.textContent.includes('Submit') ||
-        button.type === 'submit'
-      )) {
+      if (button && button.type === 'submit' && !button.closest('a')) {
         showLoading('Processing...');
         
-        // Auto-hide after 1 second as fallback (faster)
+        // Auto-hide after 1 second as fallback
         setTimeout(() => {
           hideLoading();
         }, 1000);
       }
     };
 
-    document.addEventListener('click', handleLinkClick);
     document.addEventListener('submit', handleFormSubmit);
     document.addEventListener('click', handleButtonClick);
 
     return () => {
-      document.removeEventListener('click', handleLinkClick);
       document.removeEventListener('submit', handleFormSubmit);
       document.removeEventListener('click', handleButtonClick);
     };
