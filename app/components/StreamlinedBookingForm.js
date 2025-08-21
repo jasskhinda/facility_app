@@ -317,7 +317,21 @@ export default function StreamlinedBookingForm({ user }) {
         // Add route information from map if available
         route_duration: routeInfo?.duration?.text || null,
         route_distance_text: routeInfo?.distance?.text || null,
-        route_duration_text: routeInfo?.duration?.text || null
+        route_duration_text: routeInfo?.duration?.text || null,
+        // Add pricing breakdown data - LOCKED FROM BOOKING
+        pricing_breakdown_data: currentPricing ? {
+          pricing: currentPricing.pricing,
+          distance: currentPricing.distance,
+          summary: currentPricing.summary,
+          countyInfo: currentPricing.countyInfo,
+          clientInfo: clientInfoData,
+          wheelchairInfo: wheelchairData,
+          holidayInfo: holidayData,
+          createdAt: new Date().toISOString(),
+          source: 'StreamlinedBookingForm'
+        } : null,
+        pricing_breakdown_total: currentPricing?.pricing?.total || null,
+        pricing_breakdown_locked_at: currentPricing ? new Date().toISOString() : null
       };
       
       // Set the appropriate client reference based on client type

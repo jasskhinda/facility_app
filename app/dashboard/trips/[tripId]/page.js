@@ -7,191 +7,52 @@ import { createBrowserClient } from '@supabase/ssr';
 import DashboardLayout from '@/app/components/DashboardLayout';
 import EditTripForm from '@/app/components/EditTripForm';
 import PricingDisplay from '@/app/components/PricingDisplay';
+import SavedPricingBreakdown from '@/app/components/SavedPricingBreakdown';
 import { createPricingBreakdown, formatCurrency } from '@/lib/pricing';
 
-// Cost Breakdown Component - Uses EXACT PricingDisplay from booking page
-function ProfessionalCostBreakdown({ trip, onPricingCalculated }) {
-  const [clientInfoData, setClientInfoData] = useState(null);
-  const [holidayData, setHolidayData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [pricingResult, setPricingResult] = useState(null);
-
-  // Prepare EXACT same data format as booking page
-  const formData = {
-    pickupAddress: trip.pickup_address,
-    destinationAddress: trip.destination_address || trip.dropoff_address,
-    pickupDate: new Date(trip.pickup_time).toISOString().split('T')[0],
-    pickupTime: new Date(trip.pickup_time).toTimeString().slice(0, 5),
-    isRoundTrip: trip.is_round_trip || false,
-    wheelchairType: trip.wheelchair_type || 'none',
-    additionalPassengers: trip.additional_passengers || 0,
-    isEmergency: trip.is_emergency || false
-  };
-
-  const selectedClient = {
-    client_type: trip.facility_id ? 'managed' : 'authenticated'
-  };
-
-  // Use EXACT stored distance
-  const routeInfo = trip.distance ? {
-    distance: {
-      miles: parseFloat(trip.distance),
-      text: trip.route_distance_text || `${trip.distance} miles`
-    },
-    duration: {
-      text: trip.route_duration_text || trip.route_duration || ''
-    }
-  } : null;
-
-  const wheelchairData = {
-    type: trip.wheelchair_type || 'none',
-    needsProvided: trip.wheelchair_type === 'provided' || trip.wheelchair_type === 'wheelchair',
-    isTransportChair: trip.wheelchair_type === 'transport_not_allowed'
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const supabase = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-        );
-
-        let clientInfo = { weight: '250' };
-
-        // Fetch client weight if managed client
-        if (trip.managed_client_id) {
-          const { data: clientData } = await supabase
-            .from('facility_managed_clients')
-            .select('weight')
-            .eq('id', trip.managed_client_id)
-            .single();
-          
-          if (clientData?.weight) {
-            clientInfo = { weight: clientData.weight };
-          } else {
-            // If no weight found, but the price suggests bariatric was used, force bariatric weight
-            const expectedBariatricPrice = trip.is_round_trip ? 300 : 150; // Base bariatric fare
-            const actualBaseFare = parseFloat((trip.price / (parseFloat(trip.distance || 1) * 4 + 100)).toFixed(2)) * (trip.is_round_trip ? 300 : 150);
-            
-            // If the price structure suggests bariatric pricing was used during booking
-            if (trip.price >= 600) { // Threshold suggesting bariatric
-              clientInfo = { weight: '350' }; // Force bariatric weight
-              console.log('🚨 FORCING bariatric weight due to high trip price:', trip.price);
-            }
-          }
-        } else {
-          // For non-managed clients, infer weight from price
-          if (trip.price >= 600) { // Threshold suggesting bariatric
-            clientInfo = { weight: '350' }; // Force bariatric weight
-            console.log('🚨 FORCING bariatric weight for non-managed client due to price:', trip.price);
-          }
+// Legacy fallback component for trips without saved pricing breakdown
+// Legacy fallback component for trips without saved pricing breakdown
+function LegacyPricingFallback({ trip, onPricingCalculated }) {
+  // Pass the trip price as the calculated pricing for download functionality
+  React.useEffect(() => {
+    if (onPricingCalculated && trip.price) {
+      // Create a simple pricing object for the download function
+      const simplePricing = {
+        pricing: {
+          total: trip.price
         }
+      };
+      onPricingCalculated(simplePricing);
+    }
+  }, [trip.price, onPricingCalculated]);
 
-        // Use same holiday detection logic as booking page
-        const pickupDate = new Date(trip.pickup_time);
-        const month = pickupDate.getMonth() + 1;
-        const day = pickupDate.getDate();
-        
-        // Check for fixed holidays (same logic as pricing.js)
-        const fixedHolidays = [
-          { month: 1, day: 1, name: "New Year's Day" },
-          { month: 12, day: 31, name: "New Year's Eve" },
-          { month: 7, day: 4, name: "Independence Day" },
-          { month: 12, day: 24, name: "Christmas Eve" },
-          { month: 12, day: 25, name: "Christmas Day" }
-        ];
-        
-        const holiday = fixedHolidays.find(h => h.month === month && h.day === day);
-        const holidayInfo = {
-          isHoliday: !!holiday,
-          holidayName: holiday?.name || '',
-          surcharge: holiday ? 100 : 0
-        };
-
-        setClientInfoData(clientInfo);
-        setHolidayData(holidayInfo);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setClientInfoData({ weight: '250' });
-        setHolidayData({ isHoliday: false, holidayName: '', surcharge: 0 });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [trip]);
-
-  if (loading) {
-    return (
-      <div className="animate-pulse">
-        <div className="h-4 bg-gray-200 rounded mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded mb-2"></div>
-        <div className="h-6 bg-gray-200 rounded"></div>
-      </div>
-    );
-  }
-
-  // Use hidden PricingDisplay to get the calculated data
   return (
-    <>
-      {/* Hidden PricingDisplay to get the exact calculation */}
-      <div style={{ position: 'absolute', left: '-9999px', visibility: 'hidden', opacity: 0 }}>
-        <PricingDisplay 
-          formData={formData}
-          selectedClient={selectedClient}
-          routeInfo={routeInfo}
-          wheelchairData={wheelchairData}
-          clientInfoData={clientInfoData}
-          holidayData={holidayData}
-          isVisible={true}
-          onPricingCalculated={(pricing) => {
-            if (pricing && !pricingResult) {
-              setPricingResult(pricing);
-              // Pass the pricing result to parent component
-              if (onPricingCalculated) {
-                onPricingCalculated(pricing);
-              }
-            }
-          }}
-        />
+    <div className="space-y-4">
+      {/* Total Amount Display */}
+      <div className="flex justify-between items-center py-3 border-t-2 border-[#7CCFD0] pt-3 bg-[#F8F9FA] rounded-lg px-4">
+        <span className="text-lg font-semibold text-[#2E4F54] text-gray-900">
+          Total Amount
+        </span>
+        <span className="text-lg font-bold text-[#7CCFD0]">
+          ${trip.price?.toFixed(2) || '0.00'}
+        </span>
       </div>
       
-      {/* Display the breakdown manually */}
-      {pricingResult && pricingResult.pricing ? (
-        <>
-          {createPricingBreakdown(pricingResult.pricing, pricingResult.countyInfo).map((item, index) => (
-            <div key={index} className={`flex justify-between items-center py-2 ${
-              item.type === 'total' ? 'border-t-2 border-[#7CCFD0] pt-3 bg-[#F8F9FA] rounded-lg px-4 mt-4' : 
-              item.type === 'subtotal' ? 'border-t border-[#DDE5E7] dark:border-[#E0E0E0] pt-2' :
-              'border-b border-[#DDE5E7] dark:border-[#E0E0E0]'
-            }`}>
-              <span className={`${item.type === 'total' ? 'text-lg font-semibold' : 'text-sm'} ${
-                item.type === 'total' ? 'text-[#2E4F54] text-gray-900' :
-                item.type === 'discount' ? 'text-green-600 dark:text-green-400' :
-                item.type === 'premium' ? 'text-orange-600 dark:text-orange-400' :
-                'text-[#2E4F54] text-gray-900'
-              }`}>
-                {item.label}
-              </span>
-              <span className={`${item.type === 'total' ? 'text-lg font-bold text-[#7CCFD0]' : 'text-sm font-medium'} ${
-                item.type === 'total' ? '' :
-                item.type === 'discount' ? 'text-green-600 dark:text-green-400' :
-                item.type === 'premium' ? 'text-orange-600 dark:text-orange-400' :
-                'text-[#2E4F54] text-gray-900'
-              }`}>
-                {formatCurrency(Math.abs(item.amount))}
-              </span>
-            </div>
-          ))}
-        </>
-      ) : (
-        <div className="text-center py-4 text-gray-500">
-          Calculating pricing breakdown...
+      {/* Information Message */}
+      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg border border-blue-200 dark:border-blue-800">
+        <div className="flex items-start">
+          <svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+          </svg>
+          <div>
+            <p className="text-sm font-medium">Price Breakdown Information</p>
+            <p className="text-sm mt-1">
+              Detailed price breakdown is available while booking the trip. The total amount shown reflects the final fare calculated during booking.
+            </p>
+          </div>
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 }
 
@@ -226,16 +87,10 @@ export default function TripDetailsPage() {
       
       const clientType = trip.user_profile ? 'Registered Client' : trip.managed_client ? 'Managed Client' : 'Unknown';
       
-      // Create pricing breakdown text using the calculated pricing (same as booking page)
+      // Create pricing breakdown text using the stored trip price
       let pricingBreakdownText = '';
-      if (calculatedPricing && calculatedPricing.pricing) {
-        const breakdown = createPricingBreakdown(calculatedPricing.pricing, calculatedPricing.countyInfo);
-        pricingBreakdownText = breakdown.map(item => {
-          if (item.type === 'total') {
-            return `------------------------------------------------\n${item.label.toUpperCase()}: ${formatCurrency(item.amount)}`;
-          }
-          return `${item.label}: ${formatCurrency(item.amount)}`;
-        }).join('\n');
+      if (calculatedPricing && calculatedPricing.pricing && calculatedPricing.pricing.total) {
+        pricingBreakdownText = `TOTAL AMOUNT: $${calculatedPricing.pricing.total.toFixed(2)}`;
       } else {
         // Fallback to trip.price if no calculated pricing available
         pricingBreakdownText = `TOTAL AMOUNT: $${trip.price?.toFixed(2) || '0.00'}`;
@@ -817,7 +672,7 @@ Website: https://compassionatecaretransportation.com
           <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Cost Breakdown</h3>
           
           <div className="space-y-3">
-            <ProfessionalCostBreakdown 
+            <SavedPricingBreakdown 
               trip={trip} 
               onPricingCalculated={(pricing) => {
                 setCalculatedPricing(pricing);
