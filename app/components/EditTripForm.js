@@ -50,8 +50,20 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
     allergies: '',
     medications: '',
     mobility_aids: '',
-    special_instructions: ''
+    special_instructions: '',
+    isBariatric: false
   });
+
+  // Handle client info changes and update bariatric status
+  const handleClientInfoChange = useCallback((newClientInfo) => {
+    const weight = parseFloat(newClientInfo.weight) || 0;
+    const isBariatric = weight >= 300 && weight < 400;
+    
+    setClientInfo({
+      ...newClientInfo,
+      isBariatric
+    });
+  }, []);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -116,6 +128,9 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
           .single();
         
         if (profile) {
+          const weight = parseFloat(profile.weight) || 0;
+          const isBariatric = weight >= 300 && weight < 400;
+          
           setClientInfo({
             weight: profile.weight || '',
             height_feet: profile.height_feet || '',
@@ -129,7 +144,8 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
             allergies: profile.allergies || '',
             medications: profile.medications || '',
             mobility_aids: profile.mobility_aids || '',
-            special_instructions: profile.special_instructions || ''
+            special_instructions: profile.special_instructions || '',
+            isBariatric
           });
         }
       } else if (trip?.managed_client_id) {
@@ -141,6 +157,9 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
           .single();
         
         if (managedClient) {
+          const weight = parseFloat(managedClient.weight) || 0;
+          const isBariatric = weight >= 300 && weight < 400;
+          
           setClientInfo({
             weight: managedClient.weight || '',
             height_feet: managedClient.height_feet || '',
@@ -154,7 +173,8 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
             allergies: managedClient.allergies || '',
             medications: managedClient.medications || '',
             mobility_aids: managedClient.mobility_aids || '',
-            special_instructions: managedClient.special_instructions || ''
+            special_instructions: managedClient.special_instructions || '',
+            isBariatric
           });
         }
       }
@@ -499,7 +519,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
             {/* Enhanced Client Information */}
             <EnhancedClientInfoForm
               clientInfo={clientInfo}
-              onClientInfoChange={setClientInfo}
+              onClientInfoChange={handleClientInfoChange}
               className="mb-6"
             />
 
@@ -602,14 +622,16 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
             <PricingDisplay 
               formData={{
                 ...formData,
-                clientWeight: clientInfo.weight,
+                pickupDate: formData.pickupDate,
+                pickupTime: formData.pickupTime,
                 isEmergency: formData.isEmergency,
                 wheelchairType: formData.wheelchairType
               }}
               selectedClient={selectedClient}
               routeInfo={routeInfo}
               holidayInfo={holidayInfo}
-              clientInfo={clientInfo}
+              wheelchairData={wheelchairData}
+              clientInfoData={clientInfo}
               onPricingCalculated={setCurrentPricing}
             />
 
