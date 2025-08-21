@@ -10,7 +10,7 @@ import PricingDisplay from '@/app/components/PricingDisplay';
 import { createPricingBreakdown, formatCurrency } from '@/lib/pricing';
 
 // Cost Breakdown Component - Uses EXACT PricingDisplay from booking page
-function ProfessionalCostBreakdown({ trip }) {
+function ProfessionalCostBreakdown({ trip, onPricingCalculated }) {
   const [clientInfoData, setClientInfoData] = useState(null);
   const [holidayData, setHolidayData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -149,6 +149,10 @@ function ProfessionalCostBreakdown({ trip }) {
           onPricingCalculated={(pricing) => {
             if (pricing && !pricingResult) {
               setPricingResult(pricing);
+              // Pass the pricing result to parent component
+              if (onPricingCalculated) {
+                onPricingCalculated(pricing);
+              }
             }
           }}
         />
@@ -209,6 +213,7 @@ export default function TripDetailsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [calculatedPricing, setCalculatedPricing] = useState(null);
 
   // Download trip details as PDF-style document
   const downloadTripDetails = () => {
@@ -220,6 +225,21 @@ export default function TripDetailsPage() {
         : 'Unknown Client';
       
       const clientType = trip.user_profile ? 'Registered Client' : trip.managed_client ? 'Managed Client' : 'Unknown';
+      
+      // Create pricing breakdown text using the calculated pricing (same as booking page)
+      let pricingBreakdownText = '';
+      if (calculatedPricing && calculatedPricing.pricing) {
+        const breakdown = createPricingBreakdown(calculatedPricing.pricing, calculatedPricing.countyInfo);
+        pricingBreakdownText = breakdown.map(item => {
+          if (item.type === 'total') {
+            return `------------------------------------------------\n${item.label.toUpperCase()}: ${formatCurrency(item.amount)}`;
+          }
+          return `${item.label}: ${formatCurrency(item.amount)}`;
+        }).join('\n');
+      } else {
+        // Fallback to trip.price if no calculated pricing available
+        pricingBreakdownText = `TOTAL AMOUNT: $${trip.price?.toFixed(2) || '0.00'}`;
+      }
       
       const tripDetails = `
 COMPASSIONATE CARE TRANSPORTATION
@@ -258,12 +278,7 @@ ${trip.notes ? `Special Instructions: ${trip.notes}` : ''}
 ================================================
 COST BREAKDOWN
 ================================================
-Base Fare: $${trip.base_price?.toFixed(2) || (trip.price ? (trip.price * 0.8).toFixed(2) : '0.00')}
-${trip.wheelchair_type === 'wheelchair' ? `Wheelchair Surcharge: $${trip.wheelchair_fee?.toFixed(2) || (trip.price ? (trip.price * 0.1).toFixed(2) : '0.00')}` : ''}
-${trip.additional_passengers && trip.additional_passengers > 0 ? `Additional Passengers: ${trip.additional_passengers}` : ''}
-${trip.is_round_trip ? `Round Trip Fee: $${trip.round_trip_fee?.toFixed(2) || (trip.price ? (trip.price * 0.1).toFixed(2) : '0.00')}` : ''}
-------------------------------------------------
-TOTAL AMOUNT: $${trip.price?.toFixed(2) || '0.00'}
+${pricingBreakdownText}
 ${trip.status === 'completed' ? 'Payment Status: AWAITING PAYMENT' : ''}
 ${trip.status === 'cancelled' && trip.refund_status ? `Refund Status: ${trip.refund_status}` : ''}
 
@@ -802,7 +817,12 @@ Website: https://compassionatecaretransportation.com
           <h3 className="text-lg font-medium mb-4 text-[#2E4F54] text-gray-900">Cost Breakdown</h3>
           
           <div className="space-y-3">
-            <ProfessionalCostBreakdown trip={trip} />
+            <ProfessionalCostBreakdown 
+              trip={trip} 
+              onPricingCalculated={(pricing) => {
+                setCalculatedPricing(pricing);
+              }}
+            />
             
             {trip.status === 'completed' && (
               <div className="flex justify-between items-center py-2 text-sm">
