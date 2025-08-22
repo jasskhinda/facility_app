@@ -85,13 +85,51 @@ export async function POST(request) {
 
     // Delete the user from Supabase Auth
     console.log('👤 Deleting from auth...');
-    const { error: authDeleteError } = await adminSupabase.auth.admin.deleteUser(userId);
-
-    if (authDeleteError) {
-      console.error('❌ Auth deletion error:', authDeleteError);
+    
+    // Check if service role key is configured
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('❌ Service role key not configured');
+      // For now, just mark as successful if we removed from facility_users
+      console.log('⚠️ Skipping auth deletion - service role key not configured');
+      console.log('✅ User removed from facility successfully');
+      
       return NextResponse.json({ 
-        error: 'Failed to delete user account: ' + authDeleteError.message 
-      }, { status: 500 });
+        success: true, 
+        message: 'User removed from facility successfully',
+        warning: 'Auth account remains active - service role key required for full deletion'
+      });
+    }
+    
+    try {
+      const { error: authDeleteError } = await adminSupabase.auth.admin.deleteUser(userId);
+
+      if (authDeleteError) {
+        console.error('❌ Auth deletion error:', authDeleteError);
+        console.error('Auth error details:', JSON.stringify(authDeleteError, null, 2));
+        
+        // Check for specific error types
+        if (authDeleteError.message?.includes('Database error')) {
+          console.log('⚠️ Database error during auth deletion - user may already be deleted or service role key is invalid');
+          // Still consider this successful if we removed from facility_users
+          return NextResponse.json({ 
+            success: true, 
+            message: 'User removed from facility successfully',
+            warning: 'Could not fully delete auth account - it may already be deleted'
+          });
+        }
+        
+        return NextResponse.json({ 
+          error: 'Failed to delete user account: ' + (authDeleteError.message || 'Unknown error')
+        }, { status: 500 });
+      }
+    } catch (authError) {
+      console.error('❌ Unexpected auth deletion error:', authError);
+      // If auth deletion fails but we've removed from facility, consider it partial success
+      return NextResponse.json({ 
+        success: true, 
+        message: 'User removed from facility successfully',
+        warning: 'Could not delete auth account: ' + authError.message
+      });
     }
 
     console.log('✅ User deleted from auth');

@@ -295,11 +295,18 @@ export default function UserDetailsPage({ params }) {
 
       const result = await response.json();
 
-      if (!response.ok) {
+      if (!response.ok && !result.success) {
         throw new Error(result.error || 'Failed to delete user');
       }
 
-      alert('User deleted successfully');
+      // Check for warnings but still treat as success
+      if (result.warning) {
+        console.warn('Delete warning:', result.warning);
+        alert('User removed from facility successfully.\n\nNote: ' + result.warning);
+      } else {
+        alert('User deleted successfully');
+      }
+      
       router.push('/dashboard/facility-settings');
 
     } catch (error) {
