@@ -51,8 +51,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
     medications: '',
     mobility_aids: '',
     special_instructions: '',
-    isBariatric: false,
-    is_veteran: false
+    isBariatric: false
   });
 
   // Handle client info changes and update bariatric status
@@ -146,8 +145,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
             medications: profile.medications || '',
             mobility_aids: profile.mobility_aids || '',
             special_instructions: profile.special_instructions || '',
-            isBariatric,
-            is_veteran: profile.is_veteran || false
+            isBariatric
           });
         }
       } else if (trip?.managed_client_id) {
@@ -176,8 +174,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
             medications: managedClient.medications || '',
             mobility_aids: managedClient.mobility_aids || '',
             special_instructions: managedClient.special_instructions || '',
-            isBariatric,
-            is_veteran: managedClient.is_veteran || false
+            isBariatric
           });
         }
       }
