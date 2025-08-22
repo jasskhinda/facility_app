@@ -57,7 +57,7 @@ export default function ContractViewer({ user, facilityId, userRole }) {
 
       // Upload file to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('facility')
+        .from('contracts')
         .upload(fileName, uploadForm.file, {
           cacheControl: '3600',
           upsert: false
@@ -77,7 +77,7 @@ export default function ContractViewer({ user, facilityId, userRole }) {
 
       // Get public URL for the uploaded file
       const { data: urlData } = supabase.storage
-        .from('facility')
+        .from('contracts')
         .getPublicUrl(fileName);
 
       const contractUrl = urlData.publicUrl;
@@ -99,7 +99,7 @@ export default function ContractViewer({ user, facilityId, userRole }) {
         console.error('Database error:', dbError);
         // Try to clean up uploaded file if database insert fails
         await supabase.storage
-          .from('facility')
+          .from('contracts')
           .remove([fileName]);
         throw dbError;
       }
@@ -142,7 +142,7 @@ export default function ContractViewer({ user, facilityId, userRole }) {
       // Try to delete the actual file if we have the file name
       if (contract.file_name) {
         const { error: storageError } = await supabase.storage
-          .from('facility')
+          .from('contracts')
           .remove([contract.file_name]);
         
         if (storageError) {
