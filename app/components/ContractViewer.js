@@ -91,8 +91,7 @@ export default function ContractViewer({ user, facilityId, userRole }) {
           contract_name: uploadForm.name,
           contract_url: contractUrl,
           contract_type: uploadForm.type,
-          uploaded_by: user.id,
-          file_name: fileName
+          uploaded_by: user.id
         });
 
       if (dbError) {
@@ -122,15 +121,6 @@ export default function ContractViewer({ user, facilityId, userRole }) {
     }
 
     try {
-      // Get contract info first to find the file
-      const { data: contract, error: fetchError } = await supabase
-        .from('facility_contracts')
-        .select('file_name')
-        .eq('id', contractId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
       // Mark as inactive in database
       const { error: dbError } = await supabase
         .from('facility_contracts')
@@ -138,18 +128,6 @@ export default function ContractViewer({ user, facilityId, userRole }) {
         .eq('id', contractId);
 
       if (dbError) throw dbError;
-
-      // Try to delete the actual file if we have the file name
-      if (contract.file_name) {
-        const { error: storageError } = await supabase.storage
-          .from('contracts')
-          .remove([contract.file_name]);
-        
-        if (storageError) {
-          console.warn('Could not delete file from storage:', storageError);
-          // Don't fail the entire operation if file deletion fails
-        }
-      }
 
       alert('Contract deleted successfully');
       fetchContracts();
