@@ -48,21 +48,61 @@ export default function ContractViewer({ user, facilityId, userRole }) {
         return;
       }
 
-      // In a real implementation, you would upload the file to storage first
-      // For now, we'll create a placeholder URL
-      const contractUrl = `https://example.com/contracts/${uploadForm.file.name}`;
+      // Create unique filename with timestamp to avoid conflicts
+      const timestamp = Date.now();
+      const fileExtension = uploadForm.file.name.split('.').pop();
+      const fileName = `${facilityId}/contracts/${timestamp}_${uploadForm.file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
 
-      const { error } = await supabase
+      console.log('Uploading file to:', fileName);
+
+      // Upload file to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('facility')
+        .upload(fileName, uploadForm.file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        if (uploadError.message.includes('The resource was not found')) {
+          alert('Storage bucket not configured. Please contact support to set up file storage.');
+        } else {
+          alert('Failed to upload file: ' + uploadError.message);
+        }
+        return;
+      }
+
+      console.log('File uploaded successfully:', uploadData);
+
+      // Get public URL for the uploaded file
+      const { data: urlData } = supabase.storage
+        .from('facility')
+        .getPublicUrl(fileName);
+
+      const contractUrl = urlData.publicUrl;
+      console.log('Contract URL:', contractUrl);
+
+      // Save contract info to database
+      const { error: dbError } = await supabase
         .from('facility_contracts')
         .insert({
           facility_id: facilityId,
           contract_name: uploadForm.name,
           contract_url: contractUrl,
           contract_type: uploadForm.type,
-          uploaded_by: user.id
+          uploaded_by: user.id,
+          file_name: fileName
         });
 
-      if (error) throw error;
+      if (dbError) {
+        console.error('Database error:', dbError);
+        // Try to clean up uploaded file if database insert fails
+        await supabase.storage
+          .from('facility')
+          .remove([fileName]);
+        throw dbError;
+      }
 
       alert('Contract uploaded successfully');
       setShowUploadModal(false);
@@ -70,7 +110,7 @@ export default function ContractViewer({ user, facilityId, userRole }) {
       fetchContracts();
     } catch (error) {
       console.error('Error uploading contract:', error);
-      alert('Failed to upload contract');
+      alert('Failed to upload contract: ' + error.message);
     } finally {
       setUploadLoading(false);
     }
@@ -82,18 +122,40 @@ export default function ContractViewer({ user, facilityId, userRole }) {
     }
 
     try {
-      const { error } = await supabase
+      // Get contract info first to find the file
+      const { data: contract, error: fetchError } = await supabase
+        .from('facility_contracts')
+        .select('file_name')
+        .eq('id', contractId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Mark as inactive in database
+      const { error: dbError } = await supabase
         .from('facility_contracts')
         .update({ is_active: false })
         .eq('id', contractId);
 
-      if (error) throw error;
+      if (dbError) throw dbError;
+
+      // Try to delete the actual file if we have the file name
+      if (contract.file_name) {
+        const { error: storageError } = await supabase.storage
+          .from('facility')
+          .remove([contract.file_name]);
+        
+        if (storageError) {
+          console.warn('Could not delete file from storage:', storageError);
+          // Don't fail the entire operation if file deletion fails
+        }
+      }
 
       alert('Contract deleted successfully');
       fetchContracts();
     } catch (error) {
       console.error('Error deleting contract:', error);
-      alert('Failed to delete contract');
+      alert('Failed to delete contract: ' + error.message);
     }
   }
 
