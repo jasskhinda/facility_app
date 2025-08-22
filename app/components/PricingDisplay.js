@@ -72,7 +72,8 @@ export default function PricingDisplay({
         } : null,
         clientWeight: clientInfoData?.weight ? parseFloat(clientInfoData.weight) : null,
         holidayData: holidayData,
-        calculateDeadMileageEnabled: true
+        calculateDeadMileageEnabled: true,
+        isVeteran: clientInfoData?.is_veteran || false
       });
 
       if (result.success) {
@@ -158,9 +159,9 @@ export default function PricingDisplay({
               <p className="text-2xl font-bold text-[#2E4F54] text-gray-900">
                 {pricing.summary.estimatedTotal}
               </p>
-              {pricing.pricing.discount > 0 && (
+              {pricing.pricing.veteranDiscount > 0 && (
                 <p className="text-xs text-green-600 dark:text-green-400">
-                  10% discount applied
+                  10% veteran discount applied
                 </p>
               )}
             </div>
@@ -223,7 +224,7 @@ export default function PricingDisplay({
               <p>• Additional charges apply for off-hours, weekends, or wheelchair accessibility</p>
             )}
             {pricing.summary.hasDiscounts && (
-              <p>• 10% discount applied for individual client</p>
+              <p>• 10% veteran discount applied</p>
             )}
             <p>• Final fare may vary based on actual route and traffic conditions</p>
           </div>

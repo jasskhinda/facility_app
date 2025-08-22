@@ -202,6 +202,7 @@ export async function PUT(request, { params }) {
           accessibility_needs: clientData.accessibility_needs || null,
           medical_requirements: clientData.medical_requirements || null,
           emergency_contact: clientData.emergency_contact || null,
+          is_veteran: clientData.is_veteran || false,
         })
         .eq('id', id);
         
@@ -233,6 +234,7 @@ export async function PUT(request, { params }) {
           accessibility_needs: clientData.accessibility_needs || null,
           medical_requirements: clientData.medical_requirements || null,
           emergency_contact: clientData.emergency_contact || null,
+          is_veteran: clientData.is_veteran || false,
           updated_at: new Date().toISOString()
         })
         .eq('id', id);

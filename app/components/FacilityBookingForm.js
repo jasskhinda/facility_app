@@ -936,6 +936,16 @@ export default function FacilityBookingForm({ user }) {
               {clientProfile && (
                 <div className="bg-[#7CCFD0]/10 dark:bg-[#7CCFD0]/20 p-3 rounded-md">
                   <h3 className="text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">Client Information</h3>
+                  
+                  {/* Veteran Status */}
+                  {clientProfile.is_veteran && (
+                    <div className="mb-2">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        🎖️ Veteran - 10% Discount Applied
+                      </span>
+                    </div>
+                  )}
+                  
                   {clientProfile.accessibility_needs && (
                     <div className="mb-2">
                       <span className="text-xs font-medium text-[#2E4F54] text-gray-900">Accessibility Needs: </span>

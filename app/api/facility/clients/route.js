@@ -187,6 +187,7 @@ export async function POST(request) {
         accessibility_needs: clientData.accessibility_needs || null,
         medical_requirements: clientData.medical_requirements || null,
         emergency_contact: clientData.emergency_contact || null,
+        is_veteran: clientData.is_veteran || false,
         facility_id: profile.facility_id
       }])
       .select()

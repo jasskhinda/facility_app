@@ -25,6 +25,7 @@ export default function ClientForm({ clientId = null }) {
     accessibility_needs: '',
     medical_requirements: '',
     emergency_contact: '',
+    is_veteran: false,
   });
 
   useEffect(() => {
@@ -106,6 +107,7 @@ export default function ClientForm({ clientId = null }) {
             accessibility_needs: client.accessibility_needs || '',
             medical_requirements: client.medical_requirements || '',
             emergency_contact: client.emergency_contact || '',
+            is_veteran: client.is_veteran || false,
           });
         }
         
@@ -135,10 +137,10 @@ export default function ClientForm({ clientId = null }) {
   }, [router, supabase, clientId]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
@@ -176,6 +178,7 @@ export default function ClientForm({ clientId = null }) {
             accessibility_needs: formData.accessibility_needs,
             medical_requirements: formData.medical_requirements,
             emergency_contact: formData.emergency_contact,
+            is_veteran: formData.is_veteran,
           }),
         });
 
@@ -218,6 +221,7 @@ export default function ClientForm({ clientId = null }) {
             accessibility_needs: formData.accessibility_needs,
             medical_requirements: formData.medical_requirements,
             emergency_contact: formData.emergency_contact,
+            is_veteran: formData.is_veteran,
           }),
         });
 
@@ -403,6 +407,21 @@ export default function ClientForm({ clientId = null }) {
               onChange={handleChange}
               className="w-full p-2 border rounded text-gray-900 placeholder-gray-500"
             />
+          </div>
+          
+          {/* Veteran Status */}
+          <div className="flex items-center">
+            <input
+              id="is_veteran"
+              name="is_veteran"
+              type="checkbox"
+              checked={formData.is_veteran}
+              onChange={handleChange}
+              className="h-4 w-4 text-[#7CCFD0] focus:ring-[#7CCFD0] border-gray-300 rounded"
+            />
+            <label htmlFor="is_veteran" className="ml-2 block text-sm font-medium text-gray-900">
+              Veteran (eligible for 10% discount)
+            </label>
           </div>
           
           <div className="pt-6 flex justify-between gap-4">
