@@ -450,7 +450,7 @@ export default function UserDetailsPage({ params }) {
 
   // Always provide session user to DashboardLayout to prevent its internal loading state
   return (
-    <DashboardLayout user={session?.user || user}>
+    <DashboardLayout user={session?.user}>
       <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
