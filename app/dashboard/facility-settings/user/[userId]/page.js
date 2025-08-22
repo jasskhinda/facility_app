@@ -4,12 +4,10 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import DashboardLayout from '@/app/components/DashboardLayout';
-import { useLoading } from '@/app/components/LoadingProvider';
 
 export default function UserDetailsPage({ params }) {
   const router = useRouter();
   const { userId } = params;
-  const { hideLoading } = useLoading();
   const [user, setUser] = useState(null);
   const [facilityUser, setFacilityUser] = useState(null);
   const [loading, setLoading] = useState(false); // Start with false to avoid initial loading state
@@ -157,19 +155,17 @@ export default function UserDetailsPage({ params }) {
         role: targetFacilityUser.role || ''
       });
       
-      // Set loading to false and hide global loading
+      // Set loading to false
       setLoading(false);
-      hideLoading(); // Hide global loading overlay
       // Force a re-render
       setForceRender(prev => prev + 1);
       // Force hide again after a brief delay to ensure it's dismissed
       setTimeout(() => {
         setLoading(false);
-        hideLoading();
         setForceRender(prev => prev + 1); // Force another re-render
-        console.log('🏁 Force dismissed global loading and re-rendered');
+        console.log('🏁 Force dismissed loading and re-rendered');
       }, 100);
-      console.log('🏁 Loading set to false and global loading hidden');
+      console.log('🏁 Loading set to false');
 
     } catch (error) {
       console.error('💥 Error loading user:', error);
@@ -177,7 +173,6 @@ export default function UserDetailsPage({ params }) {
     } finally {
       console.log('🏁 Loading finished');
       setLoading(false);
-      hideLoading(); // Always hide global loading even on error
     }
   }
 
@@ -186,14 +181,12 @@ export default function UserDetailsPage({ params }) {
     if (userId && !hasLoadedRef.current) {
       console.log('🔄 useEffect triggered for userId:', userId);
       hasLoadedRef.current = true;
-      hideLoading(); // Hide global loading immediately
       loadUserData();
     }
     
     // Cleanup on unmount
     return () => {
       isMountedRef.current = false;
-      hideLoading();
     };
   }, [userId]);
 
@@ -376,7 +369,6 @@ export default function UserDetailsPage({ params }) {
       if (loading) {
         console.warn('⚠️ Loading timeout - forcing page render');
         setLoading(false);
-        hideLoading();
       }
     }, 2000); // 2 second timeout
     
@@ -388,7 +380,6 @@ export default function UserDetailsPage({ params }) {
     if (user && facilityUser) {
       console.log('📊 User data available, forcing render');
       setLoading(false);
-      hideLoading();
     }
   }, [user, facilityUser]);
 
