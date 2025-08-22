@@ -184,23 +184,35 @@ export default function ContractViewer({ user, facilityId, userRole }) {
               
               <div className="flex items-center space-x-3">
                 {/* View Button */}
-                <a
-                  href={contract.contract_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => {
+                    if (contract.contract_url && !contract.contract_url.includes('example.com')) {
+                      window.open(contract.contract_url, '_blank');
+                    } else {
+                      alert('Contract file is not available. Please contact your administrator to upload the contract file.');
+                    }
+                  }}
                   className="bg-[#7CCFD0] hover:bg-[#60BFC0] text-white px-3 py-1 rounded text-sm font-medium transition-colors"
                 >
                   View Contract
-                </a>
+                </button>
                 
                 {/* Download Button */}
-                <a
-                  href={contract.contract_url}
-                  download
+                <button
+                  onClick={() => {
+                    if (contract.contract_url && !contract.contract_url.includes('example.com')) {
+                      const link = document.createElement('a');
+                      link.href = contract.contract_url;
+                      link.download = contract.contract_name;
+                      link.click();
+                    } else {
+                      alert('Contract file is not available for download. Please contact your administrator to upload the contract file.');
+                    }
+                  }}
                   className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-1 rounded text-sm font-medium transition-colors"
                 >
                   Download
-                </a>
+                </button>
                 
                 {/* Delete Button (Admin only) */}
                 {canManageContracts && (
