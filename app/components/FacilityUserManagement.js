@@ -362,8 +362,8 @@ export default function FacilityUserManagement({ user, facilityId }) {
                     </span>
                   )}
                   
-                  {/* Remove Button */}
-                  {canRemoveUser(facilityUser.user_id, facilityUser.role) && facilityUser.is_owner !== true && (
+                  {/* Remove Button - Commented out as requested */}
+                  {/* {canRemoveUser(facilityUser.user_id, facilityUser.role) && facilityUser.is_owner !== true && (
                     <button
                       onClick={() => handleRemoveUser(facilityUser.user_id)}
                       disabled={actionLoading === facilityUser.user_id}
@@ -371,7 +371,7 @@ export default function FacilityUserManagement({ user, facilityId }) {
                     >
                       {actionLoading === facilityUser.user_id ? '🔄 Removing...' : '🔒 Remove'}
                     </button>
-                  )}
+                  )} */}
                   
                   {/* Show protected message for owner */}
                   {facilityUser.is_owner === true && (
