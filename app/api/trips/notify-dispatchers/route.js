@@ -29,19 +29,43 @@ export async function POST(request) {
       );
     }
     
+    // Get user's profile to check if they're facility staff
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, facility_id')
+      .eq('id', session.user.id)
+      .single();
+
+    const isFacilityStaff = profile?.role === 'facility';
+
     // Fetch the trip details
-    const { data: trip, error: tripError } = await supabase
+    // For facility staff: allow access to any trip from their facility
+    // For regular users: only allow access to their own trips
+    let tripQuery = supabase
       .from('trips')
       .select('*')
-      .eq('id', tripId)
-      .eq('user_id', session.user.id)
-      .single();
-    
+      .eq('id', tripId);
+
+    // If not facility staff, restrict to user's own trips
+    if (!isFacilityStaff) {
+      tripQuery = tripQuery.eq('user_id', session.user.id);
+    }
+
+    const { data: trip, error: tripError } = await tripQuery.single();
+
     if (tripError || !trip) {
       console.error('Error fetching trip:', tripError);
       return NextResponse.json(
         { error: 'Trip not found or access denied' },
         { status: 404 }
+      );
+    }
+
+    // Additional security: verify facility staff can only access trips from their facility
+    if (isFacilityStaff && trip.facility_id && trip.facility_id !== profile.facility_id) {
+      return NextResponse.json(
+        { error: 'Access denied - trip belongs to different facility' },
+        { status: 403 }
       );
     }
     
