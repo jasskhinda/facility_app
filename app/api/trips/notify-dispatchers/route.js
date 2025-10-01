@@ -1,7 +1,7 @@
 import { createRouteHandlerClient } from '@/lib/route-handler-client';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { notifyDispatchersOfNewTrip } from '@/lib/notifications';
+const { notifyDispatchersOfNewTrip } = require('@/lib/notifications');
 
 export async function POST(request) {
   try {
