@@ -74,7 +74,7 @@ export async function POST(request) {
       // Fetch client data if it's a managed client
       if (trip.managed_client_id) {
         const { data: clientData } = await supabase
-          .from('managed_clients')
+          .from('facility_managed_clients')
           .select('first_name, last_name, email')
           .eq('id', trip.managed_client_id)
           .single();
