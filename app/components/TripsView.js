@@ -319,10 +319,12 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                     <div className="mb-2 sm:mb-0">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(trip.status)}`}>
                         {trip.status === 'pending' ? 'Pending Approval' :
-                         trip.status === 'upcoming' ? 'Upcoming' : 
+                         trip.status === 'upcoming' || trip.status === 'approved' ? 'Upcoming' :
                          trip.status === 'in_process' ? 'In Process (Paid)' :
-                         trip.status === 'completed' ? 'Completed' : 
-                         trip.status === 'in_progress' ? 'In Progress' : 'Cancelled'}
+                         trip.status === 'completed' ? 'Completed' :
+                         trip.status === 'in_progress' ? 'In Progress' :
+                         trip.status === 'cancelled' || trip.status === 'canceled' ? 'Cancelled' :
+                         trip.status === 'rejected' ? 'Rejected' : trip.status}
                       </span>
                       <p className="mt-2 text-sm text-[#2E4F54]/70 text-gray-900/70">
                         {formatDate(trip.pickup_time)}
