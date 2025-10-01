@@ -38,23 +38,12 @@ export async function POST(request) {
 
     const isFacilityStaff = profile?.role === 'facility';
 
-    // Fetch the trip details with related client and facility information
+    // Fetch the trip details
     // For facility staff: allow access to any trip from their facility
     // For regular users: only allow access to their own trips
     let tripQuery = supabase
       .from('trips')
-      .select(`
-        *,
-        managed_clients (
-          first_name,
-          last_name,
-          email
-        ),
-        facilities (
-          contact_email,
-          name
-        )
-      `)
+      .select('*')
       .eq('id', tripId);
 
     // If not facility staff, restrict to user's own trips
