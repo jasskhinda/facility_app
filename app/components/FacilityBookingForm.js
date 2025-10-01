@@ -828,8 +828,12 @@ export default function FacilityBookingForm({ user }) {
       // In the background, notify dispatchers without blocking the user flow
       const createdTrip = data[0]; // Get the first trip from the returned data
 
+      console.log('✅ Trip created successfully:', createdTrip.id);
+
       // DEBUG: Check localStorage for debug mode
-      const isDebugMode = typeof window !== 'undefined' && localStorage.getItem('debugBooking') === 'true';
+      const debugValue = typeof window !== 'undefined' ? localStorage.getItem('debugBooking') : null;
+      const isDebugMode = debugValue === 'true';
+      console.log('🔍 Debug check - localStorage value:', debugValue, 'isDebugMode:', isDebugMode);
 
       if (isDebugMode) {
         console.log('🐛 DEBUG MODE ACTIVE: Waiting for notification to complete...');
@@ -837,7 +841,9 @@ export default function FacilityBookingForm({ user }) {
         await notifyDispatchersInBackground(createdTrip.id);
         console.log('🐛 DEBUG MODE: Notification complete. Preventing redirect. Run localStorage.removeItem("debugBooking") to restore normal behavior.');
         // Don't redirect in debug mode
+        return; // Important: exit early to prevent redirect
       } else {
+        console.log('📍 Normal mode: Will redirect in 2 seconds');
         // Normal mode: fire and forget notification, then redirect
         notifyDispatchersInBackground(createdTrip.id);
         setTimeout(() => {
