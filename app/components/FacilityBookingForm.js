@@ -825,31 +825,16 @@ export default function FacilityBookingForm({ user }) {
         paymentMethod: 'facility',
       });
 
+      // Start the redirect process
+      setTimeout(() => {
+        router.push('/dashboard/trips');
+      }, 2000);
+      
       // In the background, notify dispatchers without blocking the user flow
       const createdTrip = data[0]; // Get the first trip from the returned data
-
-      console.log('✅ Trip created successfully:', createdTrip.id);
-
-      // DEBUG: Check localStorage for debug mode
-      const debugValue = typeof window !== 'undefined' ? localStorage.getItem('debugBooking') : null;
-      const isDebugMode = debugValue === 'true';
-      console.log('🔍 Debug check - localStorage value:', debugValue, 'isDebugMode:', isDebugMode);
-
-      if (isDebugMode) {
-        console.log('🐛 DEBUG MODE ACTIVE: Waiting for notification to complete...');
-        // In debug mode, await the notification so we can see the result
-        await notifyDispatchersInBackground(createdTrip.id);
-        console.log('🐛 DEBUG MODE: Notification complete. Preventing redirect. Run localStorage.removeItem("debugBooking") to restore normal behavior.');
-        // Don't redirect in debug mode
-        return; // Important: exit early to prevent redirect
-      } else {
-        console.log('📍 Normal mode: Will redirect in 2 seconds');
-        // Normal mode: fire and forget notification, then redirect
-        notifyDispatchersInBackground(createdTrip.id);
-        setTimeout(() => {
-          router.push('/dashboard/trips');
-        }, 2000);
-      }
+      
+      // Use non-blocking notification in the background
+      notifyDispatchersInBackground(createdTrip.id);
       
     } catch (error) {
       console.error('Error booking trip:', error);
@@ -862,7 +847,6 @@ export default function FacilityBookingForm({ user }) {
   
   // Function to notify dispatchers in the background
   const notifyDispatchersInBackground = async (tripId) => {
-    console.log('🔔 Starting notification process for trip:', tripId);
     try {
       const notifyResponse = await fetch('/api/trips/notify-dispatchers', {
         method: 'POST',
@@ -871,20 +855,17 @@ export default function FacilityBookingForm({ user }) {
         },
         body: JSON.stringify({ tripId }),
       });
-
-      console.log('🔔 Notification API response status:', notifyResponse.status);
-
+      
       const notifyResult = await notifyResponse.json();
-      console.log('🔔 Notification API response:', notifyResult);
-
+      
       if (!notifyResponse.ok) {
-        console.error('❌ Error notifying dispatchers:', notifyResult.error, notifyResult.details);
+        console.error('Error notifying dispatchers:', notifyResult.error);
         // We don't block the user experience if notification fails
       } else {
-        console.log('✅ Dispatchers notified successfully:', notifyResult.message);
+        console.log('Dispatchers notified successfully');
       }
     } catch (notifyError) {
-      console.error('❌ Error in dispatcher notification:', notifyError);
+      console.error('Error in dispatcher notification:', notifyError);
       // Again, we don't block the user experience on notification errors
     }
   };
