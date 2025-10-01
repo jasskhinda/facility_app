@@ -45,12 +45,12 @@ export async function POST(request) {
       .from('trips')
       .select(`
         *,
-        managed_clients!managed_client_id (
+        managed_clients (
           first_name,
           last_name,
           email
         ),
-        facilities!facility_id (
+        facilities (
           contact_email,
           name
         )
