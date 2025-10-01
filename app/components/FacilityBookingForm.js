@@ -847,6 +847,7 @@ export default function FacilityBookingForm({ user }) {
   
   // Function to notify dispatchers in the background
   const notifyDispatchersInBackground = async (tripId) => {
+    console.log('🔔 Starting notification process for trip:', tripId);
     try {
       const notifyResponse = await fetch('/api/trips/notify-dispatchers', {
         method: 'POST',
@@ -855,17 +856,20 @@ export default function FacilityBookingForm({ user }) {
         },
         body: JSON.stringify({ tripId }),
       });
-      
+
+      console.log('🔔 Notification API response status:', notifyResponse.status);
+
       const notifyResult = await notifyResponse.json();
-      
+      console.log('🔔 Notification API response:', notifyResult);
+
       if (!notifyResponse.ok) {
-        console.error('Error notifying dispatchers:', notifyResult.error);
+        console.error('❌ Error notifying dispatchers:', notifyResult.error, notifyResult.details);
         // We don't block the user experience if notification fails
       } else {
-        console.log('Dispatchers notified successfully');
+        console.log('✅ Dispatchers notified successfully:', notifyResult.message);
       }
     } catch (notifyError) {
-      console.error('Error in dispatcher notification:', notifyError);
+      console.error('❌ Error in dispatcher notification:', notifyError);
       // Again, we don't block the user experience on notification errors
     }
   };
