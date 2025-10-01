@@ -68,7 +68,39 @@ export async function POST(request) {
         { status: 403 }
       );
     }
-    
+
+    // Enrich trip data with client and facility information for better email notifications
+    try {
+      // Fetch client data if it's a managed client
+      if (trip.managed_client_id) {
+        const { data: clientData } = await supabase
+          .from('managed_clients')
+          .select('first_name, last_name, email')
+          .eq('id', trip.managed_client_id)
+          .single();
+
+        if (clientData) {
+          trip.client_info = clientData;
+        }
+      }
+
+      // Fetch facility data if there's a facility_id
+      if (trip.facility_id) {
+        const { data: facilityData } = await supabase
+          .from('facilities')
+          .select('contact_email, name')
+          .eq('id', trip.facility_id)
+          .single();
+
+        if (facilityData) {
+          trip.facility_info = facilityData;
+        }
+      }
+    } catch (enrichError) {
+      // Don't fail if enrichment fails - just log and continue
+      console.log('Could not enrich trip data:', enrichError.message);
+    }
+
     // Set a timeout to prevent the API from hanging if notification takes too long
     // This makes the endpoint more resilient when handling many concurrent requests
     let notificationTimeout;
