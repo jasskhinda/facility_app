@@ -825,16 +825,22 @@ export default function FacilityBookingForm({ user }) {
         paymentMethod: 'facility',
       });
 
-      // Start the redirect process
-      setTimeout(() => {
-        router.push('/dashboard/trips');
-      }, 2000);
-      
       // In the background, notify dispatchers without blocking the user flow
       const createdTrip = data[0]; // Get the first trip from the returned data
-      
+
       // Use non-blocking notification in the background
       notifyDispatchersInBackground(createdTrip.id);
+
+      // Start the redirect process
+      // DEBUG: Set localStorage.setItem('debugBooking', 'true') in console to prevent redirect
+      const isDebugMode = typeof window !== 'undefined' && localStorage.getItem('debugBooking') === 'true';
+      if (isDebugMode) {
+        console.log('🐛 DEBUG MODE: Redirect prevented. Check logs above. Run localStorage.removeItem("debugBooking") to restore normal behavior.');
+      } else {
+        setTimeout(() => {
+          router.push('/dashboard/trips');
+        }, 2000);
+      }
       
     } catch (error) {
       console.error('Error booking trip:', error);
