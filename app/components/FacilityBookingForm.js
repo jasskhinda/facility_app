@@ -832,7 +832,8 @@ export default function FacilityBookingForm({ user }) {
       
       // In the background, notify dispatchers without blocking the user flow
       const createdTrip = data[0]; // Get the first trip from the returned data
-      
+
+      console.log('📧 Calling notification API for trip:', createdTrip.id);
       // Use non-blocking notification in the background
       notifyDispatchersInBackground(createdTrip.id);
       
@@ -847,7 +848,9 @@ export default function FacilityBookingForm({ user }) {
   
   // Function to notify dispatchers in the background
   const notifyDispatchersInBackground = async (tripId) => {
+    console.log('📧 Inside notifyDispatchersInBackground, trip ID:', tripId);
     try {
+      console.log('📧 Sending request to /api/trips/notify-dispatchers...');
       const notifyResponse = await fetch('/api/trips/notify-dispatchers', {
         method: 'POST',
         headers: {
@@ -855,14 +858,16 @@ export default function FacilityBookingForm({ user }) {
         },
         body: JSON.stringify({ tripId }),
       });
-      
+
+      console.log('📧 Response status:', notifyResponse.status);
       const notifyResult = await notifyResponse.json();
-      
+      console.log('📧 Response data:', notifyResult);
+
       if (!notifyResponse.ok) {
-        console.error('Error notifying dispatchers:', notifyResult.error);
+        console.error('❌ Error notifying dispatchers:', notifyResult.error);
         // We don't block the user experience if notification fails
       } else {
-        console.log('Dispatchers notified successfully');
+        console.log('✅ Dispatchers notified successfully');
       }
     } catch (notifyError) {
       console.error('Error in dispatcher notification:', notifyError);
