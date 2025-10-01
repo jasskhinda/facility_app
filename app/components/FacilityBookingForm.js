@@ -809,7 +809,10 @@ export default function FacilityBookingForm({ user }) {
       }
 
       console.log('Trip booked successfully:', data);
-      
+
+      // 🎉 DEPLOYMENT CHECK: If you see this, new code is deployed! 🎉
+      console.log('🎉🎉🎉 DEPLOYMENT VERIFIED - NEW CODE ACTIVE 🎉🎉🎉');
+
       // Trip was created, show success immediately
       setSuccess(true);
       setBookingStatus('success');
