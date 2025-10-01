@@ -828,15 +828,18 @@ export default function FacilityBookingForm({ user }) {
       // In the background, notify dispatchers without blocking the user flow
       const createdTrip = data[0]; // Get the first trip from the returned data
 
-      // Use non-blocking notification in the background
-      notifyDispatchersInBackground(createdTrip.id);
-
-      // Start the redirect process
-      // DEBUG: Set localStorage.setItem('debugBooking', 'true') in console to prevent redirect
+      // DEBUG: Check localStorage for debug mode
       const isDebugMode = typeof window !== 'undefined' && localStorage.getItem('debugBooking') === 'true';
+
       if (isDebugMode) {
-        console.log('🐛 DEBUG MODE: Redirect prevented. Check logs above. Run localStorage.removeItem("debugBooking") to restore normal behavior.');
+        console.log('🐛 DEBUG MODE ACTIVE: Waiting for notification to complete...');
+        // In debug mode, await the notification so we can see the result
+        await notifyDispatchersInBackground(createdTrip.id);
+        console.log('🐛 DEBUG MODE: Notification complete. Preventing redirect. Run localStorage.removeItem("debugBooking") to restore normal behavior.');
+        // Don't redirect in debug mode
       } else {
+        // Normal mode: fire and forget notification, then redirect
+        notifyDispatchersInBackground(createdTrip.id);
         setTimeout(() => {
           router.push('/dashboard/trips');
         }, 2000);
