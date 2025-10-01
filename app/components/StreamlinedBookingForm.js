@@ -352,7 +352,14 @@ export default function StreamlinedBookingForm({ user }) {
         .single();
         
       if (tripError) throw tripError;
-      
+
+      // 🎉 DEPLOYMENT CHECK: If you see this, new code is deployed! 🎉
+      console.log('🎉🎉🎉 DEPLOYMENT VERIFIED - NEW CODE ACTIVE 🎉🎉🎉');
+      console.log('📧 Calling notification API for trip:', trip.id);
+
+      // Notify dispatchers in the background
+      notifyDispatchersInBackground(trip.id);
+
       // If round trip, create return trip
       if (formData.isRoundTrip && formData.returnTime) {
         const returnDateTime = new Date(`${formData.pickupDate}T${formData.returnTime}`);
@@ -384,6 +391,36 @@ export default function StreamlinedBookingForm({ user }) {
       setError(err.message || 'Failed to book trip');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Function to notify dispatchers in the background
+  const notifyDispatchersInBackground = async (tripId) => {
+    console.log('📧 Inside notifyDispatchersInBackground, trip ID:', tripId);
+    try {
+      console.log('📧 Sending request to /api/trips/notify-dispatchers...');
+      const supabase = createClientSupabase();
+      const notifyResponse = await fetch('/api/trips/notify-dispatchers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tripId }),
+      });
+
+      console.log('📧 Response status:', notifyResponse.status);
+      const notifyResult = await notifyResponse.json();
+      console.log('📧 Response data:', notifyResult);
+
+      if (!notifyResponse.ok) {
+        console.error('❌ Error notifying dispatchers:', notifyResult.error);
+        // We don't block the user experience if notification fails
+      } else {
+        console.log('✅ Dispatchers notified successfully');
+      }
+    } catch (notifyError) {
+      console.error('Error in dispatcher notification:', notifyError);
+      // Don't throw - this is non-blocking
     }
   };
 
