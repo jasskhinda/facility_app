@@ -1,7 +1,7 @@
 import { createRouteHandlerClient } from '@/lib/route-handler-client';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-const { notifyDispatchersOfNewTrip } = require('@/lib/notifications');
+const { notifyDispatchersOfNewTrip, sendFacilityConfirmation, sendClientConfirmation } = require('@/lib/notifications');
 
 export async function POST(request) {
   try {
@@ -128,7 +128,29 @@ export async function POST(request) {
           { status: 500 }
         );
       }
-      
+
+      // Send confirmation emails in the background (non-blocking)
+      // For facility bookings, send to facility and client
+      if (trip.managed_client_id && trip.client_info && trip.facility_info) {
+        const clientName = `${trip.client_info.first_name} ${trip.client_info.last_name}`;
+
+        // Send facility confirmation
+        sendFacilityConfirmation(trip, trip.facility_info.contact_email, clientName)
+          .catch(err => console.error('Error sending facility confirmation:', err));
+
+        // Send client confirmation if they have an email
+        if (trip.client_info.email) {
+          sendClientConfirmation(trip, trip.client_info.email, clientName)
+            .catch(err => console.error('Error sending client confirmation:', err));
+        }
+      }
+      // For direct bookings, send to client only
+      else if (session.user.email) {
+        const clientName = session.user.user_metadata?.full_name || 'Valued Customer';
+        sendClientConfirmation(trip, session.user.email, clientName)
+          .catch(err => console.error('Error sending client confirmation:', err));
+      }
+
       return NextResponse.json({
         success: true,
         message: 'Dispatchers notified successfully'
