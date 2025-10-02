@@ -71,6 +71,8 @@ export async function POST(request) {
 
     // Enrich trip data with client and facility information for better email notifications
     try {
+      console.log('📋 Enriching trip data. managed_client_id:', trip.managed_client_id, 'facility_id:', trip.facility_id);
+
       // Fetch client data if it's a managed client
       if (trip.managed_client_id) {
         const { data: clientData } = await supabase
@@ -81,6 +83,9 @@ export async function POST(request) {
 
         if (clientData) {
           trip.client_info = clientData;
+          console.log('✅ Client info fetched:', clientData.email);
+        } else {
+          console.log('⚠️ No client data found for managed_client_id:', trip.managed_client_id);
         }
       }
 
@@ -94,11 +99,14 @@ export async function POST(request) {
 
         if (facilityData) {
           trip.facility_info = facilityData;
+          console.log('✅ Facility info fetched:', facilityData.contact_email);
+        } else {
+          console.log('⚠️ No facility data found for facility_id:', trip.facility_id);
         }
       }
     } catch (enrichError) {
       // Don't fail if enrichment fails - just log and continue
-      console.log('Could not enrich trip data:', enrichError.message);
+      console.log('❌ Could not enrich trip data:', enrichError.message);
     }
 
     // Set a timeout to prevent the API from hanging if notification takes too long
@@ -131,24 +139,33 @@ export async function POST(request) {
 
       // Send confirmation emails in the background (non-blocking)
       // For facility bookings, send to facility and client
+      console.log('📧 Checking confirmation emails. managed_client_id:', trip.managed_client_id, 'client_info:', !!trip.client_info, 'facility_info:', !!trip.facility_info);
+
       if (trip.managed_client_id && trip.client_info && trip.facility_info) {
         const clientName = `${trip.client_info.first_name} ${trip.client_info.last_name}`;
+        console.log('📧 Sending facility confirmation to:', trip.facility_info.contact_email);
 
         // Send facility confirmation
         sendFacilityConfirmation(trip, trip.facility_info.contact_email, clientName)
-          .catch(err => console.error('Error sending facility confirmation:', err));
+          .catch(err => console.error('❌ Error sending facility confirmation:', err));
 
         // Send client confirmation if they have an email
         if (trip.client_info.email) {
+          console.log('📧 Sending client confirmation to:', trip.client_info.email);
           sendClientConfirmation(trip, trip.client_info.email, clientName)
-            .catch(err => console.error('Error sending client confirmation:', err));
+            .catch(err => console.error('❌ Error sending client confirmation:', err));
+        } else {
+          console.log('⚠️ Client has no email, skipping client confirmation');
         }
       }
       // For direct bookings, send to client only
       else if (session.user.email) {
         const clientName = session.user.user_metadata?.full_name || 'Valued Customer';
+        console.log('📧 Direct booking - sending client confirmation to:', session.user.email);
         sendClientConfirmation(trip, session.user.email, clientName)
-          .catch(err => console.error('Error sending client confirmation:', err));
+          .catch(err => console.error('❌ Error sending client confirmation:', err));
+      } else {
+        console.log('⚠️ No confirmation emails sent - missing required data');
       }
 
       return NextResponse.json({
