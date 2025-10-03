@@ -143,16 +143,17 @@ export async function POST(request) {
 
       if (trip.managed_client_id && trip.client_info && trip.facility_info) {
         const clientName = `${trip.client_info.first_name} ${trip.client_info.last_name}`;
+        const facilityName = trip.facility_info.name || null;
         console.log('📧 Sending facility confirmation to:', trip.facility_info.contact_email);
 
         // Send facility confirmation and WAIT for it
-        await sendFacilityConfirmation(trip, trip.facility_info.contact_email, clientName)
+        await sendFacilityConfirmation(trip, trip.facility_info.contact_email, clientName, facilityName)
           .catch(err => console.error('❌ Error sending facility confirmation:', err));
 
         // Send client confirmation if they have an email and WAIT for it
         if (trip.client_info.email) {
           console.log('📧 Sending client confirmation to:', trip.client_info.email);
-          await sendClientConfirmation(trip, trip.client_info.email, clientName)
+          await sendClientConfirmation(trip, trip.client_info.email, clientName, facilityName)
             .catch(err => console.error('❌ Error sending client confirmation:', err));
         } else {
           console.log('⚠️ Client has no email, skipping client confirmation');
@@ -194,14 +195,15 @@ export async function POST(request) {
 
       if (trip.managed_client_id && trip.client_info && trip.facility_info) {
         const clientName = `${trip.client_info.first_name} ${trip.client_info.last_name}`;
+        const facilityName = trip.facility_info.name || null;
         console.log('📧 Timeout handler - sending facility confirmation to:', trip.facility_info.contact_email);
 
-        await sendFacilityConfirmation(trip, trip.facility_info.contact_email, clientName)
+        await sendFacilityConfirmation(trip, trip.facility_info.contact_email, clientName, facilityName)
           .catch(err => console.error('❌ Timeout handler - facility confirmation error:', err));
 
         if (trip.client_info.email) {
           console.log('📧 Timeout handler - sending client confirmation to:', trip.client_info.email);
-          await sendClientConfirmation(trip, trip.client_info.email, clientName)
+          await sendClientConfirmation(trip, trip.client_info.email, clientName, facilityName)
             .catch(err => console.error('❌ Timeout handler - client confirmation error:', err));
         }
       }
