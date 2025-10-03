@@ -137,7 +137,7 @@ export async function POST(request) {
         );
       }
 
-      // Send confirmation emails in the background (non-blocking)
+      // Send confirmation emails and wait for them to complete
       // For facility bookings, send to facility and client
       console.log('📧 Checking confirmation emails. managed_client_id:', trip.managed_client_id, 'client_info:', !!trip.client_info, 'facility_info:', !!trip.facility_info);
 
@@ -145,14 +145,14 @@ export async function POST(request) {
         const clientName = `${trip.client_info.first_name} ${trip.client_info.last_name}`;
         console.log('📧 Sending facility confirmation to:', trip.facility_info.contact_email);
 
-        // Send facility confirmation
-        sendFacilityConfirmation(trip, trip.facility_info.contact_email, clientName)
+        // Send facility confirmation and WAIT for it
+        await sendFacilityConfirmation(trip, trip.facility_info.contact_email, clientName)
           .catch(err => console.error('❌ Error sending facility confirmation:', err));
 
-        // Send client confirmation if they have an email
+        // Send client confirmation if they have an email and WAIT for it
         if (trip.client_info.email) {
           console.log('📧 Sending client confirmation to:', trip.client_info.email);
-          sendClientConfirmation(trip, trip.client_info.email, clientName)
+          await sendClientConfirmation(trip, trip.client_info.email, clientName)
             .catch(err => console.error('❌ Error sending client confirmation:', err));
         } else {
           console.log('⚠️ Client has no email, skipping client confirmation');
@@ -162,7 +162,7 @@ export async function POST(request) {
       else if (session.user.email) {
         const clientName = session.user.user_metadata?.full_name || 'Valued Customer';
         console.log('📧 Direct booking - sending client confirmation to:', session.user.email);
-        sendClientConfirmation(trip, session.user.email, clientName)
+        await sendClientConfirmation(trip, session.user.email, clientName)
           .catch(err => console.error('❌ Error sending client confirmation:', err));
       } else {
         console.log('⚠️ No confirmation emails sent - missing required data');
@@ -196,12 +196,12 @@ export async function POST(request) {
         const clientName = `${trip.client_info.first_name} ${trip.client_info.last_name}`;
         console.log('📧 Timeout handler - sending facility confirmation to:', trip.facility_info.contact_email);
 
-        sendFacilityConfirmation(trip, trip.facility_info.contact_email, clientName)
+        await sendFacilityConfirmation(trip, trip.facility_info.contact_email, clientName)
           .catch(err => console.error('❌ Timeout handler - facility confirmation error:', err));
 
         if (trip.client_info.email) {
           console.log('📧 Timeout handler - sending client confirmation to:', trip.client_info.email);
-          sendClientConfirmation(trip, trip.client_info.email, clientName)
+          await sendClientConfirmation(trip, trip.client_info.email, clientName)
             .catch(err => console.error('❌ Timeout handler - client confirmation error:', err));
         }
       }
