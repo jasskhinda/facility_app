@@ -174,25 +174,42 @@ export async function POST(request) {
       });
     } catch (timeoutError) {
       // If we hit the timeout, continue the notification in background and return success
-      console.log('Notification taking longer than expected, continuing in background');
-      
+      console.log('⏱️ Dispatcher notification timeout - continuing in background');
+
       // Continue the notification process in background without awaiting it
       notifyDispatchersOfNewTrip(trip, session.user)
         .then(result => {
           if (result.success) {
-            console.log('Background notification completed successfully');
+            console.log('✅ Background dispatcher notification completed');
           } else {
-            console.error('Background notification failed:', result.error);
+            console.error('❌ Background dispatcher notification failed:', result.error);
           }
         })
         .catch(err => {
-          console.error('Error in background notification:', err);
+          console.error('❌ Error in background dispatcher notification:', err);
         });
-      
+
+      // IMPORTANT: Still send facility and client confirmations even if dispatcher email times out
+      console.log('📧 Sending facility/client confirmations despite dispatcher timeout');
+
+      if (trip.managed_client_id && trip.client_info && trip.facility_info) {
+        const clientName = `${trip.client_info.first_name} ${trip.client_info.last_name}`;
+        console.log('📧 Timeout handler - sending facility confirmation to:', trip.facility_info.contact_email);
+
+        sendFacilityConfirmation(trip, trip.facility_info.contact_email, clientName)
+          .catch(err => console.error('❌ Timeout handler - facility confirmation error:', err));
+
+        if (trip.client_info.email) {
+          console.log('📧 Timeout handler - sending client confirmation to:', trip.client_info.email);
+          sendClientConfirmation(trip, trip.client_info.email, clientName)
+            .catch(err => console.error('❌ Timeout handler - client confirmation error:', err));
+        }
+      }
+
       // Return success to the client, as this is non-blocking
       return NextResponse.json({
         success: true,
-        message: 'Trip created. Dispatcher notification in progress.'
+        message: 'Trip created. Notifications in progress.'
       });
     }
   } catch (error) {
