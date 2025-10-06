@@ -183,7 +183,7 @@ export default function FacilityDashboardView({ user }) {
         {/* Header */}
         <div className="card p-6">
           <h1 className="section-header">
-            {facilityName} Dashboard
+            {facilityName} Dashboard - PREVIEW VERSION
           </h1>
           <p className="text-gray-600 mt-1">
             Manage your facility&apos;s transportation needs
