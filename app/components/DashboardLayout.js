@@ -42,11 +42,15 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
 
   const handleSignOut = async () => {
     try {
+      // Attempt to sign out - this may fail if session is already invalid (e.g., password changed in mobile app)
       await supabase.auth.signOut();
-      // Use window.location.href to force a full page reload and clear session
-      window.location.href = '/?logout=true'; 
     } catch (error) {
       console.error('Error signing out:', error);
+      // Even if signOut fails (invalid session), we still want to redirect and clear local session
+    } finally {
+      // Always redirect to login page and force a full page reload to clear session
+      // This ensures logout works even if the session token is invalid
+      window.location.href = '/?logout=true';
     }
   };
 
