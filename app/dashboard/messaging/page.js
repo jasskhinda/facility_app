@@ -1,19 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/app/components/DashboardLayout';
+import DashboardLayout from '../../components/DashboardLayout';
 
 export default function MessagingPage() {
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [conversation, setConversation] = useState(null);
+  const [dispatcherInfo, setDispatcherInfo] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const router = useRouter();
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [selectedRating, setSelectedRating] = useState(0);
+  const [ratingFeedback, setRatingFeedback] = useState('');
+  const messagesEndRef = useRef(null);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -21,202 +24,227 @@ export default function MessagingPage() {
   );
 
   useEffect(() => {
-    checkUser();
+    loadUserAndConversation();
   }, []);
 
   useEffect(() => {
     if (!conversation) return;
 
     // Subscribe to new messages
-    const channel = supabase
+    const messagesSubscription = supabase
       .channel('messages-changes')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `conversation_id=eq.${conversation.id}`
-      }, (payload) => {
-        setMessages(prev => [...prev, payload.new]);
-        // Mark message as read if it's from dispatcher
-        if (payload.new.sender_type === 'dispatcher') {
-          markMessageAsRead(payload.new.id);
-        }
-        // Scroll to bottom
-        setTimeout(() => {
-          const messagesContainer = document.getElementById('messages-container');
-          if (messagesContainer) {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversation.id}`
+        },
+        (payload) => {
+          setMessages(prev => [...prev, payload.new]);
+          scrollToBottom();
+
+          if (payload.new.sender_type === 'dispatcher') {
+            markMessageAsRead(payload.new.id);
           }
-        }, 100);
-      })
+        }
+      )
       .subscribe();
 
+    // Subscribe to conversation updates (for dispatcher assignment)
+    const conversationSubscription = supabase
+      .channel('conversation-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'conversations',
+          filter: `id=eq.${conversation.id}`
+        },
+        (payload) => {
+          setConversation(payload.new);
+          if (payload.new.assigned_dispatcher_id) {
+            loadDispatcherInfo(payload.new.assigned_dispatcher_id);
+          }
+        }
+      )
+      .subscribe();
+
+    // Load dispatcher info if already assigned
+    if (conversation.assigned_dispatcher_id) {
+      loadDispatcherInfo(conversation.assigned_dispatcher_id);
+    }
+
     return () => {
-      supabase.removeChannel(channel);
+      messagesSubscription.unsubscribe();
+      conversationSubscription.unsubscribe();
     };
   }, [conversation]);
 
-  const checkUser = async () => {
+  const loadUserAndConversation = async () => {
     try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      setLoading(true);
 
-      if (sessionError || !session) {
-        router.push('/');
-        return;
-      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      setUser(user);
 
-      setUser(session.user);
-
-      // Get user profile
-      const { data: profileData, error: profileError } = await supabase
+      // Get user profile with facility
+      const { data: profileData } = await supabase
         .from('profiles')
         .select('*, facilities(*)')
-        .eq('id', session.user.id)
+        .eq('id', user.id)
         .single();
 
-      if (profileError) throw profileError;
-
-      if (profileData.role !== 'facility') {
-        router.push('/dashboard');
+      if (!profileData?.facility_id) {
+        alert('No facility associated with this account');
         return;
       }
-
       setProfile(profileData);
 
       // Get or create conversation
-      await getOrCreateConversation(profileData.facility_id);
-
-    } catch (error) {
-      console.error('Error checking user:', error);
-      router.push('/');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getOrCreateConversation = async (facilityId) => {
-    try {
-      // Check if conversation exists
-      let { data: existingConv, error: convError } = await supabase
+      let { data: existingConv } = await supabase
         .from('conversations')
         .select('*')
-        .eq('facility_id', facilityId)
+        .eq('facility_id', profileData.facility_id)
         .single();
 
-      if (convError && convError.code !== 'PGRST116') {
-        throw convError;
-      }
-
       if (!existingConv) {
-        // Create new conversation
-        const { data: newConv, error: createError } = await supabase
+        const { data: newConv } = await supabase
           .from('conversations')
           .insert({
-            facility_id: facilityId,
-            subject: 'Facility Support'
+            facility_id: profileData.facility_id,
+            subject: 'General Support'
           })
           .select()
           .single();
-
-        if (createError) throw createError;
         existingConv = newConv;
       }
 
       setConversation(existingConv);
 
       // Load messages
-      await loadMessages(existingConv.id);
+      const { data: messagesData } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', existingConv.id)
+        .order('created_at', { ascending: true });
 
+      setMessages(messagesData || []);
+
+      // Mark unread as read
+      const unread = messagesData?.filter(m => m.sender_type === 'dispatcher' && !m.read_by_facility);
+      if (unread?.length > 0) {
+        await supabase
+          .from('messages')
+          .update({ read_by_facility: true })
+          .in('id', unread.map(m => m.id));
+      }
+
+      setTimeout(scrollToBottom, 100);
     } catch (error) {
-      console.error('Error getting conversation:', error);
+      console.error('Error loading:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const loadMessages = async (conversationId) => {
+  const loadDispatcherInfo = async (dispatcherId) => {
     try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select(`
-          *,
-          profiles:sender_id (
-            email,
-            full_name
-          )
-        `)
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      setMessages(data || []);
-
-      // Mark unread messages as read
-      const unreadMessages = data?.filter(m =>
-        m.sender_type === 'dispatcher' && !m.read_by_facility
-      ) || [];
-
-      for (const msg of unreadMessages) {
-        await markMessageAsRead(msg.id);
-      }
-
-      // Scroll to bottom after messages load
-      setTimeout(() => {
-        const messagesContainer = document.getElementById('messages-container');
-        if (messagesContainer) {
-          messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-      }, 100);
-
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', dispatcherId)
+        .single();
+      setDispatcherInfo(data);
     } catch (error) {
-      console.error('Error loading messages:', error);
+      console.error('Error loading dispatcher:', error);
     }
   };
 
   const markMessageAsRead = async (messageId) => {
-    try {
-      await supabase
-        .from('messages')
-        .update({ read_by_facility: true })
-        .eq('id', messageId);
-    } catch (error) {
-      console.error('Error marking message as read:', error);
-    }
+    await supabase
+      .from('messages')
+      .update({ read_by_facility: true })
+      .eq('id', messageId);
   };
 
   const sendMessage = async (e) => {
     e.preventDefault();
+    if (!newMessage.trim() || sending) return;
 
-    if (!newMessage.trim() || !conversation || sending) return;
-
-    setSending(true);
     try {
-      const { error } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id: conversation.id,
-          sender_id: user.id,
-          sender_type: 'facility',
-          message_text: newMessage.trim(),
-          read_by_facility: true,
-          read_by_dispatcher: false
-        });
-
-      if (error) throw error;
-
+      setSending(true);
+      await supabase.from('messages').insert({
+        conversation_id: conversation.id,
+        sender_id: user.id,
+        sender_type: 'facility',
+        message_text: newMessage.trim(),
+        read_by_facility: true,
+        read_by_dispatcher: false
+      });
       setNewMessage('');
+      setTimeout(scrollToBottom, 100);
     } catch (error) {
-      console.error('Error sending message:', error);
-      alert('Failed to send message. Please try again.');
+      console.error('Error:', error);
+      alert('Failed to send message');
     } finally {
       setSending(false);
     }
   };
 
+  const handleResolveConversation = () => {
+    if (conversation?.rating) {
+      alert('You have already rated this conversation.');
+      return;
+    }
+    setShowRatingModal(true);
+  };
+
+  const submitRating = async () => {
+    if (selectedRating === 0) {
+      alert('Please select a rating');
+      return;
+    }
+
+    try {
+      await supabase
+        .from('conversations')
+        .update({
+          rating: selectedRating,
+          feedback: ratingFeedback.trim() || null,
+          rated_at: new Date().toISOString(),
+          status: 'resolved'
+        })
+        .eq('id', conversation.id);
+
+      setShowRatingModal(false);
+      alert('Thank you for your feedback!');
+      loadUserAndConversation();
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to submit rating');
+    }
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const formatTime = (timestamp) => {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  };
+
   if (loading) {
     return (
       <DashboardLayout user={user} activeTab="messaging">
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#7CCFD0]"></div>
+        <div className="flex items-center justify-center h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
         </div>
       </DashboardLayout>
     );
@@ -224,87 +252,158 @@ export default function MessagingPage() {
 
   return (
     <DashboardLayout user={user} activeTab="messaging">
-      <div className="max-w-5xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-[calc(100vh-12rem)] flex flex-col">
+      <div className="max-w-5xl mx-auto h-[calc(100vh-8rem)]">
+        <div className="bg-white rounded-lg shadow-sm border h-full flex flex-col">
           {/* Header */}
-          <div className="bg-gradient-to-r from-[#7CCFD0] to-[#6AB9BA] p-4 rounded-t-lg">
-            <h2 className="text-xl font-bold text-white">Dispatcher Support</h2>
-            <p className="text-white text-sm opacity-90">Send messages to our dispatch team</p>
+          <div className="bg-gradient-to-r from-teal-500 to-teal-600 p-4 rounded-t-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white">Dispatcher Support</h2>
+                <p className="text-white text-sm opacity-90">
+                  {dispatcherInfo
+                    ? `Chatting with ${dispatcherInfo.full_name}`
+                    : conversation?.status === 'open'
+                    ? 'Waiting for dispatcher to join...'
+                    : 'Get help from our dispatch team'
+                  }
+                </p>
+              </div>
+              {conversation?.status === 'active' && dispatcherInfo && !conversation?.rating && (
+                <button
+                  onClick={handleResolveConversation}
+                  className="px-4 py-2 bg-white text-teal-600 rounded-lg hover:bg-gray-50 transition font-medium"
+                >
+                  Mark as Resolved
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Messages Area */}
-          <div
-            id="messages-container"
-            className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
-          >
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                <svg className="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
+                <div className="text-6xl mb-4">💬</div>
                 <p className="text-lg font-medium">No messages yet</p>
-                <p className="text-sm">Start a conversation with the dispatch team</p>
+                <p className="text-sm">Start a conversation with our dispatch team</p>
               </div>
             ) : (
-              messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.sender_type === 'facility' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[70%] rounded-lg p-3 ${
-                      message.sender_type === 'facility'
-                        ? 'bg-[#7CCFD0] text-white'
-                        : 'bg-white border border-gray-200 text-gray-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-medium opacity-75">
-                        {message.sender_type === 'facility' ? 'You' : 'Dispatcher'}
-                      </span>
-                      <span className="text-xs opacity-60">
-                        {new Date(message.created_at).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
+              messages.map(msg => {
+                const isFacility = msg.sender_type === 'facility';
+                return (
+                  <div key={msg.id} className={`flex mb-4 ${isFacility ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[70%] rounded-2xl px-4 py-2 ${
+                      isFacility
+                        ? 'bg-teal-500 text-white rounded-br-sm'
+                        : 'bg-white text-gray-900 shadow-sm rounded-bl-sm'
+                    }`}>
+                      <p className="text-sm leading-relaxed">{msg.message_text}</p>
+                      <p className={`text-xs mt-1 ${isFacility ? 'text-teal-100' : 'text-gray-500'}`}>
+                        {formatTime(msg.created_at)}
+                      </p>
                     </div>
-                    <p className="text-sm whitespace-pre-wrap break-words">{message.message_text}</p>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
+            <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Area */}
-          <form onSubmit={sendMessage} className="p-4 bg-white border-t border-gray-200 rounded-b-lg">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type your message..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-transparent"
-                disabled={sending}
-              />
-              <button
-                type="submit"
-                disabled={!newMessage.trim() || sending}
-                className="px-6 py-2 bg-[#7CCFD0] text-white rounded-lg font-medium hover:bg-[#6AB9BA] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {sending ? (
-                  <span className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Sending...
-                  </span>
-                ) : (
-                  'Send'
-                )}
-              </button>
+          {/* Input */}
+          {conversation?.status !== 'resolved' ? (
+            <form onSubmit={sendMessage} className="p-4 border-t bg-white rounded-b-lg">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Type your message..."
+                  className="flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  maxLength={500}
+                />
+                <button
+                  type="submit"
+                  disabled={!newMessage.trim() || sending}
+                  className="px-6 py-2 bg-teal-500 text-white rounded-full hover:bg-teal-600 disabled:bg-gray-300 transition font-medium"
+                >
+                  {sending ? 'Sending...' : 'Send'}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="bg-gray-100 border-t p-4 text-center rounded-b-lg">
+              <p className="text-sm text-gray-600">
+                ✓ This conversation has been resolved
+                {conversation.rating && ` • You rated it ${conversation.rating}/5 stars`}
+              </p>
             </div>
-          </form>
+          )}
         </div>
       </div>
+
+      {/* Rating Modal */}
+      {showRatingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <h3 className="text-2xl font-bold text-gray-900 text-center mb-2">
+              Rate Your Experience
+            </h3>
+            <p className="text-gray-600 text-center mb-6">
+              How satisfied are you with the support you received?
+            </p>
+
+            {/* Stars */}
+            <div className="flex justify-center gap-2 mb-4">
+              {[1, 2, 3, 4, 5].map(star => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setSelectedRating(star)}
+                  className="text-5xl hover:scale-110 transition"
+                >
+                  {selectedRating >= star ? '⭐' : '☆'}
+                </button>
+              ))}
+            </div>
+
+            <p className="text-center text-teal-600 font-semibold mb-6 h-6">
+              {selectedRating === 1 && 'Poor'}
+              {selectedRating === 2 && 'Fair'}
+              {selectedRating === 3 && 'Good'}
+              {selectedRating === 4 && 'Very Good'}
+              {selectedRating === 5 && 'Excellent'}
+            </p>
+
+            <textarea
+              value={ratingFeedback}
+              onChange={(e) => setRatingFeedback(e.target.value)}
+              placeholder="Tell us more about your experience (optional)"
+              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 mb-6"
+              rows={4}
+              maxLength={500}
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowRatingModal(false);
+                  setSelectedRating(0);
+                  setRatingFeedback('');
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitRating}
+                className="flex-1 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 font-medium"
+              >
+                Submit Rating
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
