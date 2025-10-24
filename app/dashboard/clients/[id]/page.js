@@ -202,8 +202,11 @@ export default function ClientDetailPage() {
                     <span className="font-medium text-[#2E4F54] w-32">Weight:</span>
                     <span className="text-[#2E4F54] font-semibold">
                       {client.weight ? `${client.weight} lbs` : 'Not provided'}
+                      {client.weight >= 400 && (
+                        <span className="ml-2 text-xs text-red-700 font-bold bg-red-100 px-2 py-1 rounded">🚫 Cannot accommodate - Over 400 lbs</span>
+                      )}
                       {client.weight >= 300 && client.weight < 400 && (
-                        <span className="ml-2 text-xs text-amber-700 font-bold">⚠️ Bariatric</span>
+                        <span className="ml-2 text-xs text-amber-700 font-bold bg-amber-100 px-2 py-1 rounded">⚠️ Bariatric</span>
                       )}
                     </span>
                   </div>
