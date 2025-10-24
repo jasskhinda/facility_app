@@ -93,7 +93,7 @@ export default function EnhancedClientInfoForm({
         {hasStoredInfo && (
           <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
             <p className="text-sm text-green-800">
-              ✓ Information loaded from client profile. To update, use the "Edit Client Info" link above.
+              ✓ Client information loaded from profile. To make changes, please use the "Edit Client Info" link above.
             </p>
           </div>
         )}
