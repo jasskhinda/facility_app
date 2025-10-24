@@ -793,10 +793,12 @@ export default function StreamlinedBookingForm({ user }) {
               </button>
               <button
                 type="submit"
-                disabled={loading}
-                className="px-6 py-2 bg-[#7CCFD0] hover:bg-[#60BFC0] text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                disabled={loading || (clientInfoData?.weight && parseFloat(clientInfoData.weight) >= 400)}
+                className="px-6 py-2 bg-[#7CCFD0] hover:bg-[#60BFC0] text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Booking...' : 'Book Trip'}
+                {loading ? 'Booking...' :
+                 (clientInfoData?.weight && parseFloat(clientInfoData.weight) >= 400) ? 'Cannot Book - Contact Us' :
+                 'Book Trip'}
               </button>
             </div>
           </form>
