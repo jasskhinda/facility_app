@@ -22,6 +22,10 @@ export default function EnhancedClientInfoForm({
     if (selectedClient) {
       setClientInfo(prev => ({
         ...prev,
+        weight: selectedClient.weight || prev.weight,
+        height_feet: selectedClient.height_feet || prev.height_feet,
+        height_inches: selectedClient.height_inches || prev.height_inches,
+        date_of_birth: selectedClient.date_of_birth || prev.date_of_birth,
         email: selectedClient.email || prev.email
       }));
     }
@@ -61,13 +65,39 @@ export default function EnhancedClientInfoForm({
     }
   };
 
+  // Check if client has stored information
+  const hasStoredInfo = selectedClient && selectedClient.weight && selectedClient.height_feet && selectedClient.date_of_birth;
+
   return (
     <div className={`space-y-4 ${className}`}>
       <div className="bg-white border border-[#DDE5E7] rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-[#2E4F54] mb-4 flex items-center">
-          👤 Enhanced Client Information
-        </h3>
-        
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-[#2E4F54] flex items-center">
+            👤 Enhanced Client Information
+          </h3>
+          {hasStoredInfo && (
+            <a
+              href={`/dashboard/clients/${selectedClient.id}/edit`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-[#7CCFD0] hover:text-[#5AAEB0] font-medium flex items-center"
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Edit Client Info
+            </a>
+          )}
+        </div>
+
+        {hasStoredInfo && (
+          <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
+            <p className="text-sm text-green-800">
+              ✓ Information loaded from client profile. To update, use the "Edit Client Info" link above.
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Weight Field - Critical for bariatric determination */}
           <div>
@@ -79,10 +109,12 @@ export default function EnhancedClientInfoForm({
               value={clientInfo.weight}
               onChange={(e) => handleChange('weight', e.target.value)}
               placeholder="Enter weight in pounds"
-              className="w-full px-3 py-2 border border-[#DDE5E7] rounded-lg bg-white text-[#2E4F54] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0]"
+              className={`w-full px-3 py-2 border border-[#DDE5E7] rounded-lg text-[#2E4F54] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0] ${hasStoredInfo ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
               min="50"
               max="800"
               required
+              readOnly={hasStoredInfo}
+              disabled={hasStoredInfo}
             />
             {parseFloat(clientInfo.weight) >= 400 && (
               <p className="text-xs text-red-700 mt-1 font-bold">
@@ -106,8 +138,9 @@ export default function EnhancedClientInfoForm({
                 <select
                   value={clientInfo.height_feet}
                   onChange={(e) => handleChange('height_feet', e.target.value)}
-                  className="w-full px-3 py-2 border border-[#DDE5E7] rounded-lg bg-white text-[#2E4F54] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className={`w-full px-3 py-2 border border-[#DDE5E7] rounded-lg text-[#2E4F54] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] ${hasStoredInfo ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
                   required
+                  disabled={hasStoredInfo}
                 >
                   <option value="">Feet</option>
                   {[3, 4, 5, 6, 7, 8].map(feet => (
@@ -119,8 +152,9 @@ export default function EnhancedClientInfoForm({
                 <select
                   value={clientInfo.height_inches}
                   onChange={(e) => handleChange('height_inches', e.target.value)}
-                  className="w-full px-3 py-2 border border-[#DDE5E7] rounded-lg bg-white text-[#2E4F54] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0]"
+                  className={`w-full px-3 py-2 border border-[#DDE5E7] rounded-lg text-[#2E4F54] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] ${hasStoredInfo ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
                   required
+                  disabled={hasStoredInfo}
                 >
                   <option value="">Inches</option>
                   {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(inches => (
@@ -140,9 +174,11 @@ export default function EnhancedClientInfoForm({
               type="date"
               value={clientInfo.date_of_birth}
               onChange={(e) => handleChange('date_of_birth', e.target.value)}
-              className="w-full px-3 py-2 border border-[#DDE5E7] rounded-lg bg-white text-[#2E4F54] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0]"
+              className={`w-full px-3 py-2 border border-[#DDE5E7] rounded-lg text-[#2E4F54] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0] ${hasStoredInfo ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
               max={new Date().toISOString().split('T')[0]} // Max date is today
               required
+              readOnly={hasStoredInfo}
+              disabled={hasStoredInfo}
             />
             <p className="text-xs text-[#2E4F54]/70 mt-1">
               Required for hospital record verification when needed
@@ -159,10 +195,12 @@ export default function EnhancedClientInfoForm({
               value={clientInfo.email}
               onChange={handleEmailChange}
               placeholder="Enter email or 'N/A' if not available"
-              className="w-full px-3 py-2 border border-[#DDE5E7] rounded-lg bg-white text-[#2E4F54] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0]"
+              className={`w-full px-3 py-2 border border-[#DDE5E7] rounded-lg text-[#2E4F54] focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-[#7CCFD0] ${hasStoredInfo ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+              readOnly={hasStoredInfo}
+              disabled={hasStoredInfo}
             />
             <p className="text-xs text-[#2E4F54]/70 mt-1">
-              Enter 'N/A' if email address is not available to proceed without delays
+              {hasStoredInfo ? 'Email loaded from client profile' : "Enter 'N/A' if email address is not available to proceed without delays"}
             </p>
           </div>
         </div>

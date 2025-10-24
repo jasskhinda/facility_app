@@ -25,6 +25,10 @@ export default function ClientForm({ clientId = null }) {
     accessibility_needs: '',
     medical_requirements: '',
     emergency_contact: '',
+    weight: '',
+    height_feet: '',
+    height_inches: '',
+    date_of_birth: '',
   });
 
   useEffect(() => {
@@ -106,6 +110,10 @@ export default function ClientForm({ clientId = null }) {
             accessibility_needs: client.accessibility_needs || '',
             medical_requirements: client.medical_requirements || '',
             emergency_contact: client.emergency_contact || '',
+            weight: client.weight || '',
+            height_feet: client.height_feet || '',
+            height_inches: client.height_inches || '',
+            date_of_birth: client.date_of_birth || '',
           });
         }
         
@@ -157,6 +165,10 @@ export default function ClientForm({ clientId = null }) {
       if (!formData.first_name || !formData.last_name || !formData.email) {
         throw new Error('First name, last name, and email are required');
       }
+
+      if (!formData.weight || !formData.height_feet || !formData.date_of_birth) {
+        throw new Error('Weight, height, and date of birth are required');
+      }
       
       // If editing an existing client
       if (clientId) {
@@ -176,6 +188,10 @@ export default function ClientForm({ clientId = null }) {
             accessibility_needs: formData.accessibility_needs,
             medical_requirements: formData.medical_requirements,
             emergency_contact: formData.emergency_contact,
+            weight: formData.weight ? parseFloat(formData.weight) : null,
+            height_feet: formData.height_feet ? parseInt(formData.height_feet) : null,
+            height_inches: formData.height_inches ? parseInt(formData.height_inches) : null,
+            date_of_birth: formData.date_of_birth,
           }),
         });
 
@@ -218,6 +234,10 @@ export default function ClientForm({ clientId = null }) {
             accessibility_needs: formData.accessibility_needs,
             medical_requirements: formData.medical_requirements,
             emergency_contact: formData.emergency_contact,
+            weight: formData.weight ? parseFloat(formData.weight) : null,
+            height_feet: formData.height_feet ? parseInt(formData.height_feet) : null,
+            height_inches: formData.height_inches ? parseInt(formData.height_inches) : null,
+            date_of_birth: formData.date_of_birth,
           }),
         });
 
@@ -332,7 +352,7 @@ export default function ClientForm({ clientId = null }) {
               Required to create client account and send login credentials
             </p>
           </div>
-          
+
           <div>
             <label htmlFor="phone_number" className="block mb-1 font-medium text-gray-900">
               Phone Number
@@ -346,6 +366,86 @@ export default function ClientForm({ clientId = null }) {
               className="w-full p-2 border rounded text-gray-900 placeholder-gray-500"
               required
             />
+          </div>
+
+          {/* 👤 Enhanced Client Information Section */}
+          <div className="border-t pt-4 mt-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              👤 Enhanced Client Information
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="weight" className="block mb-1 font-medium text-gray-900">
+                  Weight (lbs) *
+                </label>
+                <input
+                  id="weight"
+                  name="weight"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={formData.weight}
+                  onChange={handleChange}
+                  placeholder="Enter weight in pounds"
+                  className="w-full p-2 border rounded text-gray-900 placeholder-gray-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="date_of_birth" className="block mb-1 font-medium text-gray-900">
+                  Date of Birth *
+                </label>
+                <input
+                  id="date_of_birth"
+                  name="date_of_birth"
+                  type="date"
+                  value={formData.date_of_birth}
+                  onChange={handleChange}
+                  className="w-full p-2 border rounded text-gray-900 placeholder-gray-500"
+                  required
+                />
+                <p className="text-sm text-gray-600 mt-1">
+                  Required for hospital record verification when needed
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="block mb-1 font-medium text-gray-900">
+                Height *
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <input
+                    id="height_feet"
+                    name="height_feet"
+                    type="number"
+                    min="0"
+                    max="8"
+                    value={formData.height_feet}
+                    onChange={handleChange}
+                    placeholder="Feet"
+                    className="w-full p-2 border rounded text-gray-900 placeholder-gray-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <input
+                    id="height_inches"
+                    name="height_inches"
+                    type="number"
+                    min="0"
+                    max="11"
+                    value={formData.height_inches}
+                    onChange={handleChange}
+                    placeholder="Inches"
+                    className="w-full p-2 border rounded text-gray-900 placeholder-gray-500"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
           
           <div>
