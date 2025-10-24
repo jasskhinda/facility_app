@@ -263,10 +263,42 @@ export default function StreamlinedBookingForm({ user }) {
     if (formData.isRoundTrip && formData.returnTime) {
       const pickupTime = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
       const returnTime = new Date(`${formData.pickupDate}T${formData.returnTime}`);
-      
+
       if (returnTime <= pickupTime) {
         setError('Return time must be after pickup time for round trips');
         return;
+      }
+
+      // Validate return time includes travel duration + 15 minute buffer
+      if (currentPricing?.distance?.duration) {
+        const durationText = currentPricing.distance.duration;
+        const durationMatch = durationText.match(/(\d+)\s*(hour|hr|min)/gi);
+        let totalMinutes = 0;
+
+        if (durationMatch) {
+          durationMatch.forEach(part => {
+            const value = parseInt(part);
+            if (part.toLowerCase().includes('hour') || part.toLowerCase().includes('hr')) {
+              totalMinutes += value * 60;
+            } else {
+              totalMinutes += value;
+            }
+          });
+        }
+
+        const bufferMinutes = 15;
+        const minimumReturnTime = new Date(pickupTime);
+        minimumReturnTime.setMinutes(minimumReturnTime.getMinutes() + totalMinutes + bufferMinutes);
+
+        if (returnTime < minimumReturnTime) {
+          const formattedMinTime = minimumReturnTime.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          });
+          setError(`Return time must be at least ${formattedMinTime} (travel time + 15 min buffer)`);
+          return;
+        }
       }
     }
 
