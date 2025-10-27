@@ -119,14 +119,18 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
 
     // Load existing client data if available
     const loadClientData = async () => {
+      console.log('🔍 Loading client data for trip:', trip?.id, 'user_id:', trip?.user_id, 'managed_client_id:', trip?.managed_client_id);
+
       if (trip?.user_id) {
         // Load user profile data
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', trip.user_id)
           .single();
-        
+
+        console.log('👤 Profile data:', profile, 'error:', error);
+
         if (profile) {
           const weight = parseFloat(profile.weight) || 0;
           const isBariatric = weight >= 300 && weight < 400;
@@ -150,17 +154,20 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
             isBariatric
           };
 
+          console.log('✅ Setting client data from profile:', clientData);
           setClientInfo(clientData);
           setSelectedClient(clientData);
         }
       } else if (trip?.managed_client_id) {
         // Load managed client data
-        const { data: managedClient } = await supabase
+        const { data: managedClient, error } = await supabase
           .from('facility_managed_clients')
           .select('*')
           .eq('id', trip.managed_client_id)
           .single();
-        
+
+        console.log('🏥 Managed client data:', managedClient, 'error:', error);
+
         if (managedClient) {
           const weight = parseFloat(managedClient.weight) || 0;
           const isBariatric = weight >= 300 && weight < 400;
@@ -184,6 +191,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
             isBariatric
           };
 
+          console.log('✅ Setting client data from managed client:', clientData);
           setClientInfo(clientData);
           setSelectedClient(clientData);
         }

@@ -18,8 +18,20 @@ export default function EnhancedClientInfoForm({
   });
 
   useEffect(() => {
+    // Update when initialData changes (for edit mode)
+    if (initialData && Object.keys(initialData).length > 0) {
+      console.log('📝 EnhancedClientInfoForm: Updating from initialData:', initialData);
+      setClientInfo(prev => ({
+        ...prev,
+        ...initialData
+      }));
+    }
+  }, [initialData]);
+
+  useEffect(() => {
     // Auto-populate if client is pre-selected
     if (selectedClient) {
+      console.log('👤 EnhancedClientInfoForm: Updating from selectedClient:', selectedClient);
       setClientInfo(prev => ({
         ...prev,
         weight: selectedClient.weight || prev.weight,
