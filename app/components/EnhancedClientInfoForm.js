@@ -19,14 +19,19 @@ export default function EnhancedClientInfoForm({
 
   useEffect(() => {
     // Update when initialData changes (for edit mode)
-    if (initialData && Object.keys(initialData).length > 0) {
+    const hasData = initialData && Object.keys(initialData).length > 0;
+    if (hasData) {
       console.log('📝 EnhancedClientInfoForm: Updating from initialData:', initialData);
-      setClientInfo(prev => ({
-        ...prev,
+      setClientInfo({
+        weight: initialData.weight || '',
+        height_feet: initialData.height_feet || '',
+        height_inches: initialData.height_inches || '',
+        date_of_birth: initialData.date_of_birth || '',
+        email: initialData.email || '',
         ...initialData
-      }));
+      });
     }
-  }, [initialData]);
+  }, [initialData?.weight, initialData?.height_feet, initialData?.height_inches, initialData?.date_of_birth, initialData?.email, initialData?.name]);
 
   useEffect(() => {
     // Auto-populate if client is pre-selected
