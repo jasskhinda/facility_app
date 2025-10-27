@@ -174,7 +174,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
 
           const clientData = {
             id: managedClient.id,
-            name: managedClient.name,
+            name: `${managedClient.first_name || ''} ${managedClient.last_name || ''}`.trim() || 'Unknown Client',
             weight: managedClient.weight || '',
             height_feet: managedClient.height_feet || '',
             height_inches: managedClient.height_inches || '',
