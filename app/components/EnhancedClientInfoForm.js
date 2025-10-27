@@ -90,6 +90,14 @@ export default function EnhancedClientInfoForm({
           )}
         </div>
 
+        {selectedClient?.name && (
+          <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm font-medium text-blue-900">
+              📋 Client: <span className="font-semibold">{selectedClient.name}</span>
+            </p>
+          </div>
+        )}
+
         {hasStoredInfo && (
           <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
             <p className="text-sm text-green-800">

@@ -130,8 +130,10 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
         if (profile) {
           const weight = parseFloat(profile.weight) || 0;
           const isBariatric = weight >= 300 && weight < 400;
-          
-          setClientInfo({
+
+          const clientData = {
+            id: profile.id,
+            name: profile.name || profile.full_name,
             weight: profile.weight || '',
             height_feet: profile.height_feet || '',
             height_inches: profile.height_inches || '',
@@ -146,7 +148,10 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
             mobility_aids: profile.mobility_aids || '',
             special_instructions: profile.special_instructions || '',
             isBariatric
-          });
+          };
+
+          setClientInfo(clientData);
+          setSelectedClient(clientData);
         }
       } else if (trip?.managed_client_id) {
         // Load managed client data
@@ -159,8 +164,10 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
         if (managedClient) {
           const weight = parseFloat(managedClient.weight) || 0;
           const isBariatric = weight >= 300 && weight < 400;
-          
-          setClientInfo({
+
+          const clientData = {
+            id: managedClient.id,
+            name: managedClient.name,
             weight: managedClient.weight || '',
             height_feet: managedClient.height_feet || '',
             height_inches: managedClient.height_inches || '',
@@ -175,17 +182,16 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
             mobility_aids: managedClient.mobility_aids || '',
             special_instructions: managedClient.special_instructions || '',
             isBariatric
-          });
+          };
+
+          setClientInfo(clientData);
+          setSelectedClient(clientData);
         }
       }
     };
 
-    // Set up client for pricing calculations
+    // Load client data when trip is available
     if (trip) {
-      setSelectedClient({
-        client_type: 'facility', // Since this is from facility app
-        id: trip.user_id || trip.managed_client_id
-      });
       loadClientData();
     }
   }, [trip]);
@@ -536,7 +542,8 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
 
             {/* Enhanced Client Information */}
             <EnhancedClientInfoForm
-              clientInfo={clientInfo}
+              initialData={clientInfo}
+              selectedClient={selectedClient}
               onClientInfoChange={handleClientInfoChange}
               className="mb-6"
             />
