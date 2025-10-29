@@ -1,4 +1,5 @@
 import { createRouteHandlerClient } from '@/lib/route-handler-client'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request) {
   try {
@@ -11,21 +12,39 @@ export async function POST(request) {
       )
     }
 
-    const supabase = await createRouteHandlerClient()
+    // Get authorization token from header for mobile app or use cookies for web
+    const authHeader = request.headers.get('authorization');
+    let supabase;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      // Mobile app authentication via Bearer token
+      supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        {
+          global: {
+            headers: { Authorization: authHeader }
+          }
+        }
+      );
+    } else {
+      // Web app authentication via cookies
+      supabase = await createRouteHandlerClient();
+    }
 
     // Verify user authentication and role
     console.log('Payment amounts API: Checking authentication...')
-    
+
     // Try both session and getUser methods for debugging
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
     console.log('Payment amounts API: Session check result:', { hasSession: !!session, sessionError, userEmail: session?.user?.email })
-    
+
     const { data: userData, error: userError } = await supabase.auth.getUser()
     console.log('Payment amounts API: GetUser check result:', { userData: userData?.user?.email, userError })
-    
+
     // Use session if available, otherwise fall back to userData
     const user = session?.user || userData?.user
-    
+
     if (!user) {
       console.log('Payment amounts API: Authentication failed - no user found in session or getUser')
       return Response.json(
@@ -41,7 +60,8 @@ export async function POST(request) {
       .eq('id', user.id)
       .single()
 
-    if (profileError || profile.role !== 'facility' || profile.facility_id !== facility_id) {
+    const facilityStaffRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
+    if (profileError || !facilityStaffRoles.includes(profile.role) || profile.facility_id !== facility_id) {
       console.log('Payment amounts API: Profile check failed:', { profileError, role: profile?.role, facility_id: profile?.facility_id, requested_facility: facility_id })
       return Response.json(
         { error: 'Access denied' },
