@@ -31,8 +31,9 @@ export default function FacilityClientManagement({ user }) {
         .select('facility_id, role')
         .eq('id', user.id)
         .single();
-        
-      if (profile?.role !== 'facility') {
+
+      const facilityStaffRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
+      if (!facilityStaffRoles.includes(profile?.role)) {
         router.push('/dashboard');
         return;
       }
