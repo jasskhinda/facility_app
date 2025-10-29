@@ -1,4 +1,17 @@
 import { createRouteHandlerClient } from '@/lib/route-handler-client'
+import { createClient } from '@supabase/supabase-js'
+
+// Handle OPTIONS for CORS preflight
+export async function OPTIONS(request) {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
+}
 
 export async function POST(request) {
   try {
@@ -14,23 +27,36 @@ export async function POST(request) {
     // Generate invoice number if not provided
     const invoiceNumber = `CCT-${month.replace('-', '')}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
-    const supabase = await createRouteHandlerClient()
+    // Get authorization token from header for mobile app or use cookies for web
+    const authHeader = request.headers.get('authorization');
+    let supabase;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      // Mobile app authentication via Bearer token
+      supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        {
+          global: {
+            headers: { Authorization: authHeader }
+          }
+        }
+      );
+    } else {
+      // Web app authentication via cookies
+      supabase = await createRouteHandlerClient();
+    }
 
     // Verify user authentication and role
     console.log('Checking authentication...')
-    
-    // Try both session and getUser methods for debugging
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    console.log('Session check result:', { hasSession: !!session, sessionError, userEmail: session?.user?.email })
-    
+
     const { data: userData, error: userError } = await supabase.auth.getUser()
     console.log('GetUser check result:', { userData: userData?.user?.email, userError })
-    
-    // Use session if available, otherwise fall back to userData
-    const user = session?.user || userData?.user
-    
+
+    const user = userData?.user
+
     if (!user) {
-      console.log('Authentication failed - no user found in session or getUser')
+      console.log('Authentication failed - no user found')
       return Response.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -239,7 +265,7 @@ export async function POST(request) {
         .from('facility_invoices')
         .insert({
           facility_id: facility_id,
-          invoice_number: invoice_number,
+          invoice_number: invoiceNumber,
           month: month,
           total_amount: amount,
           payment_status: paymentStatus,
@@ -286,6 +312,12 @@ export async function POST(request) {
         month: month,
         submission_type: check_submission_type
       }
+    }, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
     })
 
   } catch (error) {
