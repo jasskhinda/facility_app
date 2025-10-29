@@ -88,9 +88,27 @@ export function useFacilityUsers(facilityId, currentUser) {
       }
 
       // Transform data to include profile info at the top level
-      // Filter out facility role and super_admin (Super Admin) - they manage their info in Facility Info tab
+      // Filter based on current user's role:
+      // - Super Admin/Facility: sees admins and schedulers (not other super admins)
+      // - Admin: sees themselves and schedulers
+      // - Scheduler: sees no one (they can't manage users)
       const transformedUsers = data
-        .filter(user => user.role !== 'facility' && user.role !== 'super_admin')
+        .filter(user => {
+          // Always filter out facility owner role
+          if (user.role === 'facility') return false;
+
+          // Filter based on current user's role
+          if (currentUserRole === 'facility' || currentUserRole === 'super_admin') {
+            // Super Admin sees everyone except other super admins and facility owner
+            return user.role !== 'facility' && user.role !== 'super_admin';
+          } else if (currentUserRole === 'admin') {
+            // Admin sees themselves and schedulers
+            return user.user_id === currentUser?.id || user.role === 'scheduler';
+          } else {
+            // Scheduler sees no one
+            return false;
+          }
+        })
         .map(user => {
           const profile = profiles.find(p => p.id === user.user_id);
           return {
