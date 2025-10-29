@@ -29,9 +29,19 @@ export function useFacilityUsers(facilityId, currentUser) {
       if (error) {
         // Handle specific error codes
         if (error.code === 'PGRST116') {
-          // No rows returned - user not in facility_users table
-          console.warn('User not found in facility_users table, defaulting to super_admin');
-          setCurrentUserRole('super_admin');
+          // No rows returned - check profiles table for backward compatibility
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', currentUser.id)
+            .single();
+
+          if (profileData?.role) {
+            setCurrentUserRole(profileData.role);
+          } else {
+            console.warn('User role not found, defaulting to scheduler');
+            setCurrentUserRole('scheduler');
+          }
           return;
         }
         throw error;
@@ -39,8 +49,7 @@ export function useFacilityUsers(facilityId, currentUser) {
       setCurrentUserRole(data.role);
     } catch (error) {
       console.error('Error getting current user role:', error);
-      // Fallback to super_admin for facility users
-      setCurrentUserRole('super_admin');
+      setCurrentUserRole('scheduler');
       setError(`Role fetch failed: ${error.message}`);
     }
   }
@@ -79,31 +88,19 @@ export function useFacilityUsers(facilityId, currentUser) {
       }
 
       // Transform data to include profile info at the top level
-      const transformedUsers = data.map(user => {
-        const profile = profiles.find(p => p.id === user.user_id);
-        return {
-          ...user,
-          firstName: profile?.first_name || 'Unknown',
-          lastName: profile?.last_name || 'User',
-          email: profile?.email || `user-${user.user_id.slice(0, 8)}@example.com`,
-          is_owner: Boolean(user.is_owner) // Ensure it's always a boolean
-        };
-      });
-
-      // Temporary: Mark the earliest super_admin as owner if no is_owner field exists
-      try {
-        if (transformedUsers.length > 0 && !transformedUsers.some(u => u.is_owner === true)) {
-          const superAdmins = transformedUsers.filter(u => u.role === 'super_admin' && u.status === 'active');
-          if (superAdmins.length > 0) {
-            // Sort by invited_at or created_at to find the earliest
-            superAdmins.sort((a, b) => new Date(a.invited_at || a.created_at) - new Date(b.invited_at || b.created_at));
-            superAdmins[0].is_owner = true;
-          }
-        }
-      } catch (error) {
-        console.warn('Error in owner detection fallback:', error);
-        // Continue without owner detection if there's an error
-      }
+      // Filter out facility role (Super Admin) - they manage their info in Facility Info tab
+      const transformedUsers = data
+        .filter(user => user.role !== 'facility')
+        .map(user => {
+          const profile = profiles.find(p => p.id === user.user_id);
+          return {
+            ...user,
+            firstName: profile?.first_name || 'Unknown',
+            lastName: profile?.last_name || 'User',
+            email: profile?.email || `user-${user.user_id.slice(0, 8)}@example.com`,
+            is_owner: Boolean(user.is_owner) // Ensure it's always a boolean
+          };
+        });
 
       setUsers(transformedUsers);
     } catch (error) {
@@ -259,19 +256,23 @@ export function useFacilityUsers(facilityId, currentUser) {
   }
 
   // Permission helpers
-  const canInviteUsers = currentUserRole === 'super_admin';
-  const canManageAdmins = currentUserRole === 'super_admin';
-  const canManageSchedulers = ['super_admin', 'admin'].includes(currentUserRole);
+  const canInviteUsers = currentUserRole === 'facility' || currentUserRole === 'admin';
+  const canManageAdmins = currentUserRole === 'facility';
+  const canManageSchedulers = ['facility', 'admin'].includes(currentUserRole);
 
   function canUpdateUser(targetUserRole) {
-    if (currentUserRole === 'super_admin') return true;
+    // Super Admin (facility role) can manage admins and schedulers
+    if (currentUserRole === 'facility') return true;
+    // Admins can only manage schedulers
     if (currentUserRole === 'admin' && targetUserRole === 'scheduler') return true;
     return false;
   }
 
   function canRemoveUser(targetUserId, targetUserRole) {
     if (targetUserId === currentUser.id) return false; // Can't remove yourself
-    if (currentUserRole === 'super_admin') return true;
+    // Super Admin (facility role) can remove admins and schedulers
+    if (currentUserRole === 'facility') return true;
+    // Admins can only remove schedulers
     if (currentUserRole === 'admin' && targetUserRole === 'scheduler') return true;
     return false;
   }

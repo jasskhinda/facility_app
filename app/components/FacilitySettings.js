@@ -57,16 +57,17 @@ export default function FacilitySettings() {
             
           profileData = profileDataResult;
             
-          if (profileError || !profileData || profileData.role !== 'facility') {
+          if (profileError || !profileData) {
             router.push('/dashboard');
             return;
           }
-          
+
           if (!profileData.facility_id) {
             throw new Error('No facility associated with this account');
           }
-          
-          setUserRole('super_admin'); // Default for legacy users
+
+          // Use the actual role from profiles table
+          setUserRole(profileData.role);
           facilityId = profileData.facility_id;
         } else {
           setUserRole(facilityUserData.role);
@@ -158,12 +159,15 @@ export default function FacilitySettings() {
     return <div className="p-4 text-red-500">Error: {error}</div>;
   }
 
+  // Only show Security and Password tabs for Super Admin
   const tabs = [
     { id: 'facility', label: 'Facility Info', icon: '🏥' },
     { id: 'users', label: 'User Management', icon: '👥' },
     { id: 'contracts', label: 'Contracts', icon: '📋' },
-    { id: 'security', label: 'Security', icon: '🔒' },
-    { id: 'password', label: 'Change Password', icon: '🔑' }
+    ...(userRole === 'facility' ? [
+      { id: 'security', label: 'Security', icon: '🔒' },
+      { id: 'password', label: 'Change Password', icon: '🔑' }
+    ] : [])
   ];
 
   return (
@@ -221,10 +225,10 @@ export default function FacilitySettings() {
                       onChange={handleChange}
                       className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
                       required
-                      disabled={!['super_admin', 'admin'].includes(userRole)}
+                      disabled={userRole !== 'facility'}
                     />
                   </div>
-                  
+
                   <div>
                     <label htmlFor="address" className="block mb-1 font-medium text-gray-900">
                       Address
@@ -237,10 +241,10 @@ export default function FacilitySettings() {
                       className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
                       rows="3"
                       required
-                      disabled={!['super_admin', 'admin'].includes(userRole)}
+                      disabled={userRole !== 'facility'}
                     />
                   </div>
-                  
+
                   <div>
                     <label htmlFor="phone_number" className="block mb-1 font-medium text-gray-900">
                       Phone Number
@@ -252,10 +256,10 @@ export default function FacilitySettings() {
                       value={facility?.phone_number || ''}
                       onChange={handleChange}
                       className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
-                      disabled={!['super_admin', 'admin'].includes(userRole)}
+                      disabled={userRole !== 'facility'}
                     />
                   </div>
-                  
+
                   <div>
                     <label htmlFor="contact_email" className="block mb-1 font-medium text-gray-900">
                       Contact Email
@@ -267,10 +271,10 @@ export default function FacilitySettings() {
                       value={facility?.contact_email || ''}
                       onChange={handleChange}
                       className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
-                      disabled={!['super_admin', 'admin'].includes(userRole)}
+                      disabled={userRole !== 'facility'}
                     />
                   </div>
-                  
+
                   <div>
                     <label htmlFor="billing_email" className="block mb-1 font-medium text-gray-900">
                       Billing Email
@@ -282,10 +286,10 @@ export default function FacilitySettings() {
                       value={facility?.billing_email || ''}
                       onChange={handleChange}
                       className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
-                      disabled={!['super_admin', 'admin'].includes(userRole)}
+                      disabled={userRole !== 'facility'}
                     />
                   </div>
-                  
+
                   <div>
                     <label htmlFor="facility_type" className="block mb-1 font-medium text-gray-900">
                       Facility Type
@@ -296,7 +300,7 @@ export default function FacilitySettings() {
                       value={facility?.facility_type || ''}
                       onChange={handleChange}
                       className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-[#7CCFD0] focus:ring-1 focus:ring-[#7CCFD0] outline-none"
-                      disabled={!['super_admin', 'admin'].includes(userRole)}
+                      disabled={userRole !== 'facility'}
                     >
                       <option value="">Select Facility Type</option>
                       <option value="hospital">Hospital</option>
@@ -309,7 +313,7 @@ export default function FacilitySettings() {
                     </select>
                   </div>
                   
-                  {['super_admin', 'admin'].includes(userRole) && (
+                  {userRole === 'facility' && (
                     <div className="pt-4">
                       <button
                         type="submit"
@@ -320,12 +324,12 @@ export default function FacilitySettings() {
                       </button>
                     </div>
                   )}
-                  
-                  {userRole === 'scheduler' && (
+
+                  {(userRole === 'admin' || userRole === 'scheduler') && (
                     <div className="pt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <p className="text-sm text-blue-800">
-                        <strong>Note:</strong> Only facility administrators can modify facility information. 
-                        Contact your facility admin if changes are needed.
+                        <strong>Note:</strong> Only the Super Admin can modify facility information.
+                        Contact your facility owner if changes are needed.
                       </p>
                     </div>
                   )}

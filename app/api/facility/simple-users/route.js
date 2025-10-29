@@ -44,7 +44,7 @@ export async function POST(request) {
       user_metadata: {
         first_name: firstName,
         last_name: lastName,
-        role: 'facility'
+        role: role
       }
     });
 
@@ -60,7 +60,7 @@ export async function POST(request) {
 
     // Update the auto-created profile with our data
     console.log('📋 Updating profile...');
-    
+
     const { error: profileError } = await adminSupabase
       .from('profiles')
       .update({
@@ -68,7 +68,7 @@ export async function POST(request) {
         last_name: lastName,
         phone_number: phoneNumber || null,
         facility_id: facilityId,
-        role: 'facility',
+        role: role,
         email: email,
         status: 'active'
       })
