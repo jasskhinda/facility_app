@@ -116,15 +116,41 @@ export default function ContractViewer({ user, facilityId, userRole }) {
   }
 
   async function handleDeleteContract(contractId) {
-    if (!confirm('Are you sure you want to delete this contract?')) {
+    if (!confirm('Are you sure you want to delete this contract? This action cannot be undone.')) {
       return;
     }
 
     try {
-      // Mark as inactive in database
+      // First, get the contract details to find the file path
+      const { data: contract, error: fetchError } = await supabase
+        .from('facility_contracts')
+        .select('contract_url, contract_name')
+        .eq('id', contractId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Extract file path from URL
+      // URL format: https://[project].supabase.co/storage/v1/object/public/contracts/[facilityId]/contracts/[filename]
+      const urlParts = contract.contract_url.split('/contracts/');
+      if (urlParts.length > 1) {
+        const filePath = urlParts[1];
+
+        // Delete from storage bucket
+        const { error: storageError } = await supabase.storage
+          .from('contracts')
+          .remove([filePath]);
+
+        if (storageError) {
+          console.error('Storage deletion error:', storageError);
+          // Continue anyway to delete from database
+        }
+      }
+
+      // Delete from database
       const { error: dbError } = await supabase
         .from('facility_contracts')
-        .update({ is_active: false })
+        .delete()
         .eq('id', contractId);
 
       if (dbError) throw dbError;
