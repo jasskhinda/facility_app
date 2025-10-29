@@ -11,10 +11,17 @@ export function useFacilityUsers(facilityId, currentUser) {
 
   useEffect(() => {
     if (facilityId && currentUser) {
-      fetchUsers();
+      // Get role first, then fetch users
       getCurrentUserRole();
     }
   }, [facilityId, currentUser]);
+
+  // Fetch users when role is loaded
+  useEffect(() => {
+    if (currentUserRole && facilityId) {
+      fetchUsers();
+    }
+  }, [currentUserRole, facilityId]);
 
   async function getCurrentUserRole() {
     try {
@@ -92,6 +99,9 @@ export function useFacilityUsers(facilityId, currentUser) {
       // - Super Admin/Facility: sees admins and schedulers (not other super admins)
       // - Admin: sees themselves and schedulers
       // - Scheduler: sees no one (they can't manage users)
+      console.log('Filtering users - Current role:', currentUserRole, 'Current user ID:', currentUser?.id);
+      console.log('All users before filter:', data.map(u => ({ user_id: u.user_id, role: u.role })));
+
       const transformedUsers = data
         .filter(user => {
           // Always filter out facility owner role
@@ -103,7 +113,9 @@ export function useFacilityUsers(facilityId, currentUser) {
             return user.role !== 'facility' && user.role !== 'super_admin';
           } else if (currentUserRole === 'admin') {
             // Admin sees themselves and schedulers
-            return user.user_id === currentUser?.id || user.role === 'scheduler';
+            const shouldShow = user.user_id === currentUser?.id || user.role === 'scheduler';
+            console.log('Admin filter - user:', user.user_id, 'role:', user.role, 'shouldShow:', shouldShow);
+            return shouldShow;
           } else {
             // Scheduler sees no one
             return false;
