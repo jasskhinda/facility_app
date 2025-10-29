@@ -226,30 +226,33 @@ export function useFacilityUsers(facilityId, currentUser) {
     try {
       setError(null);
       
-      const response = await fetch('/api/facility/users', {
-        method: 'PATCH',
+      console.log('🗑️ Deleting user:', userId);
+
+      const response = await fetch('/api/facility/delete-user', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           facilityId,
-          userId,
-          action: 'remove'
+          userId
         }),
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to remove user');
+        throw new Error(result.error || 'Failed to delete user');
       }
+
+      console.log('✅ User deleted successfully');
 
       // Refresh users list
       await fetchUsers();
-      
+
       return { success: true, message: result.message };
     } catch (error) {
-      console.error('Error removing user:', error);
+      console.error('❌ Error deleting user:', error);
       setError(error.message);
       return { success: false, error: error.message };
     }
