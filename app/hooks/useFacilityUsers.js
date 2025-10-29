@@ -66,6 +66,8 @@ export function useFacilityUsers(facilityId, currentUser) {
       setLoading(true);
       setError(null);
 
+      console.log('Fetching users from facility_users table for facility:', facilityId);
+
       const { data, error } = await supabase
         .from('facility_users')
         .select(`
@@ -80,7 +82,12 @@ export function useFacilityUsers(facilityId, currentUser) {
         .eq('facility_id', facilityId)
         .order('invited_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching from facility_users:', error);
+        throw error;
+      }
+
+      console.log('Raw data from facility_users:', data);
 
       // Get profile info separately for now
       const userIds = data.map(user => user.user_id);
