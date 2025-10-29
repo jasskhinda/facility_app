@@ -84,17 +84,20 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
       </svg>
-    )},
-    { id: 'billing', label: 'Billing', href: '/dashboard/billing', icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z" />
-      </svg>
     )}
   ];
-  
+
+  // Billing navigation item - only for facility, super_admin, and admin (not scheduler)
+  const billingItem = { id: 'billing', label: 'Billing', href: '/dashboard/billing', icon: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z" />
+    </svg>
+  )};
+
   // Settings navigation item for all users - the URL is different for facility staff users
   const facilityStaffRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
   const isFacilityStaff = facilityStaffRoles.includes(userRole);
+  const canAccessBilling = ['facility', 'super_admin'].includes(userRole); // Only facility owner and super admin
 
   const settingsItem = isFacilityStaff
     ? { id: 'settings', label: 'Facility Settings', href: '/dashboard/facility-settings', icon: (
@@ -111,8 +114,9 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
       )};
 
   // Combine navigation items based on user role
+  // Schedulers get clients but not billing
   const navItems = isFacilityStaff
-    ? [...commonNavItems, ...facilityNavItems, settingsItem]
+    ? [...commonNavItems, ...facilityNavItems, ...(canAccessBilling ? [billingItem] : []), settingsItem]
     : [...commonNavItems, settingsItem];
 
   if (isLoading && !userRole) {

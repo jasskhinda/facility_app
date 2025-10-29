@@ -48,11 +48,12 @@ export async function GET(request) {
       }, { status: 500 });
     }
     
-    if (profile.role !== 'facility') {
+    const facilityStaffRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
+    if (!facilityStaffRoles.includes(profile.role)) {
       console.log('Access denied - user role:', profile.role);
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Access denied - Invalid role',
-        debug: { userRole: profile.role, required: 'facility' }
+        debug: { userRole: profile.role, required: 'facility staff' }
       }, { status: 403 });
     }
     
