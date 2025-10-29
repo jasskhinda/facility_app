@@ -163,7 +163,7 @@ export default function ContractViewer({ user, facilityId, userRole }) {
     }
   }
 
-  const canManageContracts = ['super_admin', 'admin'].includes(userRole);
+  const canManageContracts = ['facility', 'super_admin', 'admin', 'scheduler'].includes(userRole);
 
   const getContractTypeLabel = (type) => {
     switch (type) {
