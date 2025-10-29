@@ -88,9 +88,9 @@ export function useFacilityUsers(facilityId, currentUser) {
       }
 
       // Transform data to include profile info at the top level
-      // Filter out facility role (Super Admin) - they manage their info in Facility Info tab
+      // Filter out facility role and super_admin (Super Admin) - they manage their info in Facility Info tab
       const transformedUsers = data
-        .filter(user => user.role !== 'facility')
+        .filter(user => user.role !== 'facility' && user.role !== 'super_admin')
         .map(user => {
           const profile = profiles.find(p => p.id === user.user_id);
           return {
