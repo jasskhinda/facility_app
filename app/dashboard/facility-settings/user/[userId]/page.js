@@ -191,17 +191,38 @@ export default function UserDetailsPage({ params }) {
   }, [userId]);
 
   function canEditUser() {
-    if (currentUserRole === 'super_admin') return true;
-    if (currentUserRole === 'admin' && facilityUser?.role === 'scheduler') return true;
+    // Scheduler can only edit their own profile
+    if (currentUserRole === 'scheduler') {
+      return userId === session?.user?.id;
+    }
+    // Super Admin can edit everyone except other Super Admins
+    if (currentUserRole === 'super_admin' || currentUserRole === 'facility') {
+      if (facilityUser?.role === 'super_admin' || facilityUser?.role === 'facility') return false;
+      return true;
+    }
+    // Admin can edit themselves and schedulers
+    if (currentUserRole === 'admin') {
+      return userId === session?.user?.id || facilityUser?.role === 'scheduler';
+    }
     return false;
   }
 
   function canManagePassword() {
-    return currentUserRole === 'super_admin';
+    // Users can change their own password, or Super Admin can change anyone's
+    return userId === session?.user?.id || currentUserRole === 'super_admin' || currentUserRole === 'facility';
   }
 
   function canDeleteUser() {
-    return currentUserRole === 'super_admin' && !facilityUser?.is_owner;
+    // Can't delete owner
+    if (facilityUser?.is_owner) return false;
+    // Can't delete yourself
+    if (userId === session?.user?.id) return false;
+    // Super Admin can delete anyone (except owner and themselves)
+    if (currentUserRole === 'super_admin' || currentUserRole === 'facility') return true;
+    // Admin can delete schedulers only
+    if (currentUserRole === 'admin' && facilityUser?.role === 'scheduler') return true;
+    // Scheduler can't delete anyone
+    return false;
   }
 
   function handleInputChange(e) {
@@ -598,27 +619,30 @@ export default function UserDetailsPage({ params }) {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Role
-                    </label>
-                    <select
-                      name="role"
-                      value={editForm.role}
-                      onChange={handleInputChange}
-                      disabled={facilityUser?.is_owner}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-transparent disabled:bg-gray-100"
-                    >
-                      <option value="scheduler">Scheduler</option>
-                      <option value="admin">Admin</option>
-                      {currentUserRole === 'super_admin' && (
-                        <option value="super_admin">Super Admin</option>
+                  {/* Only show role selector if not editing yourself */}
+                  {(currentUserRole === 'super_admin' || currentUserRole === 'facility') && userId !== session?.user?.id && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Role
+                      </label>
+                      <select
+                        name="role"
+                        value={editForm.role}
+                        onChange={handleInputChange}
+                        disabled={facilityUser?.is_owner}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CCFD0] focus:border-transparent disabled:bg-gray-100"
+                      >
+                        <option value="scheduler">Scheduler</option>
+                        <option value="admin">Admin</option>
+                        {(currentUserRole === 'super_admin' || currentUserRole === 'facility') && (
+                          <option value="super_admin">Super Admin</option>
+                        )}
+                      </select>
+                      {facilityUser?.is_owner && (
+                        <p className="text-xs text-gray-500 mt-1">Owner role cannot be changed</p>
                       )}
-                    </select>
-                    {facilityUser?.is_owner && (
-                      <p className="text-xs text-gray-500 mt-1">Owner role cannot be changed</p>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Edit Actions */}
