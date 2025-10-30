@@ -92,6 +92,15 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
     )}
   ];
 
+  // Show loading state while fetching user role
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#7CCFD0]"></div>
+      </div>
+    );
+  }
+
   // Billing navigation item - only for facility owner (not admin or scheduler)
   const billingItem = { id: 'billing', label: 'Billing', href: '/dashboard/billing', icon: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,15 +126,6 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       )};
-
-  // Show loading state while fetching user role
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#7CCFD0]"></div>
-      </div>
-    );
-  }
 
   // Combine navigation items based on user role (after userRole is loaded)
   // Schedulers get clients but not billing
