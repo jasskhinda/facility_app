@@ -103,18 +103,34 @@ export async function POST(request) {
         status: paymentMethod.us_bank_account?.status_details
       })
 
-      // Check if bank account is verified
+      // Check if bank account needs verification (in test mode)
       if (paymentMethod.us_bank_account) {
-        const accountStatus = paymentMethod.us_bank_account.account_holder_type
-        console.log('Bank account status:', accountStatus)
+        const last4 = paymentMethod.us_bank_account.last4
+        console.log('Bank account last4:', last4)
 
-        // For test accounts ending in 6789, 0000, or 9000, they should work immediately
-        // For real accounts, check verification status
-        if (paymentMethod.us_bank_account.last4 !== '6789' &&
-            paymentMethod.us_bank_account.last4 !== '0000' &&
-            paymentMethod.us_bank_account.last4 !== '9000') {
-          // Real account - may need verification
-          console.log('Real bank account detected, checking verification...')
+        // For test accounts ending in 6789, verify with test micro-deposit amounts
+        const isTestAccount = last4 === '6789' || last4 === '0000' || last4 === '9000' || last4 === '1116' || last4 === '2227'
+
+        if (isTestAccount) {
+          console.log('Test account detected - attempting to verify with test micro-deposits')
+
+          try {
+            // Verify using test mode micro-deposit amounts (32 and 45)
+            await stripe.paymentMethods.verifyMicrodeposits(
+              paymentMethodData.stripe_payment_method_id,
+              {
+                amounts: [32, 45]
+              }
+            )
+            console.log('✅ Bank account verified successfully')
+
+            // Retrieve updated payment method
+            paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodData.stripe_payment_method_id)
+          } catch (verifyError) {
+            console.log('Verification attempt result:', verifyError.message)
+            // If already verified or verification not needed, continue
+            // If verification failed for another reason, we'll catch it during attachment
+          }
         }
       }
 
