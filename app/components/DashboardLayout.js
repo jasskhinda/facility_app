@@ -18,17 +18,20 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
 
   useEffect(() => {
     async function getUserRole() {
-      if (!user) return;
-      
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .single();
-          
+
         if (error) throw error;
-        
+
         setUserRole(data.role);
       } catch (error) {
         console.error('Error getting user role:', error);
@@ -36,7 +39,7 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
         setIsLoading(false);
       }
     }
-    
+
     getUserRole();
   }, [user, supabase]);
 
@@ -87,7 +90,7 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
     )}
   ];
 
-  // Billing navigation item - only for facility, super_admin, and admin (not scheduler)
+  // Billing navigation item - only for facility owner (not admin or scheduler)
   const billingItem = { id: 'billing', label: 'Billing', href: '/dashboard/billing', icon: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z" />
@@ -97,7 +100,7 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
   // Settings navigation item for all users - the URL is different for facility staff users
   const facilityStaffRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
   const isFacilityStaff = facilityStaffRoles.includes(userRole);
-  const canAccessBilling = ['facility', 'super_admin'].includes(userRole); // Only facility owner and super admin
+  const canAccessBilling = ['facility'].includes(userRole); // Only facility owner (not admin or scheduler)
 
   const settingsItem = isFacilityStaff
     ? { id: 'settings', label: 'Facility Settings', href: '/dashboard/facility-settings', icon: (
@@ -114,7 +117,7 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
       )};
 
   // Show loading state while fetching user role
-  if (isLoading || !userRole) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#7CCFD0]"></div>
