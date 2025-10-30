@@ -23,6 +23,8 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
         return;
       }
 
+      setIsLoading(true);
+
       try {
         const { data, error } = await supabase
           .from('profiles')
@@ -127,9 +129,12 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
 
   // Combine navigation items based on user role (after userRole is loaded)
   // Schedulers get clients but not billing
-  const navItems = isFacilityStaff
-    ? [...commonNavItems, ...facilityNavItems, ...(canAccessBilling ? [billingItem] : []), settingsItem]
-    : [...commonNavItems, settingsItem];
+  // Provide fallback navigation if userRole is still loading
+  const navItems = !userRole
+    ? [...commonNavItems, settingsItem]  // Fallback: show basic navigation
+    : isFacilityStaff
+      ? [...commonNavItems, ...facilityNavItems, ...(canAccessBilling ? [billingItem] : []), settingsItem]
+      : [...commonNavItems, settingsItem];
 
   return (
     <div className="min-h-screen flex flex-col">
