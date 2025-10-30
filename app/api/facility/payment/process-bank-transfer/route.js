@@ -98,6 +98,12 @@ export async function POST(request) {
       payment_method: paymentMethodData.stripe_payment_method_id,
       confirmation_method: 'manual',
       confirm: true,
+      payment_method_types: ['us_bank_account'],
+      payment_method_options: {
+        us_bank_account: {
+          verification_method: 'instant' // Use instant verification for bank accounts
+        }
+      },
       metadata: {
         facility_id: facility_id,
         invoice_number: invoice_number,
