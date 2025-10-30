@@ -101,6 +101,12 @@ export async function POST(request) {
       customer: customerId,
       automatic_payment_methods: {
         enabled: true,
+        allow_redirects: 'never' // Disable redirect-based payment methods to avoid return_url requirement
+      },
+      payment_method_options: {
+        us_bank_account: {
+          verification_method: 'instant' // Use instant verification for bank accounts
+        }
       },
       metadata: {
         facility_id: facilityId,
