@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import DashboardLayout from './DashboardLayout';
 import { createClientSupabase } from '@/lib/client-supabase';
-// Icons will be replaced with SVGs or emojis for now
 
 export default function FacilityDashboardView({ user }) {
   const [loading, setLoading] = useState(true);
