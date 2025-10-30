@@ -14,14 +14,15 @@ export default async function BookRide() {
     redirect('/login');
   }
   
-  // Check if user is a facility admin
+  // Check if user is a facility staff member (facility, admin, or scheduler)
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', session.user.id)
     .single();
-  
-  if (profile?.role !== 'facility') {
+
+  const allowedRoles = ['facility', 'admin', 'scheduler'];
+  if (!profile || !allowedRoles.includes(profile.role)) {
     redirect('/dashboard');
   }
 
