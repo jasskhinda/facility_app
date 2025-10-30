@@ -65,31 +65,51 @@ export default function FacilityClientManagement({ user }) {
     }
   };
 
-  // Load trip counts for clients
+  // Load trip counts for clients - OPTIMIZED: Single batch query instead of N queries
   const loadClientTripCounts = async (clientList, supabase, currentFacilityId) => {
     try {
       if (!currentFacilityId) {
         console.log('No facility ID provided, skipping trip counts');
         return;
       }
-      
+
       const tripCounts = {};
-      
-      for (const client of clientList) {
-        // Count trips for this client (both user_id and managed_client_id) - FILTERED BY FACILITY
-        const userTripsQuery = client.user_id 
-          ? supabase.from('trips').select('*', { count: 'exact', head: true }).eq('user_id', client.user_id).eq('facility_id', currentFacilityId)
-          : Promise.resolve({ count: 0 });
-          
-        const managedTripsQuery = client.id 
-          ? supabase.from('trips').select('*', { count: 'exact', head: true }).eq('managed_client_id', client.id).eq('facility_id', currentFacilityId)
-          : Promise.resolve({ count: 0 });
-          
-        const [userResult, managedResult] = await Promise.all([userTripsQuery, managedTripsQuery]);
-        
-        tripCounts[client.id] = (userResult.count || 0) + (managedResult.count || 0);
+
+      // Get all user IDs and managed client IDs
+      const userIds = clientList.filter(c => c.user_id).map(c => c.user_id);
+      const managedClientIds = clientList.map(c => c.id);
+
+      // Single query for all user_id trips
+      let userTrips = [];
+      if (userIds.length > 0) {
+        const { data: userTripsData } = await supabase
+          .from('trips')
+          .select('user_id')
+          .in('user_id', userIds)
+          .eq('facility_id', currentFacilityId);
+        userTrips = userTripsData || [];
       }
-      
+
+      // Single query for all managed_client_id trips
+      let managedTrips = [];
+      if (managedClientIds.length > 0) {
+        const { data: managedTripsData } = await supabase
+          .from('trips')
+          .select('managed_client_id')
+          .in('managed_client_id', managedClientIds)
+          .eq('facility_id', currentFacilityId);
+        managedTrips = managedTripsData || [];
+      }
+
+      // Count trips for each client
+      clientList.forEach(client => {
+        const userTripCount = client.user_id
+          ? userTrips.filter(t => t.user_id === client.user_id).length
+          : 0;
+        const managedTripCount = managedTrips.filter(t => t.managed_client_id === client.id).length;
+        tripCounts[client.id] = userTripCount + managedTripCount;
+      });
+
       setClientTrips(tripCounts);
     } catch (error) {
       console.error('Error loading trip counts:', error);

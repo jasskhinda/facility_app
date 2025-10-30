@@ -73,8 +73,9 @@ export default function ClientForm({ clientId = null }) {
           throw profileError;
         }
         
-        if (profile.role !== 'facility') {
-          console.log('ClientForm: Not a facility user, redirecting');
+        const allowedRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
+        if (!allowedRoles.includes(profile.role)) {
+          console.log('ClientForm: Not a facility staff user, redirecting');
           router.push('/dashboard');
           return;
         }

@@ -33,7 +33,8 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: profileError.message }, { status: 500 });
     }
     
-    if (profile.role !== 'facility') {
+    const allowedRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
+    if (!allowedRoles.includes(profile.role)) {
       console.log('Access denied - user role:', profile.role);
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
@@ -165,7 +166,8 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: profileError.message }, { status: 500 });
     }
     
-    if (profile.role !== 'facility') {
+    const allowedRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
+    if (!allowedRoles.includes(profile.role)) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
     
@@ -280,7 +282,8 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: profileError.message }, { status: 500 });
     }
     
-    if (profile.role !== 'facility') {
+    const allowedRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
+    if (!allowedRoles.includes(profile.role)) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
     
