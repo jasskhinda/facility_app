@@ -308,12 +308,18 @@ export default function PaymentMethodsManager({ user, facilityId, onPaymentMetho
 
       // Note: For US bank accounts, the setup intent will be in 'requires_action' status
       // requiring micro-deposit verification
-      
-      // Get the payment method details from Stripe
-      const paymentMethod = setupIntent.payment_method;
-      if (typeof paymentMethod === 'string') {
-        throw new Error('Payment method details not available');
+
+      // Get the payment method ID (it's returned as a string)
+      const paymentMethodId = typeof setupIntent.payment_method === 'string'
+        ? setupIntent.payment_method
+        : setupIntent.payment_method?.id;
+
+      if (!paymentMethodId) {
+        throw new Error('Payment method ID not available');
       }
+
+      // Extract last 4 digits from the account number
+      const last4 = bankForm.accountNumber.slice(-4);
 
       // Save bank account to database
       const isFirstMethod = paymentMethods.length === 0;
@@ -321,10 +327,10 @@ export default function PaymentMethodsManager({ user, facilityId, onPaymentMetho
         .from('facility_payment_methods')
         .insert({
           facility_id: facilityId,
-          stripe_payment_method_id: paymentMethod.id,
+          stripe_payment_method_id: paymentMethodId,
           payment_method_type: 'bank_transfer',
-          bank_account_last_four: paymentMethod.us_bank_account.last4,
-          bank_routing_number: paymentMethod.us_bank_account.routing_number,
+          bank_account_last_four: last4,
+          bank_routing_number: bankForm.routingNumber,
           bank_account_holder_name: bankForm.accountHolderName,
           bank_account_type: bankForm.accountType,
           nickname: bankForm.nickname || 'Bank Account',
