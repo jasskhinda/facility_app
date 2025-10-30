@@ -30,11 +30,12 @@ export default function EditClientPage() {
           .select('role, facility_id')
           .eq('id', session.user.id)
           .single();
-        
+
         if (profileError) throw profileError;
-        
-        // If not a facility user, redirect to dashboard
-        if (profile.role !== 'facility') {
+
+        // Allow facility staff (facility owner, admin, scheduler) to edit clients
+        const allowedRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
+        if (!allowedRoles.includes(profile.role)) {
           window.location.href = '/dashboard';
           return;
         }
