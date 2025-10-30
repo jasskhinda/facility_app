@@ -64,23 +64,19 @@ export async function POST(request) {
 
     console.log('✅ Removed from facility_users table');
 
-    // Update profile to mark as inactive and remove facility association
-    console.log('📋 Updating profile...');
-    const { error: profileUpdateError } = await adminSupabase
+    // Delete profile completely
+    console.log('📋 Deleting profile...');
+    const { error: profileDeleteError } = await adminSupabase
       .from('profiles')
-      .update({
-        facility_id: null,
-        status: 'inactive',
-        updated_at: new Date().toISOString()
-      })
+      .delete()
       .eq('id', userId);
 
-    if (profileUpdateError) {
-      console.error('❌ Profile update error:', profileUpdateError);
-      // Continue with auth deletion even if profile update fails
-      console.log('⚠️ Profile update failed but continuing with user deletion');
+    if (profileDeleteError) {
+      console.error('❌ Profile deletion error:', profileDeleteError);
+      // Continue with auth deletion even if profile delete fails
+      console.log('⚠️ Profile deletion failed but continuing with auth user deletion');
     } else {
-      console.log('✅ Profile updated');
+      console.log('✅ Profile deleted');
     }
 
     // Delete the user from Supabase Auth

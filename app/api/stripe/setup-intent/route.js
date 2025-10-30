@@ -81,7 +81,7 @@ export async function POST(request) {
       }
 
       // Create setup intent for facility payment method
-      const setupIntent = await stripe.setupIntents.create({
+      const setupIntentConfig = {
         customer: customerId,
         payment_method_types: paymentMethodType === 'card' ? ['card'] : ['us_bank_account'],
         usage: 'off_session',
@@ -91,7 +91,20 @@ export async function POST(request) {
           created_by: session.user.id,
           ...metadata
         }
-      });
+      };
+
+      // For bank accounts, use automatic verification (allows both instant and microdeposits)
+      // Don't force 'instant' verification as it requires Financial Connections/Plaid
+      // In test mode, this allows manual test account numbers to work
+      if (paymentMethodType === 'bank_transfer') {
+        setupIntentConfig.payment_method_options = {
+          us_bank_account: {
+            verification_method: 'automatic' // Allows both instant (Plaid) and microdeposits
+          }
+        };
+      }
+
+      const setupIntent = await stripe.setupIntents.create(setupIntentConfig);
 
       return NextResponse.json({
         clientSecret: setupIntent.client_secret,

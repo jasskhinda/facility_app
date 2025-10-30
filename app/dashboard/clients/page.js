@@ -14,14 +14,15 @@ export default async function ClientsPage() {
     redirect('/login');
   }
   
-  // Check if user is a facility admin
+  // Check if user is facility staff
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', session.user.id)
     .single();
-  
-  if (profile?.role !== 'facility') {
+
+  const facilityStaffRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
+  if (!facilityStaffRoles.includes(profile?.role)) {
     redirect('/dashboard');
   }
 

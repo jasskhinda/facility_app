@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/app/components/DashboardLayout';
 
+// Client detail page - allows viewing client information and trip history
 export default function ClientDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -33,11 +34,12 @@ export default function ClientDetailPage() {
           .select('role, facility_id')
           .eq('id', session.user.id)
           .single();
-        
+
         if (profileError) throw profileError;
-        
-        // If not a facility user, redirect to dashboard
-        if (profile.role !== 'facility') {
+
+        // Allow facility staff (facility owner, admin, scheduler) to view clients
+        const allowedRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
+        if (!allowedRoles.includes(profile.role)) {
           router.push('/dashboard');
           return;
         }
@@ -176,12 +178,53 @@ export default function ClientDetailPage() {
                 </h4>
                 <div className="space-y-3 pl-7">
                   <div className="flex items-center">
+                    <span className="font-medium text-[#2E4F54] w-20">Email:</span>
+                    <span className="text-[#2E4F54] font-semibold">{client.email || 'No email'}</span>
+                  </div>
+                  <div className="flex items-center">
                     <span className="font-medium text-[#2E4F54] w-20">Phone:</span>
                     <span className="text-[#2E4F54] font-semibold">{client.phone_number || 'No phone number'}</span>
                   </div>
                   <div className="flex items-start">
                     <span className="font-medium text-[#2E4F54] w-20 mt-1">Address:</span>
                     <span className="text-[#2E4F54]">{client.address || 'No address provided'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-lg font-semibold text-[#2E4F54] mb-3 flex items-center">
+                  👤
+                  <span className="ml-2">Enhanced Client Information</span>
+                </h4>
+                <div className="space-y-3 pl-7">
+                  <div className="flex items-center">
+                    <span className="font-medium text-[#2E4F54] w-32">Weight:</span>
+                    <span className="text-[#2E4F54] font-semibold">
+                      {client.weight ? `${client.weight} lbs` : 'Not provided'}
+                      {client.weight >= 400 && (
+                        <span className="ml-2 text-xs text-red-700 font-bold bg-red-100 px-2 py-1 rounded">🚫 Cannot accommodate - Over 400 lbs</span>
+                      )}
+                      {client.weight >= 300 && client.weight < 400 && (
+                        <span className="ml-2 text-xs text-amber-700 font-bold bg-amber-100 px-2 py-1 rounded">⚠️ Bariatric</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="font-medium text-[#2E4F54] w-32">Height:</span>
+                    <span className="text-[#2E4F54] font-semibold">
+                      {client.height_feet && client.height_inches !== null ?
+                        `${client.height_feet}' ${client.height_inches}"` :
+                        client.height_feet ? `${client.height_feet}' 0"` : 'Not provided'}
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="font-medium text-[#2E4F54] w-32">Date of Birth:</span>
+                    <span className="text-[#2E4F54] font-semibold">
+                      {client.date_of_birth ? new Date(client.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Not provided'}
+                    </span>
                   </div>
                 </div>
               </div>

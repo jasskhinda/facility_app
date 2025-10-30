@@ -84,10 +84,11 @@ export default function TripsPage() {
             `)
             .order('created_at', { ascending: false });
           
-          // For facility users, get trips for their facility
+          // For facility staff users, get trips for their facility
           // For regular clients, get trips where they are the user
-          if (profileData?.role === 'facility' && profileData?.facility_id) {
-            console.log('🏥 Facility user detected - fetching facility trips for facility:', profileData.facility_id);
+          const facilityStaffRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
+          if (facilityStaffRoles.includes(profileData?.role) && profileData?.facility_id) {
+            console.log('🏥 Facility staff detected - fetching facility trips for facility:', profileData.facility_id);
             tripsQuery = tripsQuery.eq('facility_id', profileData.facility_id);
           } else {
             console.log('👤 Regular client detected - fetching user trips for user:', userId);
@@ -259,7 +260,8 @@ export default function TripsPage() {
                 const oldTrip = payload.old;
                 
                 // Check if this trip belongs to the current user/facility
-                const isRelevantTrip = profileData?.role === 'facility' 
+                const facilityStaffRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
+                const isRelevantTrip = facilityStaffRoles.includes(profileData?.role)
                   ? updatedTrip.facility_id === profileData.facility_id
                   : updatedTrip.user_id === user.id;
                 
@@ -364,7 +366,8 @@ export default function TripsPage() {
           `)
           .order('pickup_time', { ascending: false });
 
-        if (profileData?.role === 'facility' && profileData?.facility_id) {
+        const facilityStaffRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
+        if (facilityStaffRoles.includes(profileData?.role) && profileData?.facility_id) {
           tripsQuery = tripsQuery.eq('facility_id', profileData.facility_id);
         } else {
           tripsQuery = tripsQuery.eq('user_id', userId);

@@ -207,11 +207,12 @@ Website: https://compassionatecaretransportation.com
         // Build trip query based on user role (same logic as trips list page)
         let tripData = null;
         let tripError = null;
-        
-        // For facility users, allow access to any trip for their facility
+
+        // For facility staff (owner, admin, scheduler), allow access to any trip for their facility
         // For regular clients, only allow access to their own trips
-        if (profileData?.role === 'facility' && profileData?.facility_id) {
-          console.log('🏥 Facility user accessing trip - checking facility access');
+        const facilityStaffRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
+        if (facilityStaffRoles.includes(profileData?.role) && profileData?.facility_id) {
+          console.log('🏥 Facility staff accessing trip - checking facility access');
           const { data, error } = await supabase
             .from('trips')
             .select('*')

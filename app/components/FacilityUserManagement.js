@@ -111,7 +111,7 @@ export default function FacilityUserManagement({ user, facilityId }) {
 
     // Professional confirmation with typed confirmation
     const roleNames = {
-      'super_admin': 'SUPER ADMIN',
+      'facility': 'SUPER ADMIN',
       'admin': 'ADMIN', 
       'scheduler': 'SCHEDULER'
     };
@@ -121,7 +121,7 @@ export default function FacilityUserManagement({ user, facilityId }) {
 
     // Create professional confirmation message
     const permissions = {
-      'super_admin': 'Full administrative access - can manage all users and settings',
+      'facility': 'Full administrative access - can manage all users and settings',
       'admin': 'Administrative access - can manage schedulers and operations', 
       'scheduler': 'Limited access - can book rides and manage clients only'
     };
@@ -187,7 +187,7 @@ export default function FacilityUserManagement({ user, facilityId }) {
 
   const getRoleColor = (role) => {
     switch (role) {
-      case 'super_admin': return 'bg-purple-100 text-purple-800';
+      case 'facility': return 'bg-purple-100 text-purple-800';
       case 'admin': return 'bg-blue-100 text-blue-800';
       case 'scheduler': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
@@ -196,7 +196,7 @@ export default function FacilityUserManagement({ user, facilityId }) {
 
   const getRoleLabel = (role) => {
     switch (role) {
-      case 'super_admin': return 'Super Admin';
+      case 'facility': return 'Super Admin';
       case 'admin': return 'Admin';
       case 'scheduler': return 'Scheduler';
       default: return role;
@@ -260,10 +260,9 @@ export default function FacilityUserManagement({ user, facilityId }) {
             <div className="flex items-start">
               <span className="text-purple-600 mr-2">👑</span>
               <div>
-                <div className="font-semibold text-purple-800">Facility Owner</div>
+                <div className="font-semibold text-purple-800">Facility Owner (Super Admin)</div>
                 <div className="text-xs text-purple-700 mt-1">
-                  By default, the facility account holder is assigned Super Admin status as the facility owner. 
-                  This role is protected and cannot be changed to ensure continuous facility management and compliance with security protocols.
+                  The facility owner account is not listed here. As the Super Admin, update your account details in the "Facility Info" tab. Your email and password changes in Facility Info will update your login credentials.
                 </div>
               </div>
             </div>
@@ -348,8 +347,8 @@ export default function FacilityUserManagement({ user, facilityId }) {
                         title="Role changes require confirmation"
                       >
                         <option value="scheduler">Scheduler</option>
-                        {currentUserRole === 'super_admin' && <option value="admin">Admin</option>}
-                        {currentUserRole === 'super_admin' && <option value="super_admin">Super Admin</option>}
+                        {currentUserRole === 'facility' && <option value="admin">Admin</option>}
+                        {/* Super Admin role cannot be assigned - only one owner per facility */}
                       </select>
                       <span className="text-xs text-gray-400" title="Role changes require typing confirmation">🔒</span>
                     </div>
@@ -477,9 +476,7 @@ export default function FacilityUserManagement({ user, facilityId }) {
                 >
                   <option value="scheduler">Scheduler</option>
                   <option value="admin">Admin</option>
-                  {currentUserRole === 'super_admin' && (
-                    <option value="super_admin">Super Admin</option>
-                  )}
+                  {/* Super Admin role cannot be assigned - only one owner per facility */}
                 </select>
               </div>
             </div>
@@ -573,9 +570,7 @@ export default function FacilityUserManagement({ user, facilityId }) {
                 >
                   <option value="scheduler">Scheduler</option>
                   <option value="admin">Admin</option>
-                  {currentUserRole === 'super_admin' && (
-                    <option value="super_admin">Super Admin</option>
-                  )}
+                  {/* Super Admin role cannot be assigned - only one owner per facility */}
                 </select>
                 {editingUser?.is_owner === true && (
                   <p className="text-xs text-gray-500 mt-1">Owner role cannot be changed</p>

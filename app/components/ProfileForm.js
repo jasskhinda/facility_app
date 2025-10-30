@@ -283,42 +283,44 @@ export default function ProfileForm({ user, profile = {} }) {
               </div>
             </div>
             
-            {/* Payment Preferences */}
-            <div>
-              <h3 className="text-lg font-medium text-[#2E4F54] text-gray-900 mb-4">Payment Preferences</h3>
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="preferred_payment_method" className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-1">
-                    Preferred Payment Method Type
-                  </label>
-                  <select
-                    id="preferred_payment_method"
-                    name="preferred_payment_method"
-                    value={formData.preferred_payment_method}
-                    onChange={handleChange}
-                    className="w-full p-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md  text-[#2E4F54] text-gray-900"
-                  >
-                    <option value="">Select a payment method</option>
-                    <option value="credit_card">Credit Card</option>
-                  </select>
-                </div>
-                
-                <div className="mt-2">
-                  <p className="text-sm text-[#2E4F54]/70 text-gray-900/70 mb-2">
-                    Manage your payment cards for automatic billing
-                  </p>
-                  <Link
-                    href="/dashboard/payment-methods"
-                    className="inline-flex items-center px-4 py-2 border border-[#DDE5E7] shadow-sm text-sm font-medium rounded-md text-[#2E4F54] bg-white hover:bg-[#F8F9FA] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7CCFD0]  text-gray-900 dark:border-[#E0E0E0] dark:hover:bg-[#24393C]"
-                  >
-                    <svg className="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                    </svg>
-                    Manage Payment Methods
-                  </Link>
+            {/* Payment Preferences - Only show for client role (not facility staff) */}
+            {profile?.role !== 'facility' && profile?.role !== 'super_admin' && profile?.role !== 'admin' && profile?.role !== 'scheduler' && (
+              <div>
+                <h3 className="text-lg font-medium text-[#2E4F54] text-gray-900 mb-4">Payment Preferences</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="preferred_payment_method" className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-1">
+                      Preferred Payment Method Type
+                    </label>
+                    <select
+                      id="preferred_payment_method"
+                      name="preferred_payment_method"
+                      value={formData.preferred_payment_method}
+                      onChange={handleChange}
+                      className="w-full p-2 border border-[#DDE5E7] dark:border-[#E0E0E0] rounded-md  text-[#2E4F54] text-gray-900"
+                    >
+                      <option value="">Select a payment method</option>
+                      <option value="credit_card">Credit Card</option>
+                    </select>
+                  </div>
+
+                  <div className="mt-2">
+                    <p className="text-sm text-[#2E4F54]/70 text-gray-900/70 mb-2">
+                      Manage your payment cards for automatic billing
+                    </p>
+                    <Link
+                      href="/dashboard/payment-methods"
+                      className="inline-flex items-center px-4 py-2 border border-[#DDE5E7] shadow-sm text-sm font-medium rounded-md text-[#2E4F54] bg-white hover:bg-[#F8F9FA] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7CCFD0]  text-gray-900 dark:border-[#E0E0E0] dark:hover:bg-[#24393C]"
+                    >
+                      <svg className="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      </svg>
+                      Manage Payment Methods
+                    </Link>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
             
             <div className="pt-4">
               <button

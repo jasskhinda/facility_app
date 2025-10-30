@@ -233,6 +233,10 @@ export async function PUT(request, { params }) {
           accessibility_needs: clientData.accessibility_needs || null,
           medical_requirements: clientData.medical_requirements || null,
           emergency_contact: clientData.emergency_contact || null,
+          weight: clientData.weight || null,
+          height_feet: clientData.height_feet || null,
+          height_inches: clientData.height_inches || null,
+          date_of_birth: clientData.date_of_birth || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', id);

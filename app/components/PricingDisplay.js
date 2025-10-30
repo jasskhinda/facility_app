@@ -150,7 +150,7 @@ export default function PricingDisplay({
               </p>
               {pricing.distance?.duration && (
                 <p className="text-xs text-[#2E4F54]/60 text-gray-900/60">
-                  Est. travel time: {pricing.distance.duration}
+                  Est. travel time: {formData.isRoundTrip ? `${pricing.distance.duration} each way` : pricing.distance.duration}
                 </p>
               )}
             </div>

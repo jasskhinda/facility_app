@@ -119,19 +119,25 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
 
     // Load existing client data if available
     const loadClientData = async () => {
+      console.log('🔍 Loading client data for trip:', trip?.id, 'user_id:', trip?.user_id, 'managed_client_id:', trip?.managed_client_id);
+
       if (trip?.user_id) {
         // Load user profile data
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', trip.user_id)
           .single();
-        
+
+        console.log('👤 Profile data:', profile, 'error:', error);
+
         if (profile) {
           const weight = parseFloat(profile.weight) || 0;
           const isBariatric = weight >= 300 && weight < 400;
-          
-          setClientInfo({
+
+          const clientData = {
+            id: profile.id,
+            name: profile.name || profile.full_name,
             weight: profile.weight || '',
             height_feet: profile.height_feet || '',
             height_inches: profile.height_inches || '',
@@ -146,21 +152,29 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
             mobility_aids: profile.mobility_aids || '',
             special_instructions: profile.special_instructions || '',
             isBariatric
-          });
+          };
+
+          console.log('✅ Setting client data from profile:', clientData);
+          setClientInfo(clientData);
+          setSelectedClient(clientData);
         }
       } else if (trip?.managed_client_id) {
         // Load managed client data
-        const { data: managedClient } = await supabase
+        const { data: managedClient, error } = await supabase
           .from('facility_managed_clients')
           .select('*')
           .eq('id', trip.managed_client_id)
           .single();
-        
+
+        console.log('🏥 Managed client data:', managedClient, 'error:', error);
+
         if (managedClient) {
           const weight = parseFloat(managedClient.weight) || 0;
           const isBariatric = weight >= 300 && weight < 400;
-          
-          setClientInfo({
+
+          const clientData = {
+            id: managedClient.id,
+            name: `${managedClient.first_name || ''} ${managedClient.last_name || ''}`.trim() || 'Unknown Client',
             weight: managedClient.weight || '',
             height_feet: managedClient.height_feet || '',
             height_inches: managedClient.height_inches || '',
@@ -175,17 +189,17 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
             mobility_aids: managedClient.mobility_aids || '',
             special_instructions: managedClient.special_instructions || '',
             isBariatric
-          });
+          };
+
+          console.log('✅ Setting client data from managed client:', clientData);
+          setClientInfo(clientData);
+          setSelectedClient(clientData);
         }
       }
     };
 
-    // Set up client for pricing calculations
+    // Load client data when trip is available
     if (trip) {
-      setSelectedClient({
-        client_type: 'facility', // Since this is from facility app
-        id: trip.user_id || trip.managed_client_id
-      });
       loadClientData();
     }
   }, [trip]);
@@ -536,7 +550,8 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
 
             {/* Enhanced Client Information */}
             <EnhancedClientInfoForm
-              clientInfo={clientInfo}
+              initialData={clientInfo}
+              selectedClient={selectedClient}
               onClientInfoChange={handleClientInfoChange}
               className="mb-6"
             />

@@ -18,17 +18,22 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
 
   useEffect(() => {
     async function getUserRole() {
-      if (!user) return;
-      
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+
       try {
         const { data, error } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .single();
-          
+
         if (error) throw error;
-        
+
         setUserRole(data.role);
       } catch (error) {
         console.error('Error getting user role:', error);
@@ -36,17 +41,21 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
         setIsLoading(false);
       }
     }
-    
+
     getUserRole();
   }, [user, supabase]);
 
   const handleSignOut = async () => {
     try {
+      // Attempt to sign out - this may fail if session is already invalid (e.g., password changed in mobile app)
       await supabase.auth.signOut();
-      // Use window.location.href to force a full page reload and clear session
-      window.location.href = '/?logout=true'; 
     } catch (error) {
       console.error('Error signing out:', error);
+      // Even if signOut fails (invalid session), we still want to redirect and clear local session
+    } finally {
+      // Always redirect to login page and force a full page reload to clear session
+      // This ensures logout works even if the session token is invalid
+      window.location.href = '/?logout=true';
     }
   };
 
@@ -66,6 +75,11 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
+    )},
+    { id: 'messaging', label: 'Messaging', href: '/dashboard/messaging', icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+      </svg>
     )}
   ];
   
@@ -75,16 +89,31 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
       </svg>
-    )},
-    { id: 'billing', label: 'Billing', href: '/dashboard/billing', icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z" />
-      </svg>
     )}
   ];
-  
-  // Settings navigation item for all users - the URL is different for facility users
-  const settingsItem = userRole === 'facility' 
+
+  // Show loading state while fetching user role
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#7CCFD0]"></div>
+      </div>
+    );
+  }
+
+  // Billing navigation item - only for facility owner (not admin or scheduler)
+  const billingItem = { id: 'billing', label: 'Billing', href: '/dashboard/billing', icon: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z" />
+    </svg>
+  )};
+
+  // Settings navigation item for all users - the URL is different for facility staff users
+  const facilityStaffRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
+  const isFacilityStaff = facilityStaffRoles.includes(userRole);
+  const canAccessBilling = ['facility'].includes(userRole); // Only facility owner (not admin or scheduler)
+
+  const settingsItem = isFacilityStaff
     ? { id: 'settings', label: 'Facility Settings', href: '/dashboard/facility-settings', icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -97,19 +126,15 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       )};
-      
-  // Combine navigation items based on user role
-  const navItems = userRole === 'facility'
-    ? [...commonNavItems, ...facilityNavItems, settingsItem]
-    : [...commonNavItems, settingsItem];
 
-  if (isLoading && !userRole) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#7CCFD0]"></div>
-      </div>
-    );
-  }
+  // Combine navigation items based on user role (after userRole is loaded)
+  // Schedulers get clients but not billing
+  // Provide fallback navigation if userRole is still loading
+  const navItems = !userRole
+    ? [...commonNavItems, settingsItem]  // Fallback: show basic navigation
+    : isFacilityStaff
+      ? [...commonNavItems, ...facilityNavItems, ...(canAccessBilling ? [billingItem] : []), settingsItem]
+      : [...commonNavItems, settingsItem];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -128,9 +153,9 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
                     className="h-16 w-auto"
                   />
                 </Link>
-                {userRole === 'facility' && (
+                {isFacilityStaff && (
                   <span className="ml-2 px-2 py-0.5 text-xs bg-[#7CCFD0] text-white rounded-md font-medium">
-                    Facility
+                    Facility Staff
                   </span>
                 )}
               </div>

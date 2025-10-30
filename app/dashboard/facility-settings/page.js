@@ -32,8 +32,9 @@ export default function FacilitySettingsPage() {
         
         if (profileError) throw profileError;
         
-        // If not a facility user, redirect to dashboard
-        if (profile.role !== 'facility') {
+        // If not a facility staff user, redirect to dashboard
+        const facilityStaffRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
+        if (!facilityStaffRoles.includes(profile.role)) {
           window.location.href = '/dashboard';
           return;
         }

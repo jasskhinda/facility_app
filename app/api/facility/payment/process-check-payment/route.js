@@ -1,33 +1,62 @@
 import { createRouteHandlerClient } from '@/lib/route-handler-client'
+import { createClient } from '@supabase/supabase-js'
+
+// Handle OPTIONS for CORS preflight
+export async function OPTIONS(request) {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
+}
 
 export async function POST(request) {
   try {
-    const { facility_id, invoice_number, month, amount, check_submission_type, check_details } = await request.json()
+    const { facility_id, month, amount, payment_type, status, check_number, mail_date } = await request.json()
 
-    if (!facility_id || !invoice_number || !amount || !check_submission_type) {
+    if (!facility_id || !month || !amount || !payment_type) {
       return Response.json(
         { error: 'Missing required fields' },
         { status: 400 }
       )
     }
 
-    const supabase = await createRouteHandlerClient()
+    // Generate invoice number if not provided
+    const invoiceNumber = `CCT-${month.replace('-', '')}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+
+    // Get authorization token from header for mobile app or use cookies for web
+    const authHeader = request.headers.get('authorization');
+    let supabase;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      // Mobile app authentication via Bearer token
+      supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        {
+          global: {
+            headers: { Authorization: authHeader }
+          }
+        }
+      );
+    } else {
+      // Web app authentication via cookies
+      supabase = await createRouteHandlerClient();
+    }
 
     // Verify user authentication and role
     console.log('Checking authentication...')
-    
-    // Try both session and getUser methods for debugging
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    console.log('Session check result:', { hasSession: !!session, sessionError, userEmail: session?.user?.email })
-    
+
     const { data: userData, error: userError } = await supabase.auth.getUser()
     console.log('GetUser check result:', { userData: userData?.user?.email, userError })
-    
-    // Use session if available, otherwise fall back to userData
-    const user = session?.user || userData?.user
-    
+
+    const user = userData?.user
+
     if (!user) {
-      console.log('Authentication failed - no user found in session or getUser')
+      console.log('Authentication failed - no user found')
       return Response.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -41,7 +70,8 @@ export async function POST(request) {
       .eq('id', user.id)
       .single()
 
-    if (profileError || profile.role !== 'facility' || profile.facility_id !== facility_id) {
+    const facilityStaffRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
+    if (profileError || !facilityStaffRoles.includes(profile.role) || profile.facility_id !== facility_id) {
       console.log('Profile check failed:', { profileError, role: profile?.role, facility_id: profile?.facility_id, requested_facility: facility_id })
       return Response.json(
         { error: 'Access denied' },
@@ -71,50 +101,59 @@ export async function POST(request) {
     const isPartialMonthPayment = isCurrentMonth && currentDate < lastDayOfMonth - 2
 
     // Professional check payment workflow
-    let paymentStatus, paymentNote, nextSteps, facilityMessage
+    let paymentStatus = status
+    let paymentNote, nextSteps, facilityMessage
+    let check_submission_type = payment_type.replace('-', '_')
 
-    switch (check_submission_type) {
-      case 'will_mail':
-        paymentStatus = 'CHECK PAYMENT - WILL MAIL'
-        paymentNote = `Check payment initiated on ${now.toLocaleDateString('en-US', { 
-          month: 'long', 
-          day: 'numeric', 
-          year: 'numeric' 
+    // Build check details object
+    const check_details = {}
+    if (check_number) check_details.check_number = check_number
+    if (mail_date) check_details.date_mailed = mail_date
+
+    switch (payment_type) {
+      case 'will-mail':
+        paymentNote = `Check payment initiated on ${now.toLocaleDateString('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric'
         })}. Facility indicated they will mail check for $${amount}. Awaiting check delivery to our office.`
         nextSteps = 'Please mail your check to our office address below. Your payment status will be updated when we receive and verify the check.'
         facilityMessage = 'Your payment is being processed. Please mail your check within 5 business days to complete the payment process.'
         break
-        
-      case 'already_mailed':
-        paymentStatus = 'CHECK PAYMENT - ALREADY SENT'
-        paymentNote = `Check payment marked as already sent on ${now.toLocaleDateString('en-US', { 
-          month: 'long', 
-          day: 'numeric', 
-          year: 'numeric' 
+
+      case 'already-mailed':
+        paymentNote = `Check payment marked as already sent on ${now.toLocaleDateString('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric'
         })}. Check for $${amount} has been sent and is being verified by our dispatchers.`
-        
-        if (check_details?.date_mailed) {
-          paymentNote += ` Mailed on: ${check_details.date_mailed}.`
+
+        if (mail_date) {
+          paymentNote += ` Mailed on: ${mail_date}.`
         }
-        if (check_details?.tracking_number) {
-          paymentNote += ` Tracking: ${check_details.tracking_number}.`
+        if (check_number) {
+          paymentNote += ` Check #: ${check_number}.`
         }
-        
+
         nextSteps = 'Your check has been sent and is being verified by our dispatchers. You will be notified once the verification is complete.'
         facilityMessage = 'Your check has been sent and is being verified by our dispatchers. You will be notified once verification is complete.'
         break
-        
-      case 'hand_delivered':
-        paymentStatus = 'CHECK PAYMENT - BEING VERIFIED'
-        paymentNote = `Check payment marked as hand-delivered on ${now.toLocaleDateString('en-US', { 
-          month: 'long', 
-          day: 'numeric', 
-          year: 'numeric' 
+
+      case 'hand-delivered':
+        paymentNote = `Check payment marked as hand-delivered on ${now.toLocaleDateString('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric'
         })}. Check for $${amount} was delivered directly to our office. Awaiting dispatcher verification and deposit.`
+
+        if (check_number) {
+          paymentNote += ` Check #: ${check_number}.`
+        }
+
         nextSteps = 'Your check has been delivered to our office. Our dispatch team will verify and deposit it within 1-2 business days.'
         facilityMessage = 'Your check has been received at our office and is being processed by our dispatch team.'
         break
-        
+
       default:
         return Response.json(
           { error: 'Invalid check submission type' },
@@ -226,7 +265,7 @@ export async function POST(request) {
         .from('facility_invoices')
         .insert({
           facility_id: facility_id,
-          invoice_number: invoice_number,
+          invoice_number: invoiceNumber,
           month: month,
           total_amount: amount,
           payment_status: paymentStatus,
@@ -263,16 +302,22 @@ export async function POST(request) {
       check_instructions: {
         payable_to: 'Compassionate Care Transportation',
         amount: `$${amount.toFixed(2)}`,
-        memo: `Invoice ${invoice_number} - ${month}`,
-        mail_within_days: check_submission_type === 'will_mail' ? 5 : null
+        memo: `Invoice ${invoiceNumber} - ${month}`,
+        mail_within_days: payment_type === 'will-mail' ? 5 : null
       },
       payment_details: {
         amount: amount,
-        invoice_number: invoice_number,
+        invoice_number: invoiceNumber,
         facility_name: facility.name,
         month: month,
         submission_type: check_submission_type
       }
+    }, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
     })
 
   } catch (error) {

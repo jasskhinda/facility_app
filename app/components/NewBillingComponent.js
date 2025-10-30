@@ -2192,8 +2192,8 @@ ${monthlyTrips.map(trip => {
             </svg>
             <span className="text-center">
               <div className="text-sm">
-                {invoiceStatus && (invoiceStatus.includes('HAS ISSUES') || invoiceStatus.includes('PAYMENT FAILED'))
-                  ? 'RETRY PAYMENT'
+                {invoiceStatus && (invoiceStatus.includes('HAS ISSUES') || invoiceStatus.includes('PAYMENT FAILED') || invoiceStatus.includes('REPLACEMENT REQUESTED'))
+                  ? 'PAY INVOICE'
                   : invoiceStatus && (invoiceStatus.includes('PAID WITH CARD') || invoiceStatus.includes('PAID WITH BANK TRANSFER') || invoiceStatus.includes('PAID WITH CHECK') || invoiceStatus.includes('- VERIFIED'))
                   ? 'PAYMENT COMPLETED'
                   : invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED')
@@ -2203,7 +2203,10 @@ ${monthlyTrips.map(trip => {
               {invoiceStatus && (invoiceStatus.includes('HAS ISSUES') || invoiceStatus.includes('PAYMENT FAILED')) && (
                 <div className="text-xs opacity-90">Payment Failed</div>
               )}
-              {invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED') && !invoiceStatus.includes('HAS ISSUES') && (
+              {invoiceStatus && invoiceStatus.includes('REPLACEMENT REQUESTED') && (
+                <div className="text-xs opacity-90">Replacement Check Requested</div>
+              )}
+              {invoiceStatus && invoiceStatus.includes('CHECK PAYMENT') && !invoiceStatus.includes('VERIFIED') && !invoiceStatus.includes('HAS ISSUES') && !invoiceStatus.includes('REPLACEMENT REQUESTED') && (
                 <div className="text-xs opacity-90">Awaiting verification</div>
               )}
             </span>

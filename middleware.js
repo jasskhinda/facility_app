@@ -87,22 +87,23 @@ export async function middleware(req) {
     
     // Email verification is disabled in Supabase settings
     
-    // Check if user has 'facility' role in their metadata
+    // Check if user has allowed facility roles in their metadata
     const userRole = session.user.user_metadata?.role;
-    
-    if (userRole !== 'facility') {
+    const allowedRoles = ['facility', 'super_admin', 'admin', 'scheduler'];
+
+    if (!allowedRoles.includes(userRole)) {
       // If user doesn't have the right role, fetch from profiles table
       // This is necessary for users created before role implementation
       try {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, facility_id')
           .eq('id', session.user.id)
           .single();
-          
-        // If profile exists and doesn't have 'facility' role, log the user out
-        if (!profile || profile.role !== 'facility') {
-          console.log('Redirecting to login from protected route - Invalid role');
+
+        // If profile exists and doesn't have allowed facility role, log the user out
+        if (!profile || !allowedRoles.includes(profile.role) || !profile.facility_id) {
+          console.log('Redirecting to login from protected route - Invalid role or no facility');
           await supabase.auth.signOut();
           // Add a small delay to ensure session is cleared
           await new Promise(resolve => setTimeout(resolve, 100));

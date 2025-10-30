@@ -284,6 +284,12 @@ function PaymentForm({
       return
     }
 
+    // Check if bank account is verified
+    if (selectedSavedMethod.verification_status === 'pending') {
+      onPaymentError('This bank account is still being verified. Please use a verified payment method or try again in a few moments.')
+      return
+    }
+
     setProcessingPayment(true)
 
     try {
@@ -515,25 +521,6 @@ function PaymentForm({
         </div>
       </div>
 
-      {/* Bank Transfer Option */}
-      <div 
-        className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
-          paymentMethod === 'bank_transfer' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-        }`}
-        onClick={() => {
-          setPaymentMethod('bank_transfer')
-          setShowCheckOptions(false)
-        }}
-      >
-        <div className="flex items-center space-x-3">
-          <Building2 className="h-6 w-6 text-green-600" />
-          <div>
-            <h4 className="font-medium text-gray-900">Bank Transfer</h4>
-            <p className="text-sm text-gray-600">Uses saved bank details</p>
-          </div>
-        </div>
-      </div>
-
       {/* Check Payment Option */}
       <div 
         className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
@@ -677,12 +664,31 @@ function PaymentForm({
                   <div className="flex items-center space-x-3">
                     <Building2 className="h-5 w-5 text-gray-600" />
                     <div>
-                      <p className="font-medium text-gray-900">
-                        {method.bank_account_type?.toUpperCase()} ****{method.bank_account_last_four}
-                      </p>
+                      <div className="flex items-center space-x-2">
+                        <p className="font-medium text-gray-900">
+                          {method.bank_account_type?.toUpperCase()} ****{method.bank_account_last_four}
+                        </p>
+                        {method.verification_status === 'verified' && (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        )}
+                        {method.verification_status === 'pending' && (
+                          <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-yellow-100 text-yellow-800">
+                            <svg className="w-3 h-3 mr-1 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Verifying
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-600">
                         {method.bank_account_holder_name}
                       </p>
+                      {method.verification_status === 'pending' && (
+                        <p className="text-xs text-yellow-700 mt-0.5">
+                          Verification in progress
+                        </p>
+                      )}
                     </div>
                   </div>
                   {method.is_default && (
