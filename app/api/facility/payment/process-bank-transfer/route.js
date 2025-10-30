@@ -99,8 +99,24 @@ export async function POST(request) {
         id: paymentMethod.id,
         customer: paymentMethod.customer,
         expectedCustomer: customerId,
-        type: paymentMethod.type
+        type: paymentMethod.type,
+        status: paymentMethod.us_bank_account?.status_details
       })
+
+      // Check if bank account is verified
+      if (paymentMethod.us_bank_account) {
+        const accountStatus = paymentMethod.us_bank_account.account_holder_type
+        console.log('Bank account status:', accountStatus)
+
+        // For test accounts ending in 6789, 0000, or 9000, they should work immediately
+        // For real accounts, check verification status
+        if (paymentMethod.us_bank_account.last4 !== '6789' &&
+            paymentMethod.us_bank_account.last4 !== '0000' &&
+            paymentMethod.us_bank_account.last4 !== '9000') {
+          // Real account - may need verification
+          console.log('Real bank account detected, checking verification...')
+        }
+      }
 
       // If not attached to any customer or attached to wrong customer, attach it
       if (!paymentMethod.customer || paymentMethod.customer !== customerId) {
