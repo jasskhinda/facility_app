@@ -123,8 +123,11 @@ export function useFacilityUsers(facilityId, currentUser) {
             const shouldShow = user.user_id === currentUser?.id || user.role === 'scheduler';
             console.log('Admin filter - user:', user.user_id, 'role:', user.role, 'shouldShow:', shouldShow);
             return shouldShow;
+          } else if (currentUserRole === 'scheduler') {
+            // Scheduler sees all users (read-only access handled by permission checks)
+            return true;
           } else {
-            // Scheduler sees no one
+            // Unknown role sees no one
             return false;
           }
         })
