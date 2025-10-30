@@ -1,8 +1,12 @@
 import { createRouteHandlerClient } from '@/lib/route-handler-client'
 import { NextResponse } from 'next/server'
+import Stripe from 'stripe'
 
-// Endpoint to mark all test bank accounts as verified
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+
+// Endpoint to verify test bank accounts with Stripe
 // This is only for development/testing with Stripe test mode
+// In test mode, we can verify bank accounts using test micro-deposit amounts
 export async function POST(request) {
   try {
     const supabase = await createRouteHandlerClient()
@@ -39,27 +43,85 @@ export async function POST(request) {
       )
     }
 
-    // Update all bank accounts for this facility to verified status
-    const { data: updated, error: updateError } = await supabase
+    // Get all unverified bank accounts for this facility
+    const { data: bankAccounts, error: fetchError } = await supabase
       .from('facility_payment_methods')
-      .update({ verification_status: 'verified' })
+      .select('*')
       .eq('facility_id', profile.facility_id)
       .eq('payment_method_type', 'bank_transfer')
-      .eq('verification_status', 'pending')
       .select()
 
-    if (updateError) {
-      console.error('Error updating bank accounts:', updateError)
+    if (fetchError) {
+      console.error('Error fetching bank accounts:', fetchError)
       return NextResponse.json(
-        { error: 'Failed to update bank accounts' },
+        { error: 'Failed to fetch bank accounts' },
         { status: 500 }
       )
     }
 
+    if (!bankAccounts || bankAccounts.length === 0) {
+      return NextResponse.json({
+        success: true,
+        verified_count: 0,
+        message: 'No bank accounts found to verify'
+      })
+    }
+
+    // Verify each bank account with Stripe using test micro-deposit amounts
+    const verifiedAccounts = []
+    const errors = []
+
+    for (const account of bankAccounts) {
+      try {
+        console.log(`Attempting to verify bank account ${account.id} with Stripe payment method ${account.stripe_payment_method_id}`)
+
+        // Retrieve the payment method from Stripe
+        const paymentMethod = await stripe.paymentMethods.retrieve(account.stripe_payment_method_id)
+
+        console.log('Payment method status:', {
+          id: paymentMethod.id,
+          type: paymentMethod.type,
+          last4: paymentMethod.us_bank_account?.last4,
+          status: paymentMethod.us_bank_account?.status_details
+        })
+
+        // For test mode, use test micro-deposit amounts: 32 and 45
+        // This is documented in Stripe's test mode documentation
+        if (paymentMethod.us_bank_account) {
+          try {
+            await stripe.paymentMethods.verifyMicrodeposits(
+              account.stripe_payment_method_id,
+              {
+                amounts: [32, 45], // Test mode micro-deposit amounts
+              }
+            )
+
+            console.log(`Successfully verified payment method ${account.stripe_payment_method_id}`)
+
+            // Update database
+            await supabase
+              .from('facility_payment_methods')
+              .update({ verification_status: 'verified' })
+              .eq('id', account.id)
+
+            verifiedAccounts.push(account.id)
+          } catch (verifyError) {
+            console.error(`Verification error for ${account.stripe_payment_method_id}:`, verifyError.message)
+            errors.push(`Account ${account.bank_account_last_four}: ${verifyError.message}`)
+          }
+        }
+      } catch (error) {
+        console.error(`Error processing account ${account.id}:`, error.message)
+        errors.push(`Account ${account.bank_account_last_four}: ${error.message}`)
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      updated_count: updated?.length || 0,
-      message: `Successfully verified ${updated?.length || 0} test bank account(s)`
+      verified_count: verifiedAccounts.length,
+      total_count: bankAccounts.length,
+      errors: errors.length > 0 ? errors : undefined,
+      message: `Successfully verified ${verifiedAccounts.length} out of ${bankAccounts.length} bank account(s)`
     })
 
   } catch (error) {
