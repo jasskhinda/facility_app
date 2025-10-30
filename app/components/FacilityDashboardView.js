@@ -78,11 +78,12 @@ export default function FacilityDashboardView({ user }) {
           .gte('pickup_time', weekAgo.toISOString());
 
         // Get recent trips (simple query first, then enhance with client info)
+        // Order by created_at to show most recently booked trips
         const { data: rawTrips, error: tripsError } = await supabase
           .from('trips')
           .select('*')
           .eq('facility_id', profile.facility_id)
-          .order('pickup_time', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(10);
         
         if (tripsError) {
