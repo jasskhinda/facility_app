@@ -90,6 +90,21 @@ export async function POST(request) {
         .eq('id', facility_id)
     }
 
+    // Ensure payment method is attached to customer
+    try {
+      const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodData.stripe_payment_method_id)
+
+      // If not attached to this customer, attach it
+      if (paymentMethod.customer !== customerId) {
+        await stripe.paymentMethods.attach(paymentMethodData.stripe_payment_method_id, {
+          customer: customerId
+        })
+      }
+    } catch (attachError) {
+      console.error('Error attaching payment method:', attachError)
+      // Continue anyway - it might already be attached
+    }
+
     // Create ACH payment intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
