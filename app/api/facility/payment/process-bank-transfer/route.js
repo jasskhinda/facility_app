@@ -154,7 +154,7 @@ export async function POST(request) {
       payment_method_types: ['us_bank_account'],
       payment_method_options: {
         us_bank_account: {
-          verification_method: 'instant' // Use instant verification for bank accounts
+          verification_method: 'automatic' // Allows both instant and microdeposits
         }
       },
       metadata: {

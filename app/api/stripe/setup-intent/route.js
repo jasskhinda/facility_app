@@ -93,11 +93,13 @@ export async function POST(request) {
         }
       };
 
-      // For bank accounts, add payment method options to handle instant verification
+      // For bank accounts, use automatic verification (allows both instant and microdeposits)
+      // Don't force 'instant' verification as it requires Financial Connections/Plaid
+      // In test mode, this allows manual test account numbers to work
       if (paymentMethodType === 'bank_transfer') {
         setupIntentConfig.payment_method_options = {
           us_bank_account: {
-            verification_method: 'instant' // Use instant verification instead of micro-deposits
+            verification_method: 'automatic' // Allows both instant (Plaid) and microdeposits
           }
         };
       }
