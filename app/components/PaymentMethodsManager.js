@@ -672,18 +672,18 @@ export default function PaymentMethodsManager({ user, facilityId, onPaymentMetho
             </div>
           </button>
 
-          <button
-            onClick={() => setShowAddBankModal(true)}
-            className="flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors group"
-          >
+          <div className="flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 opacity-60 cursor-not-allowed relative">
             <div className="text-center">
-              <svg className="mx-auto h-8 w-8 text-gray-400 group-hover:text-green-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="mx-auto h-8 w-8 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
               </svg>
-              <h4 className="text-sm font-medium text-gray-900 group-hover:text-green-900">Add Bank Account</h4>
+              <h4 className="text-sm font-medium text-gray-700">Add Bank Account</h4>
               <p className="text-xs text-gray-500 mt-1">ACH Direct Transfer</p>
+              <span className="inline-block mt-2 px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
+                Coming Soon
+              </span>
             </div>
-          </button>
+          </div>
         </div>
       </div>
 
