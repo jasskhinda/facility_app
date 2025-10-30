@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/app/components/DashboardLayout';
 
+// Client detail page - allows viewing client information and trip history
 export default function ClientDetailPage() {
   const params = useParams();
   const router = useRouter();
