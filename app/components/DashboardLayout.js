@@ -113,19 +113,20 @@ export default function DashboardLayout({ user, activeTab = 'dashboard', childre
         </svg>
       )};
 
-  // Combine navigation items based on user role
-  // Schedulers get clients but not billing
-  const navItems = isFacilityStaff
-    ? [...commonNavItems, ...facilityNavItems, ...(canAccessBilling ? [billingItem] : []), settingsItem]
-    : [...commonNavItems, settingsItem];
-
-  if (isLoading && !userRole) {
+  // Show loading state while fetching user role
+  if (isLoading || !userRole) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#7CCFD0]"></div>
       </div>
     );
   }
+
+  // Combine navigation items based on user role (after userRole is loaded)
+  // Schedulers get clients but not billing
+  const navItems = isFacilityStaff
+    ? [...commonNavItems, ...facilityNavItems, ...(canAccessBilling ? [billingItem] : []), settingsItem]
+    : [...commonNavItems, settingsItem];
 
   return (
     <div className="min-h-screen flex flex-col">
