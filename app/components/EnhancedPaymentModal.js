@@ -521,24 +521,6 @@ function PaymentForm({
         </div>
       </div>
 
-      {/* Bank Transfer Option - Coming Soon */}
-      <div
-        className="border-2 rounded-lg p-4 opacity-60 cursor-not-allowed bg-gray-50 relative"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Building2 className="h-6 w-6 text-gray-400" />
-            <div>
-              <h4 className="font-medium text-gray-700">Bank Transfer</h4>
-              <p className="text-sm text-gray-500">ACH Direct Transfer</p>
-            </div>
-          </div>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-            Coming Soon
-          </span>
-        </div>
-      </div>
-
       {/* Check Payment Option */}
       <div 
         className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${

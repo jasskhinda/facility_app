@@ -657,34 +657,19 @@ export default function PaymentMethodsManager({ user, facilityId, onPaymentMetho
       {/* Add Payment Methods Section */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Payment Method</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button
-            onClick={handleOpenCardModal}
-            className="flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#7CCFD0] hover:bg-[#7CCFD0]/10 transition-colors group"
-          >
-            <div className="text-center">
-              <svg className="mx-auto h-8 w-8 text-gray-400 group-hover:text-[#7CCFD0] mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-              </svg>
-              <h4 className="text-sm font-medium text-gray-900 group-hover:text-[#60BFC0]">Add Payment Card</h4>
-              <p className="text-xs text-gray-500 mt-1">Credit or Debit Card</p>
-            </div>
-          </button>
 
-          <div className="flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 opacity-60 cursor-not-allowed relative">
-            <div className="text-center">
-              <svg className="mx-auto h-8 w-8 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-              </svg>
-              <h4 className="text-sm font-medium text-gray-700">Add Bank Account</h4>
-              <p className="text-xs text-gray-500 mt-1">ACH Direct Transfer</p>
-              <span className="inline-block mt-2 px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
-                Coming Soon
-              </span>
-            </div>
+        <button
+          onClick={handleOpenCardModal}
+          className="w-full flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#7CCFD0] hover:bg-[#7CCFD0]/10 transition-colors group"
+        >
+          <div className="text-center">
+            <svg className="mx-auto h-8 w-8 text-gray-400 group-hover:text-[#7CCFD0] mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+            <h4 className="text-sm font-medium text-gray-900 group-hover:text-[#60BFC0]">Add Payment Card</h4>
+            <p className="text-xs text-gray-500 mt-1">Credit or Debit Card</p>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Payment Methods List */}
