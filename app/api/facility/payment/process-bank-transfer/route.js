@@ -90,19 +90,41 @@ export async function POST(request) {
         .eq('id', facility_id)
     }
 
-    // Ensure payment method is attached to customer
+    // Ensure payment method is attached to customer before using
+    let paymentMethod
     try {
-      const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodData.stripe_payment_method_id)
+      paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodData.stripe_payment_method_id)
 
-      // If not attached to this customer, attach it
-      if (paymentMethod.customer !== customerId) {
-        await stripe.paymentMethods.attach(paymentMethodData.stripe_payment_method_id, {
-          customer: customerId
-        })
+      console.log('Payment method details:', {
+        id: paymentMethod.id,
+        customer: paymentMethod.customer,
+        expectedCustomer: customerId,
+        type: paymentMethod.type
+      })
+
+      // If not attached to any customer or attached to wrong customer, attach it
+      if (!paymentMethod.customer || paymentMethod.customer !== customerId) {
+        console.log('Attaching payment method to customer...')
+
+        // If attached to different customer, we need to handle differently
+        if (paymentMethod.customer && paymentMethod.customer !== customerId) {
+          throw new Error('Payment method is attached to a different customer')
+        }
+
+        // Attach to this customer
+        paymentMethod = await stripe.paymentMethods.attach(
+          paymentMethodData.stripe_payment_method_id,
+          { customer: customerId }
+        )
+
+        console.log('Payment method attached successfully')
       }
     } catch (attachError) {
-      console.error('Error attaching payment method:', attachError)
-      // Continue anyway - it might already be attached
+      console.error('Error with payment method:', attachError)
+      return Response.json(
+        { error: `Payment method error: ${attachError.message}` },
+        { status: 400 }
+      )
     }
 
     // Create ACH payment intent
@@ -111,8 +133,8 @@ export async function POST(request) {
       currency: 'usd',
       customer: customerId,
       payment_method: paymentMethodData.stripe_payment_method_id,
-      confirmation_method: 'manual',
-      confirm: true,
+      off_session: true, // Indicate this is an off-session payment
+      confirm: true, // Confirm immediately
       payment_method_types: ['us_bank_account'],
       payment_method_options: {
         us_bank_account: {
