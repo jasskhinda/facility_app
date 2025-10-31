@@ -105,18 +105,38 @@ export async function DELETE(request) {
     }
 
     const { paymentMethodId, facilityId } = await request.json();
-    
+
     if (!paymentMethodId || !facilityId) {
       return NextResponse.json(
         { error: 'Payment method ID and facility ID are required' },
         { status: 400 }
       );
     }
-    
+
+    // Get authorization - support both web (cookies) and mobile (Bearer token)
+    const authHeader = request.headers.get('authorization');
+    let supabase;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      // Mobile app authentication via Bearer token
+      const { createClient } = await import('@supabase/supabase-js');
+      supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        {
+          global: {
+            headers: { Authorization: authHeader }
+          }
+        }
+      );
+    } else {
+      // Web app authentication via cookies
+      supabase = await createRouteHandlerClient();
+    }
+
     // Get the user session
-    const supabase = await createRouteHandlerClient();
     const { data: { session } } = await supabase.auth.getSession();
-    
+
     if (!session) {
       return NextResponse.json(
         { error: 'You must be logged in to delete a payment method' },
@@ -131,7 +151,8 @@ export async function DELETE(request) {
       .eq('id', session.user.id)
       .single();
 
-    if (profileError || profile.facility_id !== facilityId || profile.role !== 'facility') {
+    const allowedRoles = ['facility', 'super_admin'];
+    if (profileError || profile.facility_id !== facilityId || !allowedRoles.includes(profile.role)) {
       return NextResponse.json(
         { error: 'Access denied to this facility' },
         { status: 403 }
