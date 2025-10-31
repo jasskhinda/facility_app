@@ -18,15 +18,55 @@ export async function POST(request) {
       );
     }
 
-    // Get the user session
-    const supabase = await createRouteHandlerClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      return NextResponse.json(
-        { error: 'You must be logged in to create a setup intent' },
-        { status: 401 }
+    // Get authorization - support both web (cookies) and mobile (Bearer token)
+    const authHeader = request.headers.get('authorization');
+    let supabase;
+    let userId;
+    let userEmail;
+    let userName;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      // Mobile app authentication via Bearer token
+      const { createClient } = await import('@supabase/supabase-js');
+      supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        {
+          global: {
+            headers: { Authorization: authHeader }
+          }
+        }
       );
+
+      // For Bearer token, use getUser() instead of getSession()
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        return NextResponse.json(
+          { error: 'You must be logged in to create a setup intent' },
+          { status: 401 }
+        );
+      }
+
+      userId = user.id;
+      userEmail = user.email;
+      userName = user.user_metadata?.full_name || 'User';
+    } else {
+      // Web app authentication via cookies
+      supabase = await createRouteHandlerClient();
+
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        return NextResponse.json(
+          { error: 'You must be logged in to create a setup intent' },
+          { status: 401 }
+        );
+      }
+
+      userId = session.user.id;
+      userEmail = session.user.email;
+      userName = session.user.user_metadata?.full_name || 'User';
     }
 
     // If facilityId is provided, handle facility payment methods
@@ -35,10 +75,11 @@ export async function POST(request) {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('facility_id, role')
-        .eq('id', session.user.id)
+        .eq('id', userId)
         .single();
 
-      if (profileError || profile.facility_id !== facilityId || profile.role !== 'facility') {
+      const allowedRoles = ['facility', 'super_admin'];
+      if (profileError || profile.facility_id !== facilityId || !allowedRoles.includes(profile.role)) {
         return NextResponse.json(
           { error: 'Access denied to this facility' },
           { status: 403 }
@@ -88,7 +129,7 @@ export async function POST(request) {
         metadata: {
           facility_id: facilityId,
           payment_method_type: paymentMethodType,
-          created_by: session.user.id,
+          created_by: userId,
           ...metadata
         }
       };
@@ -116,7 +157,7 @@ export async function POST(request) {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('stripe_customer_id')
-      .eq('id', session.user.id)
+      .eq('id', userId)
       .single();
     
     if (profileError && profileError.code !== 'PGRST116') {
@@ -132,21 +173,21 @@ export async function POST(request) {
     // If the customer doesn't exist in Stripe yet, create one
     if (!customerId) {
       const customer = await stripe.customers.create({
-        email: session.user.email,
-        name: session.user.user_metadata?.full_name || 'User',
+        email: userEmail,
+        name: userName,
         metadata: {
-          user_id: session.user.id,
+          user_id: userId,
           type: 'individual'
         }
       });
-      
+
       customerId = customer.id;
-      
+
       // Save the customer ID to the user's profile
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ stripe_customer_id: customerId })
-        .eq('id', session.user.id);
+        .eq('id', userId);
       
       if (updateError) {
         console.error('Error updating profile with Stripe customer ID:', updateError);
