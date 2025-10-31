@@ -137,15 +137,24 @@ export default function FacilityDashboardView({ user }) {
         console.log('Recent trips data:', trips?.length || 0, 'trips found');
         console.log('Recent trips sample:', trips?.slice(0, 2));
 
-        // Calculate monthly spend from completed trips
+        // Calculate upcoming invoice amount (matches billing page logic)
+        // Only billable trips: status='completed' AND price > 0
         const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-        const { data: monthlyCompletedTrips } = await supabase
+        const lastOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
+        lastOfMonth.setHours(23, 59, 59, 999);
+
+        const { data: monthlyTrips } = await supabase
           .from('trips')
-          .select('price')
+          .select('price, status')
           .eq('facility_id', profile.facility_id)
-          .eq('status', 'completed')
-          .gte('pickup_time', firstOfMonth.toISOString());
-        const monthlySpend = monthlyCompletedTrips?.reduce((sum, trip) => sum + (parseFloat(trip.price) || 0), 0) || 0;
+          .gte('pickup_time', firstOfMonth.toISOString())
+          .lte('pickup_time', lastOfMonth.toISOString());
+
+        // Only count billable trips (completed with price > 0)
+        const monthlySpend = monthlyTrips?.reduce((sum, trip) => {
+          const isBillable = trip.status === 'completed' && parseFloat(trip.price) > 0;
+          return sum + (isBillable ? parseFloat(trip.price) : 0);
+        }, 0) || 0;
 
         // For now, set pending invoices to 0 since we don't have invoice system yet
         const pendingInvoices = 0;
@@ -257,7 +266,7 @@ export default function FacilityDashboardView({ user }) {
           <div className="bg-white  rounded-lg border border-[#DDE5E7] dark:border-[#E0E0E0] p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[#2E4F54]/60 text-gray-900/60">Current Month Transportation Costs</p>
+                <p className="text-sm font-medium text-[#2E4F54]/60 text-gray-900/60">Upcoming Invoice</p>
                 <p className="text-2xl font-semibold text-[#2E4F54] text-gray-900 mt-1">
                   ${stats.monthlySpend.toFixed(2)}
                 </p>
