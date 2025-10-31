@@ -102,9 +102,12 @@ export async function GET(request) {
     
     // If no customer ID, return empty list
     if (!facility?.stripe_customer_id) {
+      console.log('No Stripe customer ID for facility:', facilityId);
       return NextResponse.json({ paymentMethods: [] });
     }
-    
+
+    console.log('Fetching payment methods from Stripe for customer:', facility.stripe_customer_id);
+
     // Retrieve the facility's payment methods from Stripe
     const cardMethods = await stripe.paymentMethods.list({
       customer: facility.stripe_customer_id,
@@ -115,9 +118,14 @@ export async function GET(request) {
       customer: facility.stripe_customer_id,
       type: 'us_bank_account',
     });
-    
+
+    console.log('Card methods found:', cardMethods.data.length);
+    console.log('Bank methods found:', bankMethods.data.length);
+
     const allMethods = [...cardMethods.data, ...bankMethods.data];
-    
+
+    console.log('Total payment methods returning:', allMethods.length);
+
     return NextResponse.json({ paymentMethods: allMethods });
   } catch (error) {
     console.error('Error retrieving facility payment methods:', error);
