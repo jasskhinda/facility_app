@@ -116,6 +116,7 @@ export async function DELETE(request) {
     // Get authorization - support both web (cookies) and mobile (Bearer token)
     const authHeader = request.headers.get('authorization');
     let supabase;
+    let userId;
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
       // Mobile app authentication via Bearer token
@@ -129,26 +130,39 @@ export async function DELETE(request) {
           }
         }
       );
+
+      // For Bearer token, use getUser() instead of getSession()
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        return NextResponse.json(
+          { error: 'You must be logged in to delete a payment method' },
+          { status: 401 }
+        );
+      }
+
+      userId = user.id;
     } else {
       // Web app authentication via cookies
       supabase = await createRouteHandlerClient();
-    }
 
-    // Get the user session
-    const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
 
-    if (!session) {
-      return NextResponse.json(
-        { error: 'You must be logged in to delete a payment method' },
-        { status: 401 }
-      );
+      if (!session) {
+        return NextResponse.json(
+          { error: 'You must be logged in to delete a payment method' },
+          { status: 401 }
+        );
+      }
+
+      userId = session.user.id;
     }
 
     // Verify user has access to this facility
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('facility_id, role')
-      .eq('id', session.user.id)
+      .eq('id', userId)
       .single();
 
     const allowedRoles = ['facility', 'super_admin'];
