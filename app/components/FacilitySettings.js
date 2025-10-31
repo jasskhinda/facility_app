@@ -125,8 +125,18 @@ export default function FacilitySettings() {
       setSaving(true);
       setError(null);
       setMessage(null);
-      
-      const { error } = await supabase
+
+      console.log('🔄 Updating facility with data:', {
+        name: facility.name,
+        address: facility.address,
+        phone_number: facility.phone_number,
+        contact_email: facility.contact_email,
+        billing_email: facility.billing_email,
+        facility_type: facility.facility_type,
+      });
+
+      // First update without select
+      const { error: updateError } = await supabase
         .from('facilities')
         .update({
           name: facility.name,
@@ -135,14 +145,35 @@ export default function FacilitySettings() {
           contact_email: facility.contact_email,
           billing_email: facility.billing_email,
           facility_type: facility.facility_type,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', facility.id);
-      
-      if (error) {
-        throw error;
+
+      if (updateError) {
+        console.error('❌ Error updating facility:', updateError);
+        throw updateError;
       }
-      
+
+      console.log('✅ Facility updated successfully');
+
+      // Now fetch the updated data separately
+      const { data: updatedData, error: fetchError } = await supabase
+        .from('facilities')
+        .select('*')
+        .eq('id', facility.id)
+        .single();
+
+      if (!fetchError && updatedData) {
+        console.log('📥 Fetched updated facility data:', updatedData);
+        setFacility(updatedData);
+      }
+
       setMessage('Facility settings updated successfully');
+
+      // Clear message after 3 seconds
+      setTimeout(() => {
+        setMessage(null);
+      }, 3000);
     } catch (err) {
       console.error('Error updating facility:', err);
       setError(err.message);
