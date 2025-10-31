@@ -26,25 +26,60 @@ export async function GET(request) {
       );
     }
 
-    // Get the user session
-    const supabase = await createRouteHandlerClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      return NextResponse.json(
-        { error: 'You must be logged in to view payment methods' },
-        { status: 401 }
+    // Get authorization - support both web (cookies) and mobile (Bearer token)
+    const authHeader = request.headers.get('authorization');
+    let supabase;
+    let userId;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      // Mobile app authentication via Bearer token
+      const { createClient } = await import('@supabase/supabase-js');
+      supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        {
+          global: {
+            headers: { Authorization: authHeader }
+          }
+        }
       );
+
+      // For Bearer token, use getUser() instead of getSession()
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        return NextResponse.json(
+          { error: 'You must be logged in to view payment methods' },
+          { status: 401 }
+        );
+      }
+
+      userId = user.id;
+    } else {
+      // Web app authentication via cookies
+      supabase = await createRouteHandlerClient();
+
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        return NextResponse.json(
+          { error: 'You must be logged in to view payment methods' },
+          { status: 401 }
+        );
+      }
+
+      userId = session.user.id;
     }
 
     // Verify user has access to this facility
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('facility_id, role')
-      .eq('id', session.user.id)
+      .eq('id', userId)
       .single();
 
-    if (profileError || profile.facility_id !== facilityId || profile.role !== 'facility') {
+    const allowedRoles = ['facility', 'super_admin'];
+    if (profileError || profile.facility_id !== facilityId || !allowedRoles.includes(profile.role)) {
       return NextResponse.json(
         { error: 'Access denied to this facility' },
         { status: 403 }
