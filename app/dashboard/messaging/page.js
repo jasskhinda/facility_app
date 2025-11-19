@@ -185,6 +185,29 @@ export default function MessagingPage() {
         read_by_facility: true,
         read_by_dispatcher: false
       });
+
+      // Send push notification to dispatchers
+      try {
+        const senderName = userProfile?.first_name && userProfile?.last_name
+          ? `${userProfile.first_name} ${userProfile.last_name}`
+          : facilityName || 'Facility';
+
+        await fetch(`${process.env.NEXT_PUBLIC_DISPATCHER_APP_URL || 'https://dispatch.compassionatecaretransportation.com'}/api/notifications/send-message-notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            conversationId: conversation.id,
+            senderName: senderName,
+            message: newMessage.trim(),
+            senderRole: 'facility',
+          }),
+        });
+        console.log('📨 Push notification sent to dispatchers');
+      } catch (pushError) {
+        console.error('⚠️ Failed to send push notification (non-critical):', pushError);
+        // Don't fail the message send if push fails
+      }
+
       setNewMessage('');
       setTimeout(scrollToBottom, 100);
     } catch (error) {
