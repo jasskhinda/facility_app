@@ -721,7 +721,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         
         // Create separate arrays for different trip statuses based on actual database values
         const filteredPendingTrips = trips.filter(trip => trip.status === 'pending');
-        const filteredUpcomingTrips = trips.filter(trip => trip.status === 'upcoming' || trip.status === 'awaiting_driver_acceptance');
+        const filteredUpcomingTrips = trips.filter(trip => trip.status === 'upcoming' || trip.status === 'awaiting_driver_acceptance' || trip.status === 'in_progress');
         const filteredApprovedTrips = trips.filter(trip => trip.status === 'approved'); // This status doesn't exist in current data
         const filteredCancelledTrips = trips.filter(trip => ['cancelled', 'canceled', 'rejected'].includes(trip.status));
         
