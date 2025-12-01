@@ -177,14 +177,38 @@ export default function MessagingPage() {
 
     try {
       setSending(true);
+      const messageText = newMessage.trim();
+
       await supabase.from('messages').insert({
         conversation_id: conversation.id,
         sender_id: user.id,
         sender_type: 'facility',
-        message_text: newMessage.trim(),
+        message_text: messageText,
         read_by_facility: true,
         read_by_dispatcher: false
       });
+
+      // Send push notification to dispatchers
+      try {
+        const dispatcherApiUrl = process.env.NEXT_PUBLIC_DISPATCHER_APP_URL || 'https://dispatch.compassionatecaretransportation.com';
+        await fetch(`${dispatcherApiUrl}/api/notifications/send-dispatcher-push`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tripId: null,
+            action: 'message',
+            source: 'facility_app',
+            tripDetails: {
+              facility_name: profile?.facilities?.name || 'A facility',
+              message_preview: messageText.substring(0, 50) + (messageText.length > 50 ? '...' : ''),
+            },
+          }),
+        });
+      } catch (pushError) {
+        console.error('Push notification failed:', pushError);
+        // Don't fail the message send if push fails
+      }
+
       setNewMessage('');
       setTimeout(scrollToBottom, 100);
     } catch (error) {
