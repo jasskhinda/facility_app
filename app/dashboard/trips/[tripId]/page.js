@@ -376,8 +376,7 @@ Website: https://compassionatecaretransportation.com
 
       // Send push notification to dispatchers
       try {
-        const dispatcherApiUrl = process.env.NEXT_PUBLIC_DISPATCHER_APP_URL || 'https://dispatch.compassionatecaretransportation.com';
-        await fetch(`${dispatcherApiUrl}/api/notifications/send-dispatcher-push`, {
+        await fetch('https://dispatch.compassionatecaretransportation.com/api/notifications/send-dispatcher-push', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
