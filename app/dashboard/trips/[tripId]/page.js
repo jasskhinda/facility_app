@@ -373,7 +373,26 @@ Website: https://compassionatecaretransportation.com
         console.error('Error cancelling trip:', error);
         throw new Error('Failed to cancel trip. Please try again.');
       }
-      
+
+      // Send push notification to dispatchers
+      try {
+        const dispatcherApiUrl = process.env.NEXT_PUBLIC_DISPATCHER_APP_URL || 'https://dispatch.compassionatecaretransportation.com';
+        await fetch(`${dispatcherApiUrl}/api/notifications/send-dispatcher-push`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tripId: tripId,
+            action: 'cancelled',
+            source: 'facility_app',
+            tripDetails: {
+              pickup_address: trip.pickup_address || 'Unknown',
+            },
+          }),
+        });
+      } catch (pushError) {
+        console.error('Push notification failed:', pushError);
+      }
+
       // Update local trip state
       setTrip({
         ...trip,
@@ -381,7 +400,7 @@ Website: https://compassionatecaretransportation.com
         cancellation_reason: cancelReason || 'Customer cancelled',
         refund_status: 'Pending'
       });
-      
+
       setCancellingTrip(false);
       setCancelReason('');
       setSuccessMessage('Trip cancelled successfully');

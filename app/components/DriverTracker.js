@@ -355,6 +355,25 @@ export default function DriverTracker({ trip, driverLocation, user }) {
         console.error('Error details:', JSON.stringify(error));
         alert('Failed to cancel trip. Please try again.');
       } else {
+        // Send push notification to dispatchers
+        try {
+          const dispatcherApiUrl = process.env.NEXT_PUBLIC_DISPATCHER_APP_URL || 'https://dispatch.compassionatecaretransportation.com';
+          await fetch(`${dispatcherApiUrl}/api/notifications/send-dispatcher-push`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tripId: trip.id,
+              action: 'cancelled',
+              source: 'facility_app',
+              tripDetails: {
+                pickup_address: trip.pickup_address || 'Unknown',
+              },
+            }),
+          });
+        } catch (pushError) {
+          console.error('Push notification failed:', pushError);
+        }
+
         // Redirect to trips page with success message
         router.push('/dashboard/trips?cancelled=true');
       }

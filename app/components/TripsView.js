@@ -91,15 +91,34 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
         console.error('Error details:', JSON.stringify(error));
         alert('Failed to cancel trip. Please try again.');
       } else {
+        // Send push notification to dispatchers
+        try {
+          const dispatcherApiUrl = process.env.NEXT_PUBLIC_DISPATCHER_APP_URL || 'https://dispatch.compassionatecaretransportation.com';
+          await fetch(`${dispatcherApiUrl}/api/notifications/send-dispatcher-push`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tripId: tripId,
+              action: 'cancelled',
+              source: 'facility_app',
+              tripDetails: {
+                pickup_address: trips.find(t => t.id === tripId)?.pickup_address || 'Unknown',
+              },
+            }),
+          });
+        } catch (pushError) {
+          console.error('Push notification failed:', pushError);
+        }
+
         // Create new updated trips array with the cancelled trip
-        const updatedTrips = trips.map(trip => 
+        const updatedTrips = trips.map(trip =>
           trip.id === tripId ? { ...trip, status: 'cancelled', cancellation_reason: cancelReason || 'Customer cancelled', refund_status: 'Pending' } : trip
         );
-        
+
         // Set the trips state with the new array
         setTrips(updatedTrips);
         setFilter('cancelled'); // Switch to cancelled tab to show the result
-        
+
         setCancellingTrip(null);
         setCancelReason('');
       }
