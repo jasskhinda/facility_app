@@ -356,40 +356,25 @@ Website: https://compassionatecaretransportation.com
   // Handle cancellation
   const handleCancelTrip = async () => {
     if (!trip || trip.status === 'completed' || trip.status === 'cancelled') return;
-    
+
     setIsSubmitting(true);
     try {
-      const { data, error } = await supabase
-        .from('trips')
-        .update({
+      // Use server-side API to update trip status (sends push notification)
+      const response = await fetch('/api/trips/update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tripId,
           status: 'cancelled',
-          cancellation_reason: cancelReason || 'Customer cancelled',
-          refund_status: 'Pending'
-        })
-        .eq('id', tripId)
-        .select();
-        
-      if (error) {
-        console.error('Error cancelling trip:', error);
-        throw new Error('Failed to cancel trip. Please try again.');
-      }
+          reason: cancelReason || 'Customer cancelled',
+        }),
+      });
 
-      // Send push notification to dispatchers
-      try {
-        await fetch('https://dispatch.compassionatecaretransportation.com/api/notifications/send-dispatcher-push', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tripId: tripId,
-            action: 'cancelled',
-            source: 'facility_app',
-            tripDetails: {
-              pickup_address: trip.pickup_address || 'Unknown',
-            },
-          }),
-        });
-      } catch (pushError) {
-        console.error('Push notification failed:', pushError);
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        console.error('Error cancelling trip:', result.error);
+        throw new Error('Failed to cancel trip. Please try again.');
       }
 
       // Update local trip state

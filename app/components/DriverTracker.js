@@ -340,45 +340,28 @@ export default function DriverTracker({ trip, driverLocation, user }) {
   async function submitCancellation() {
     setIsSubmitting(true);
     try {
-      // Update trip status to cancelled in Supabase
-      const { error } = await supabase
-        .from('trips')
-        .update({
+      // Use server-side API to update trip status (sends push notification)
+      const response = await fetch('/api/trips/update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tripId: trip.id,
           status: 'cancelled',
-          cancellation_reason: cancelReason || 'Customer cancelled during trip',
-          refund_status: 'Pending'
-        })
-        .eq('id', trip.id);
-        
-      if (error) {
-        console.error('Error cancelling trip:', error);
-        console.error('Error details:', JSON.stringify(error));
+          reason: cancelReason || 'Customer cancelled during trip',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        console.error('Error cancelling trip:', result.error);
         alert('Failed to cancel trip. Please try again.');
       } else {
-        // Send push notification to dispatchers
-        try {
-          await fetch('https://dispatch.compassionatecaretransportation.com/api/notifications/send-dispatcher-push', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              tripId: trip.id,
-              action: 'cancelled',
-              source: 'facility_app',
-              tripDetails: {
-                pickup_address: trip.pickup_address || 'Unknown',
-              },
-            }),
-          });
-        } catch (pushError) {
-          console.error('Push notification failed:', pushError);
-        }
-
         // Redirect to trips page with success message
         router.push('/dashboard/trips?cancelled=true');
       }
     } catch (err) {
       console.error('Unexpected error:', err);
-      console.error('Error details:', JSON.stringify(err));
       alert('An unexpected error occurred. Please try again.');
       setShowCancelModal(false);
     } finally {
