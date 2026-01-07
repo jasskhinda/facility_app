@@ -8,7 +8,7 @@ export default function ResetPasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  
+
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -19,20 +19,40 @@ export default function ResetPasswordForm() {
     setIsLoading(true);
     setError('');
     setMessage('');
-    
+
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      // Try Supabase built-in reset first
+      const { error: supabaseError } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/update-password`,
       });
-      
-      if (error) {
-        throw error;
+
+      if (supabaseError) {
+        console.log('Supabase reset failed, trying custom SMTP:', supabaseError.message);
+
+        // Fallback to custom SMTP API
+        const response = await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to send reset email');
+        }
+
+        setMessage(data.message || 'If an account exists with this email, a password reset link will be sent.');
+        setEmail('');
+        return;
       }
-      
-      // Success
+
+      // Supabase succeeded
       setMessage('Check your email for a password reset link.');
       setEmail('');
-      
+
     } catch (error) {
       console.error('Reset password error:', error);
       setError(error.message || 'Error sending recovery email. Please try again.');
