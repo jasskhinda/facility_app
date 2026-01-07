@@ -125,13 +125,14 @@ export async function middleware(req) {
   
   // Define auth routes that should redirect to dashboard if user is already logged in
   const authRoutes = ['/login', '/signup', '/reset-password'];
-  
+
   if (authRoutes.includes(pathname) && session) {
-    // Check for the 'fresh' flag or logout flag to prevent redirect loops
+    // Check for the 'fresh' flag, logout flag, or error flag to prevent redirect loops
     const freshLogin = req.nextUrl.searchParams.get('fresh') === 'true';
     const isLogout = req.nextUrl.searchParams.get('logout') === 'true';
-    
-    if (!freshLogin && !isLogout) {
+    const hasError = req.nextUrl.searchParams.get('error') !== null;
+
+    if (!freshLogin && !isLogout && !hasError) {
       console.log('Redirecting to dashboard from auth route');
       return NextResponse.redirect(new URL('/dashboard', req.url));
     }
