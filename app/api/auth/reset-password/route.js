@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
-
-// Import the email provider library that supports SendPulse, Resend, etc.
-const { createTransporter } = require('@/lib/email-providers');
+import nodemailer from 'nodemailer';
 
 // Create Supabase admin client
 const supabaseAdmin = createClient(
@@ -70,8 +68,21 @@ export async function POST(request) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://facility.compassionatecaretransportation.com';
     const resetLink = `${appUrl}/update-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
-    // Send email via configured provider (SendPulse, Resend, etc.)
-    const transporter = await createTransporter();
+    // Create SendPulse transporter directly
+    console.log('Creating SendPulse transporter...');
+    console.log('SENDPULSE_USER:', process.env.SENDPULSE_USER ? 'SET' : 'NOT SET');
+    console.log('SENDPULSE_PASSWORD:', process.env.SENDPULSE_PASSWORD ? 'SET' : 'NOT SET');
+
+    const transporter = nodemailer.createTransport({
+      host: 'smtp-pulse.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.SENDPULSE_USER,
+        pass: process.env.SENDPULSE_PASSWORD,
+      },
+    });
+
     const fromEmail = process.env.EMAIL_FROM || 'Compassionate Care Transportation <noreply@compassionatecaretransportation.com>';
 
     const mailOptions = {
@@ -151,18 +162,19 @@ Compassionate Care Transportation Team
       `,
     };
 
-    await transporter.sendMail(mailOptions);
-
-    console.log('Password reset email sent to:', email);
+    console.log('Sending email to:', email);
+    const result = await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully:', result.messageId);
 
     return NextResponse.json({
       message: 'If an account exists with this email, a password reset link will be sent.'
     });
 
   } catch (error) {
-    console.error('Password reset error:', error);
+    console.error('Password reset error:', error.message);
+    console.error('Full error:', JSON.stringify(error, null, 2));
     return NextResponse.json(
-      { error: 'Failed to process password reset request' },
+      { error: `Failed to send reset email: ${error.message}` },
       { status: 500 }
     );
   }
