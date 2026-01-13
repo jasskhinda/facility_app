@@ -134,7 +134,7 @@ ${trip.notes ? `Special Instructions: ${trip.notes}` : ''}
 COST BREAKDOWN
 ================================================
 ${pricingBreakdownText}
-${trip.status === 'completed' ? 'Payment Status: AWAITING PAYMENT' : ''}
+${trip.status === 'completed' ? (trip.is_private_pay ? 'Payment Status: PAID PRIVATELY' : 'Payment Status: AWAITING PAYMENT') : ''}
 ${trip.status === 'cancelled' && trip.refund_status ? `Refund Status: ${trip.refund_status}` : ''}
 
 ================================================
@@ -686,7 +686,16 @@ Website: https://compassionatecaretransportation.com
             {trip.status === 'completed' && (
               <div className="flex justify-between items-center py-2 text-sm">
                 <span className="text-[#2E4F54]/70 text-gray-900/70">Payment Status</span>
-                <span className="font-medium text-blue-600 dark:text-blue-400">Awaiting Payment</span>
+                {trip.is_private_pay ? (
+                  <span className="inline-flex items-center font-medium text-green-600 dark:text-green-400">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Paid Privately
+                  </span>
+                ) : (
+                  <span className="font-medium text-blue-600 dark:text-blue-400">Awaiting Payment</span>
+                )}
               </div>
             )}
             
