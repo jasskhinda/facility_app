@@ -11,6 +11,7 @@ export default function TripsPage() {
   const [trips, setTrips] = useState([]);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [facilityId, setFacilityId] = useState(null);
   const router = useRouter();
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -90,6 +91,7 @@ export default function TripsPage() {
           if (facilityStaffRoles.includes(profileData?.role) && profileData?.facility_id) {
             console.log('🏥 Facility staff detected - fetching facility trips for facility:', profileData.facility_id);
             tripsQuery = tripsQuery.eq('facility_id', profileData.facility_id);
+            setFacilityId(profileData.facility_id);  // Store facility ID for Private Pay
           } else {
             console.log('👤 Regular client detected - fetching user trips for user:', userId);
             tripsQuery = tripsQuery.eq('user_id', userId);
@@ -419,5 +421,5 @@ export default function TripsPage() {
     );
   }
 
-  return <TripsView user={user} trips={trips} successMessage={successMessage} onRefresh={refreshTrips} />;
+  return <TripsView user={user} trips={trips} successMessage={successMessage} onRefresh={refreshTrips} facilityId={facilityId} />;
 }

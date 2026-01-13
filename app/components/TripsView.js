@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from './DashboardLayout';
 import RatingForm from './RatingForm';
+import PrivatePayModal from './PrivatePayModal';
 import { createBrowserClient } from '@supabase/ssr';
 
-export default function TripsView({ user, trips: initialTrips = [], successMessage = null, onRefresh = null }) {
+export default function TripsView({ user, trips: initialTrips = [], successMessage = null, onRefresh = null, facilityId = null }) {
   const [filter, setFilter] = useState('all'); // all, upcoming, completed, cancelled
   const [cancellingTrip, setCancellingTrip] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
@@ -15,6 +16,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
   const [ratingTrip, setRatingTrip] = useState(null);
   const [rebookingTrip, setRebookingTrip] = useState(null);
   const [trips, setTrips] = useState(initialTrips);
+  const [privatePayTrip, setPrivatePayTrip] = useState(null);
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -126,6 +128,16 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
     setRatingTrip(null);
   };
   
+  // Function to handle private pay success
+  const handlePrivatePaySuccess = (tripId) => {
+    // Update the trip in the local state to mark as privately paid
+    const updatedTrips = trips.map(trip =>
+      trip.id === tripId ? { ...trip, is_private_pay: true, private_pay_date: new Date().toISOString() } : trip
+    );
+    setTrips(updatedTrips);
+    setPrivatePayTrip(null);
+  };
+
   // Function to handle rebooking a trip
   const handleRebookTrip = async (trip) => {
     try {
@@ -478,9 +490,33 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                       <div className="flex justify-between items-center mb-3">
                         <div>
                           <p className="text-base font-bold text-[#2E4F54] text-gray-900">Price</p>
-                          <p className="text-lg text-black font-bold">${trip.price?.toFixed(2) || 'N/A'}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-lg text-black font-bold">${trip.price?.toFixed(2) || 'N/A'}</p>
+                            {/* Paid Privately Badge */}
+                            {trip.is_private_pay && (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                                Paid Privately
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="flex space-x-2">
+                          {/* Private Pay Button - only show if not already paid privately */}
+                          {!trip.is_private_pay && facilityId && (
+                            <button
+                              onClick={() => setPrivatePayTrip(trip)}
+                              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-md text-white bg-green-600 hover:bg-green-700"
+                              title="Pay for this trip now - excludes from monthly billing"
+                            >
+                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                              </svg>
+                              Private Pay
+                            </button>
+                          )}
                           {!trip.rating && (
                             <button
                               onClick={() => setRatingTrip(trip)}
@@ -511,7 +547,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                           </Link>
                         </div>
                       </div>
-                      
+
                       {/* Show rating form if this trip is being rated */}
                       {ratingTrip && ratingTrip.id === trip.id && (
                         <div className="mt-3">
@@ -579,7 +615,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
             <p className="text-[#2E4F54]/80 text-gray-900/80 mb-4">
               Are you sure you want to cancel this trip? This action cannot be undone.
             </p>
-            
+
             <div className="mb-4">
               <label htmlFor="cancelReason" className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-1">
                 Reason for cancellation (optional)
@@ -593,7 +629,7 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
                 rows={3}
               ></textarea>
             </div>
-            
+
             <div className="flex justify-end space-x-3">
               <button
                 onClick={cancelCancellation}
@@ -613,6 +649,15 @@ export default function TripsView({ user, trips: initialTrips = [], successMessa
           </div>
         </div>
       )}
+
+      {/* Private Pay Modal */}
+      <PrivatePayModal
+        isOpen={!!privatePayTrip}
+        onClose={() => setPrivatePayTrip(null)}
+        trip={privatePayTrip}
+        facilityId={facilityId}
+        onPaymentSuccess={handlePrivatePaySuccess}
+      />
     </DashboardLayout>
   );
 }

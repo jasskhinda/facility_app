@@ -45,6 +45,7 @@ export async function GET(request) {
     
     // ✅ CRITICAL FIX: Query trips by facility_id to only get facility-created trips
     // This excludes individual client trips booked through other apps
+    // ✅ PRIVATE PAY: Also excludes trips that have been paid privately
     let query = supabase
       .from('trips')
       .select(`
@@ -60,11 +61,15 @@ export async function GET(request) {
         additional_passengers,
         created_at,
         user_id,
-        managed_client_id
+        managed_client_id,
+        is_private_pay,
+        private_pay_date,
+        private_pay_amount
       `)
       .eq('facility_id', profile.facility_id)
       .not('price', 'is', null)
       .gt('price', 0)
+      .or('is_private_pay.is.null,is_private_pay.eq.false')  // Exclude privately paid trips from billing
       .order('created_at', { ascending: false });
     
     // Apply filters
