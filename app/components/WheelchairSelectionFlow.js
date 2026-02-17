@@ -2,11 +2,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getEffectiveRates, formatCurrency } from '@/lib/pricing';
 
-export default function WheelchairSelectionFlow({ 
-  onWheelchairChange, 
+export default function WheelchairSelectionFlow({
+  onWheelchairChange,
   initialValue = 'none',
-  className = '' 
+  customRates = null,
+  className = ''
 }) {
   const [wheelchairType, setWheelchairType] = useState(initialValue);
   const [needsWheelchair, setNeedsWheelchair] = useState(false);
@@ -14,8 +16,8 @@ export default function WheelchairSelectionFlow({
   const [showProvideOption, setShowProvideOption] = useState(false);
   const [showCustomInput, setShowCustomInput] = useState(false);
 
-  // Wheelchair pricing - FACILITY APP: Free wheelchair service
-  const WHEELCHAIR_PRICE = 0;
+  // Get wheelchair price from custom rates (falls back to default)
+  const WHEELCHAIR_PRICE = getEffectiveRates(customRates).PREMIUMS.WHEELCHAIR_RENTAL;
 
   useEffect(() => {
     // Reset states when wheelchair type changes
@@ -39,8 +41,8 @@ export default function WheelchairSelectionFlow({
       type: wheelchairType,
       needsProvided: needsWheelchair,
       customType: customWheelchairType,
-      hasWheelchairFee: false, // FACILITY APP: Never charge wheelchair fees
-      fee: 0, // FACILITY APP: Always $0 wheelchair fee
+      hasWheelchairFee: needsWheelchair && WHEELCHAIR_PRICE > 0,
+      fee: needsWheelchair ? WHEELCHAIR_PRICE : 0,
       isTransportChair: isTransportChair,
       isValidSelection: !isTransportChair
     };
@@ -255,7 +257,7 @@ export default function WheelchairSelectionFlow({
                   </p>
                   <div className="flex items-center mt-1">
                     <span className="text-xs font-semibold text-[#7CCFD0]">
-                      +${WHEELCHAIR_PRICE}
+                      +{formatCurrency(WHEELCHAIR_PRICE)}
                     </span>
                     <span className="text-xs text-[#2E4F54]/50 text-gray-900/50 ml-1">
                       wheelchair rental fee
@@ -353,7 +355,7 @@ export default function WheelchairSelectionFlow({
                 Wheelchair Rental Fee
               </span>
               <span className="text-sm font-bold text-[#7CCFD0]">
-                +${WHEELCHAIR_PRICE}
+                +{formatCurrency(WHEELCHAIR_PRICE)}
               </span>
             </div>
             <p className="text-xs text-[#2E4F54]/70 text-gray-900/70 mt-1">

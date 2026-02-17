@@ -61,10 +61,13 @@ export default function FacilityBillingComponent({ user, facilityId }) {
   // Testing functionality
   const [resettingPayment, setResettingPayment] = useState(false);
   const [resetMessage, setResetMessage] = useState('');
-  
+
   // Filter states for non-completed trips
   const [selectedTripFilter, setSelectedTripFilter] = useState('all');
   const [approvedTrips, setApprovedTrips] = useState([]);
+
+  // Private Pay trips (excluded from monthly billing)
+  const [privatePayTrips, setPrivatePayTrips] = useState([]);
 
   const supabase = createClientSupabase();
 
@@ -467,7 +470,10 @@ export default function FacilityBillingComponent({ user, facilityId }) {
           additional_passengers,
           status,
           user_id,
-          managed_client_id
+          managed_client_id,
+          is_private_pay,
+          private_pay_date,
+          private_pay_amount
         `)
         .eq('facility_id', facilityId)
         .in('status', ['completed', 'pending', 'upcoming', 'confirmed', 'approved', 'cancelled', 'canceled', 'rejected', 'no-show'])
@@ -700,7 +706,11 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         }
         
         // Categorize trips based on status and payment status
-        trips.forEach(trip => {
+        // First, separate private pay trips from monthly billing
+        const filteredPrivatePayTrips = trips.filter(trip => trip.is_private_pay === true);
+        const nonPrivatePayTrips = trips.filter(trip => trip.is_private_pay !== true);
+
+        nonPrivatePayTrips.forEach(trip => {
           if (paidTripIds.has(trip.id)) {
             categorizedPaidTrips.push(trip);
           } else {
@@ -715,18 +725,20 @@ export default function FacilityBillingComponent({ user, facilityId }) {
             // Pending/Upcoming trips will be handled separately
           }
         });
-        
+
         // Set invoice paid status if there are any paid trips
         currentInvoicePaid = categorizedPaidTrips.length > 0;
-        
+
         // Create separate arrays for different trip statuses based on actual database values
-        const filteredPendingTrips = trips.filter(trip => trip.status === 'pending');
-        const filteredUpcomingTrips = trips.filter(trip => trip.status === 'upcoming' || trip.status === 'awaiting_driver_acceptance' || trip.status === 'in_progress');
-        const filteredApprovedTrips = trips.filter(trip => trip.status === 'approved'); // This status doesn't exist in current data
-        const filteredCancelledTrips = trips.filter(trip => ['cancelled', 'canceled', 'rejected'].includes(trip.status));
-        
+        // Exclude private pay trips from all these filters
+        const filteredPendingTrips = nonPrivatePayTrips.filter(trip => trip.status === 'pending');
+        const filteredUpcomingTrips = nonPrivatePayTrips.filter(trip => trip.status === 'upcoming' || trip.status === 'awaiting_driver_acceptance' || trip.status === 'in_progress');
+        const filteredApprovedTrips = nonPrivatePayTrips.filter(trip => trip.status === 'approved'); // This status doesn't exist in current data
+        const filteredCancelledTrips = nonPrivatePayTrips.filter(trip => ['cancelled', 'canceled', 'rejected'].includes(trip.status));
+
         console.log('📊 Trip categorization completed:', {
           totalTrips: trips.length,
+          privatePayTrips: filteredPrivatePayTrips.length,
           paidTrips: categorizedPaidTrips.length,
           dueTrips: categorizedDueTrips.length,
           pendingTrips: filteredPendingTrips.length,
@@ -857,7 +869,7 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         
         const enhancedPaidTrips = categorizedPaidTrips.map(trip => {
           let clientName = 'Unknown Client';
-          
+
           if (trip.user_id) {
             const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
             if (userProfile && userProfile.first_name) {
@@ -873,14 +885,41 @@ export default function FacilityBillingComponent({ user, facilityId }) {
               clientName = `${name} (Managed)`;
             }
           }
-          
+
           return {
             ...trip,
             clientName,
             billable: false // Already paid
           };
         });
-        
+
+        // Create enhanced Private Pay trips (excluded from monthly billing)
+        const enhancedPrivatePayTrips = filteredPrivatePayTrips.map(trip => {
+          let clientName = 'Unknown Client';
+
+          if (trip.user_id) {
+            const userProfile = userProfiles.find(profile => profile.id === trip.user_id);
+            if (userProfile && userProfile.first_name) {
+              clientName = `${userProfile.first_name} ${userProfile.last_name || ''}`.trim();
+            }
+          } else if (trip.managed_client_id) {
+            const managedClient = managedClients.find(client => client.id === trip.managed_client_id);
+            if (managedClient && managedClient.first_name) {
+              let name = `${managedClient.first_name} ${managedClient.last_name || ''}`.trim();
+              if (managedClient.phone_number) {
+                name += ` - ${managedClient.phone_number}`;
+              }
+              clientName = `${name} (Managed)`;
+            }
+          }
+
+          return {
+            ...trip,
+            clientName,
+            billable: false // Private pay - already paid at booking
+          };
+        });
+
         // Create combined enhanced trips for backward compatibility
         const enhancedTrips = [...enhancedDueTrips, ...enhancedPaidTrips, ...enhancedPendingTrips, ...enhancedUpcomingTrips, ...enhancedApprovedTrips, ...enhancedCancelledTrips];
         
@@ -888,14 +927,16 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         console.log('🔧 DEBUG - Setting trip state arrays:', {
           dueTrips: categorizedDueTrips.length,
           paidTrips: categorizedPaidTrips.length,
+          privatePayTrips: enhancedPrivatePayTrips.length,
           pendingTrips: enhancedPendingTrips.length,
           upcomingTrips: enhancedUpcomingTrips.length,
           approvedTrips: enhancedApprovedTrips.length,
           cancelledTrips: enhancedCancelledTrips.length
         });
-        
+
         setDueTrips(enhancedDueTrips);
         setPaidTrips(enhancedPaidTrips);
+        setPrivatePayTrips(enhancedPrivatePayTrips);
         setPendingTrips(enhancedPendingTrips);
         setUpcomingTrips(enhancedUpcomingTrips);
         setApprovedTrips(enhancedApprovedTrips);
@@ -996,11 +1037,16 @@ export default function FacilityBillingComponent({ user, facilityId }) {
             // Reset categorization arrays
             categorizedDueTrips = [];
             categorizedPaidTrips = [];
-            
+
             // Move ALL trips to paid section since dispatcher verified payment
+            // BUT exclude private pay trips - they stay in their own section
             trips.forEach(trip => {
-              categorizedPaidTrips.push(trip);
-              console.log(`✅ Trip ${trip.id} marked as PAID (dispatcher verified)`);
+              if (trip.is_private_pay !== true) {
+                categorizedPaidTrips.push(trip);
+                console.log(`✅ Trip ${trip.id} marked as PAID (dispatcher verified)`);
+              } else {
+                console.log(`💳 Trip ${trip.id} is Private Pay - excluded from monthly billing`);
+              }
             });
             
             currentInvoicePaid = true;
@@ -1023,10 +1069,10 @@ export default function FacilityBillingComponent({ user, facilityId }) {
         
       } catch (error) {
         console.error('Error checking payment status:', error);
-        // Fallback: treat all trips as due
-        categorizedDueTrips = trips;
+        // Fallback: treat all non-private-pay trips as due
+        categorizedDueTrips = trips.filter(trip => trip.is_private_pay !== true);
         trips.forEach(trip => {
-          if (trip.status === 'completed' && trip.price > 0) {
+          if (trip.is_private_pay !== true && trip.status === 'completed' && trip.price > 0) {
             currentActualBillableAmount += (trip.price || 0);
           }
         });
@@ -2245,7 +2291,7 @@ ${monthlyTrips.map(trip => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7CCFD0] mx-auto"></div>
           <p className="text-gray-600 mt-2">Loading trips...</p>
         </div>
-      ) : (dueTrips.length > 0 || paidTrips.length > 0 || monthlyTrips.length > 0) ? (
+      ) : (dueTrips.length > 0 || paidTrips.length > 0 || privatePayTrips.length > 0 || monthlyTrips.length > 0) ? (
         <div className="space-y-6">
           {/* DUE TRIPS Section */}
           {dueTrips.length > 0 && (
@@ -2328,6 +2374,94 @@ ${monthlyTrips.map(trip => {
                                 </span>
                               )}
                             </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <Link
+                              href={`/dashboard/trips/${trip.id}`}
+                              className="bg-[#7CCFD0] text-white px-3 py-1 rounded text-xs hover:bg-[#60BFC0] transition-colors inline-flex items-center"
+                            >
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              Trip Details
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* PRIVATE PAY Section - Trips paid at booking time (excluded from monthly billing) */}
+          {privatePayTrips.length > 0 && (
+            <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+              <div className="px-6 py-4 border-b bg-green-50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-green-800">
+                      💳 PRIVATE PAY
+                    </h3>
+                    <p className="text-sm text-green-600 mt-1">
+                      Trips paid at booking - excluded from monthly billing ({privatePayTrips.length} trips)
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-green-700">
+                      ${privatePayTrips.reduce((sum, trip) => sum + (trip.private_pay_amount || trip.total_fare || trip.price || 0), 0).toFixed(2)}
+                    </div>
+                    <div className="text-xs text-green-600">✓ Already Paid</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Date</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Client</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Route</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Amount Paid</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Status</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-700 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {privatePayTrips.map((trip) => {
+                      const formattedDate = trip.pickup_time ?
+                        new Date(trip.pickup_time).toLocaleDateString() : 'N/A';
+                      const paidDate = trip.private_pay_date ?
+                        new Date(trip.private_pay_date).toLocaleDateString() : '';
+
+                      return (
+                        <tr key={trip.id} className="hover:bg-green-50/30">
+                          <td className="px-6 py-4 text-sm text-gray-900">{formattedDate}</td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">{trip.clientName}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <div className="max-w-xs">
+                              <p className="truncate font-medium">{trip.pickup_address || 'Unknown pickup'}</p>
+                              <p className="truncate text-xs text-gray-500">
+                                → {trip.destination_address || 'Unknown destination'}
+                              </p>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium">
+                            <span className="text-green-600 font-semibold">
+                              ${(trip.private_pay_amount || trip.total_fare || trip.price || 0).toFixed(2)}
+                            </span>
+                            {paidDate && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                Paid {paidDate}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                              ✓ PAID
+                            </span>
                           </td>
                           <td className="px-6 py-4 text-sm">
                             <Link

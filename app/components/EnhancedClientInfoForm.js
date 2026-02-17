@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getEffectiveRates, formatCurrency } from '@/lib/pricing';
 
-export default function EnhancedClientInfoForm({ 
-  onClientInfoChange, 
+export default function EnhancedClientInfoForm({
+  onClientInfoChange,
   initialData = {},
   className = '',
-  selectedClient = null 
+  selectedClient = null,
+  customRates = null
 }) {
   const [clientInfo, setClientInfo] = useState({
     weight: initialData.weight || '',
@@ -56,7 +58,7 @@ export default function EnhancedClientInfoForm({
     const enhancedData = {
       ...clientInfo,
       isBariatric,
-      bariatricRate: isBariatric ? 150 : 50,
+      bariatricRate: isBariatric ? getEffectiveRates(customRates).BASE_RATES.BARIATRIC_PER_LEG : getEffectiveRates(customRates).BASE_RATES.REGULAR_PER_LEG,
       emailAllowNA: clientInfo.email === 'N/A' || clientInfo.email === 'n/a'
     };
     
@@ -148,7 +150,7 @@ export default function EnhancedClientInfoForm({
             )}
             {parseFloat(clientInfo.weight) >= 300 && parseFloat(clientInfo.weight) < 400 && (
               <p className="text-xs text-amber-700 mt-1 font-medium">
-                ⚠️ Bariatric transportation required ($150 per leg vs $50 regular rate)
+                ⚠️ Bariatric transportation required ({formatCurrency(getEffectiveRates(customRates).BASE_RATES.BARIATRIC_PER_LEG)} per leg vs {formatCurrency(getEffectiveRates(customRates).BASE_RATES.REGULAR_PER_LEG)} regular rate)
               </p>
             )}
           </div>
@@ -241,7 +243,7 @@ export default function EnhancedClientInfoForm({
                 Why This Information Matters
               </h5>
               <ul className="text-xs text-blue-700 mt-1 space-y-1">
-                <li>• <strong>Weight:</strong> Determines regular ($50) vs bariatric ($150) transportation rate</li>
+                <li>• <strong>Weight:</strong> Determines regular ({formatCurrency(getEffectiveRates(customRates).BASE_RATES.REGULAR_PER_LEG)}) vs bariatric ({formatCurrency(getEffectiveRates(customRates).BASE_RATES.BARIATRIC_PER_LEG)}) transportation rate</li>
                 <li>• <strong>Height:</strong> Helps ensure proper vehicle and equipment selection</li>
                 <li>• <strong>Date of Birth:</strong> Required for hospital record verification when needed</li>
                 <li>• <strong>Email:</strong> Use 'N/A' when client doesn't have email to avoid booking delays</li>

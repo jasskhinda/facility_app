@@ -5,12 +5,18 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { createClientSupabase } from '@/lib/client-supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import DashboardLayout from './DashboardLayout';
 import PricingDisplay from './PricingDisplay';
 import WheelchairSelectionFlow from './WheelchairSelectionFlow';
 import EnhancedClientInfoForm from './EnhancedClientInfoForm';
 import HolidayPricingChecker from './HolidayPricingChecker';
 import { getTodayISO } from '../utils/dateUtils';
+import { getEffectiveRates, formatCurrency } from '@/lib/pricing';
+
+// Initialize Stripe
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
 // Dynamically import Google Maps components to prevent SSR issues
 const SuperSimpleMap = dynamic(() => import('./SuperSimpleMap'), {
@@ -37,6 +43,7 @@ export default function StreamlinedBookingForm({ user }) {
   const [clients, setClients] = useState([]);
   const [facilityId, setFacilityId] = useState(null);
   const [facilityDefaults, setFacilityDefaults] = useState({});
+  const [customRates, setCustomRates] = useState(null);
   
   const [formData, setFormData] = useState({
     clientId: preselectedClientId || '',
@@ -51,9 +58,15 @@ export default function StreamlinedBookingForm({ user }) {
     wheelchairType: 'no_wheelchair',
     additionalPassengers: 0,
     tripNotes: '',
-    billTo: 'facility', // facility or client
-    isEmergency: false
+    billTo: 'facility', // facility or client or private_pay
+    isEmergency: false,
+    isPrivatePay: false
   });
+
+  // Private Pay state
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [clientSecret, setClientSecret] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const [selectedClient, setSelectedClient] = useState(null);
   const [error, setError] = useState('');
@@ -174,6 +187,25 @@ export default function StreamlinedBookingForm({ user }) {
             address: facility.address,
             phone: facility.phone_number
           });
+
+          // Fetch custom rates if facility has them
+          if (facility.has_custom_rates) {
+            try {
+              const { data: facilityRates } = await supabase
+                .from('facility_custom_rates')
+                .select('*')
+                .eq('facility_id', profile.facility_id)
+                .eq('is_active', true)
+                .single();
+
+              if (facilityRates) {
+                console.log('💰 Loaded custom rates for facility:', facilityRates);
+                setCustomRates(facilityRates);
+              }
+            } catch (ratesErr) {
+              console.log('No custom rates found for facility (using defaults)');
+            }
+          }
         }
         
         // Load all clients (authenticated + managed) using the API
@@ -314,7 +346,197 @@ export default function StreamlinedBookingForm({ user }) {
       setLoading(false);
       return;
     }
-    
+
+    // Validate price for Private Pay
+    if (formData.isPrivatePay && (!currentPricing?.pricing?.total || currentPricing.pricing.total <= 0)) {
+      setError('Unable to process payment. Please ensure addresses are valid and price is calculated.');
+      return;
+    }
+
+    // If Private Pay, process payment first
+    if (formData.isPrivatePay) {
+      await processPrivatePayment();
+      return;
+    }
+
+    // Otherwise, create trip directly (monthly billing)
+    await createTrip(null);
+  };
+
+  // Process Private Pay payment using Stripe Checkout
+  const processPrivatePayment = async () => {
+    setPaymentProcessing(true);
+    try {
+      // Store form data in sessionStorage before redirecting to Stripe
+      const bookingData = {
+        formData,
+        facilityId,
+        clientId: formData.clientId,
+        pricing: currentPricing,
+        wheelchairData,
+        clientInfoData,
+        holidayData,
+        routeInfo,
+        selectedClientData: clients.find(c => c.id === formData.clientId),
+      };
+      sessionStorage.setItem('pendingPrivatePayBooking', JSON.stringify(bookingData));
+
+      // Create Stripe Checkout session on server
+      const response = await fetch('/api/facility/trips/private-pay-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          facility_id: facilityId,
+          amount: currentPricing.pricing.total,
+          success_url: `${window.location.origin}/dashboard/book?payment=success`,
+          cancel_url: `${window.location.origin}/dashboard/book?payment=cancelled`,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create checkout session');
+      }
+
+      // Redirect to Stripe Checkout
+      const stripe = await stripePromise;
+      const { error: stripeError } = await stripe.redirectToCheckout({
+        sessionId: result.sessionId,
+      });
+
+      if (stripeError) {
+        throw new Error(stripeError.message);
+      }
+
+    } catch (error) {
+      console.error('Payment error:', error);
+      setError(error.message || 'Payment failed. Please try again.');
+      setPaymentProcessing(false);
+    }
+  };
+
+  // Handle successful payment return from Stripe
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    const sessionId = urlParams.get('session_id');
+
+    if (paymentStatus === 'success' && sessionId) {
+      // Retrieve booking data and create trip
+      const pendingBooking = sessionStorage.getItem('pendingPrivatePayBooking');
+      if (pendingBooking) {
+        const bookingData = JSON.parse(pendingBooking);
+        sessionStorage.removeItem('pendingPrivatePayBooking');
+
+        // Create the trip with payment info
+        createTripAfterPayment(bookingData, sessionId);
+
+        // Clean up URL
+        window.history.replaceState({}, '', '/dashboard/book');
+      }
+    } else if (paymentStatus === 'cancelled') {
+      setError('Payment was cancelled. Please try again.');
+      window.history.replaceState({}, '', '/dashboard/book');
+    }
+  }, []);
+
+  // Create trip after successful Stripe payment
+  const createTripAfterPayment = async (bookingData, sessionId) => {
+    try {
+      setLoading(true);
+
+      // Verify payment and get payment intent ID
+      const verifyResponse = await fetch('/api/facility/trips/verify-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+
+      const verifyResult = await verifyResponse.json();
+
+      if (!verifyResponse.ok || !verifyResult.success) {
+        throw new Error(verifyResult.error || 'Payment verification failed');
+      }
+
+      // Now create the trip with the verified payment
+      const supabase = createClientSupabase();
+      const pickupDateTime = new Date(`${bookingData.formData.pickupDate}T${bookingData.formData.pickupTime}`);
+
+      const tripData = {
+        facility_id: bookingData.facilityId,
+        pickup_address: bookingData.formData.pickupAddress,
+        pickup_details: bookingData.formData.pickupDetails,
+        destination_address: bookingData.formData.destinationAddress,
+        destination_details: bookingData.formData.destinationDetails,
+        pickup_time: pickupDateTime.toISOString(),
+        wheelchair_type: bookingData.wheelchairData?.type === 'none' ? 'no_wheelchair' : bookingData.wheelchairData?.type,
+        additional_passengers: bookingData.formData.additionalPassengers,
+        trip_notes: bookingData.formData.tripNotes,
+        status: 'pending',
+        booked_by: user.id,
+        bill_to: 'private_pay',
+        price: bookingData.pricing?.pricing?.total || null,
+        is_round_trip: bookingData.formData.isRoundTrip,
+        distance: bookingData.routeInfo?.distance?.miles || bookingData.pricing?.distance?.distance || null,
+        // Add route information from booking data if available
+        route_duration: bookingData.routeInfo?.duration?.text || null,
+        route_distance_text: bookingData.routeInfo?.distance?.text || null,
+        route_duration_text: bookingData.routeInfo?.duration?.text || null,
+        // Add pricing breakdown data - LOCKED FROM BOOKING
+        pricing_breakdown_data: bookingData.pricing ? {
+          pricing: bookingData.pricing.pricing,
+          distance: bookingData.pricing.distance,
+          summary: bookingData.pricing.summary,
+          countyInfo: bookingData.pricing.countyInfo,
+          clientInfo: bookingData.clientInfoData,
+          wheelchairInfo: bookingData.wheelchairData,
+          holidayInfo: bookingData.holidayData,
+          createdAt: new Date().toISOString(),
+          source: 'StreamlinedBookingForm_PrivatePay'
+        } : null,
+        pricing_breakdown_total: bookingData.pricing?.pricing?.total || null,
+        pricing_breakdown_locked_at: bookingData.pricing ? new Date().toISOString() : null,
+        // Private Pay fields
+        is_private_pay: true,
+        private_pay_date: new Date().toISOString(),
+        private_pay_amount: bookingData.pricing?.pricing?.total,
+        private_pay_stripe_id: verifyResult.paymentIntentId,
+        private_pay_method: 'card',
+      };
+
+      // Set client reference
+      if (bookingData.selectedClientData?.client_type === 'managed') {
+        tripData.managed_client_id = bookingData.clientId;
+        tripData.user_id = null;
+      } else {
+        tripData.user_id = bookingData.clientId;
+        tripData.managed_client_id = null;
+      }
+
+      const { data: trip, error: tripError } = await supabase
+        .from('trips')
+        .insert(tripData)
+        .select()
+        .single();
+
+      if (tripError) throw tripError;
+
+      setSuccess(true);
+      setTimeout(() => {
+        window.location.href = '/dashboard/trips';
+      }, 2000);
+
+    } catch (err) {
+      console.error('Error creating trip after payment:', err);
+      setError(err.message || 'Failed to create trip after payment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Create the trip (called after payment for Private Pay, or directly for Monthly Billing)
+  const createTrip = async (paymentIntentId) => {
     try {
       setLoading(true);
       const supabase = createClientSupabase();
@@ -363,7 +585,13 @@ export default function StreamlinedBookingForm({ user }) {
           source: 'StreamlinedBookingForm'
         } : null,
         pricing_breakdown_total: currentPricing?.pricing?.total || null,
-        pricing_breakdown_locked_at: currentPricing ? new Date().toISOString() : null
+        pricing_breakdown_locked_at: currentPricing ? new Date().toISOString() : null,
+        // Private Pay fields
+        is_private_pay: formData.isPrivatePay,
+        private_pay_date: formData.isPrivatePay ? new Date().toISOString() : null,
+        private_pay_amount: formData.isPrivatePay ? currentPricing?.pricing?.total : null,
+        private_pay_stripe_id: paymentIntentId,
+        private_pay_method: formData.isPrivatePay ? 'card' : null
       };
       
       // Set the appropriate client reference based on client type
@@ -685,7 +913,7 @@ export default function StreamlinedBookingForm({ user }) {
                   <span className="text-red-800 dark:text-white font-medium">🚨 Emergency Trip</span>
                   <p className="text-sm text-red-700 dark:text-white mt-1">
                     Check this box if this is an emergency trip requiring immediate attention.
-                    <span className="font-medium"> Additional $40 emergency fee applies.</span>
+                    <span className="font-medium"> Additional {formatCurrency(getEffectiveRates(customRates).PREMIUMS.EMERGENCY)} emergency fee applies.</span>
                   </p>
                 </div>
               </label>
@@ -696,6 +924,7 @@ export default function StreamlinedBookingForm({ user }) {
               <WheelchairSelectionFlow
                 onWheelchairChange={handleWheelchairChange}
                 initialValue={wheelchairData.type}
+                customRates={customRates}
                 className="mt-2"
               />
             </div>
@@ -706,6 +935,7 @@ export default function StreamlinedBookingForm({ user }) {
                 onClientInfoChange={handleClientInfoChange}
                 initialData={clientInfoData}
                 selectedClient={selectedClient}
+                customRates={customRates}
                 className="mt-2"
               />
             </div>
@@ -750,7 +980,7 @@ export default function StreamlinedBookingForm({ user }) {
             </div>
 
             {/* Pricing Display */}
-            <PricingDisplay 
+            <PricingDisplay
               formData={formData}
               selectedClient={selectedClient}
               routeInfo={routeInfo}
@@ -758,27 +988,69 @@ export default function StreamlinedBookingForm({ user }) {
               wheelchairData={wheelchairData}
               clientInfoData={clientInfoData}
               holidayData={holidayData}
+              customRates={customRates}
             />
 
-            {/* Billing */}
+            {/* Payment Type */}
             <div>
               <label className="block text-sm font-medium text-[#2E4F54] text-gray-900 mb-2">
-                Bill To
+                💳 Payment Type
               </label>
-              <div className="space-y-2">
-                <label className="flex items-center space-x-3">
+              <div className="space-y-3">
+                {/* Monthly Billing Option */}
+                <label className={`flex items-start p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                  !formData.isPrivatePay
+                    ? 'border-[#7CCFD0] bg-[#7CCFD0]/5'
+                    : 'border-[#DDE5E7] hover:border-[#7CCFD0]/50'
+                }`}>
                   <input
                     type="radio"
-                    value="facility"
-                    checked={formData.billTo === 'facility'}
-                    onChange={(e) => setFormData({ ...formData, billTo: e.target.value })}
-                    className="w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] focus:ring-[#7CCFD0]"
+                    name="paymentType"
+                    checked={!formData.isPrivatePay}
+                    onChange={() => setFormData({ ...formData, isPrivatePay: false, billTo: 'facility' })}
+                    className="mt-1 w-4 h-4 text-[#7CCFD0] border-[#DDE5E7] focus:ring-[#7CCFD0]"
                   />
-                  <span className="text-[#2E4F54] text-gray-900">Facility</span>
+                  <div className="ml-3">
+                    <span className="text-[#2E4F54] text-gray-900 font-medium">Monthly Billing</span>
+                    <p className="text-xs text-[#2E4F54]/70 text-gray-900/70 mt-1">
+                      Trip will be added to the facility's monthly invoice
+                    </p>
+                  </div>
                 </label>
-                <p className="text-xs text-[#2E4F54]/70 text-gray-900/70 ml-7">
-                  All trips are billed to the facility for consolidated billing
-                </p>
+
+                {/* Private Pay Option */}
+                <label className={`flex items-start p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                  formData.isPrivatePay
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-[#DDE5E7] hover:border-green-300'
+                }`}>
+                  <input
+                    type="radio"
+                    name="paymentType"
+                    checked={formData.isPrivatePay}
+                    onChange={() => setFormData({ ...formData, isPrivatePay: true, billTo: 'private_pay' })}
+                    className="mt-1 w-4 h-4 text-green-500 border-[#DDE5E7] focus:ring-green-500"
+                  />
+                  <div className="ml-3">
+                    <span className="text-[#2E4F54] text-gray-900 font-medium">Private Pay</span>
+                    <p className="text-xs text-[#2E4F54]/70 text-gray-900/70 mt-1">
+                      Pay now with credit/debit card - excluded from monthly billing
+                    </p>
+                  </div>
+                </label>
+
+                {/* Private Pay Notice */}
+                {formData.isPrivatePay && currentPricing?.pricing?.total > 0 && (
+                  <div className="flex items-start p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <span className="text-xl mr-3">💳</span>
+                    <div>
+                      <p className="text-green-800 font-medium">Payment Required</p>
+                      <p className="text-green-700 text-sm mt-1">
+                        You will be charged <span className="font-bold">${currentPricing.pricing.total.toFixed(2)}</span> before the trip is booked.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -793,11 +1065,16 @@ export default function StreamlinedBookingForm({ user }) {
               </button>
               <button
                 type="submit"
-                disabled={loading || (clientInfoData?.weight && parseFloat(clientInfoData.weight) >= 400)}
-                className="px-6 py-2 bg-[#7CCFD0] hover:bg-[#60BFC0] text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading || paymentProcessing || (clientInfoData?.weight && parseFloat(clientInfoData.weight) >= 400)}
+                className={`px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  formData.isPrivatePay
+                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                    : 'bg-[#7CCFD0] hover:bg-[#60BFC0] text-white'
+                }`}
               >
-                {loading ? 'Booking...' :
+                {loading || paymentProcessing ? 'Processing...' :
                  (clientInfoData?.weight && parseFloat(clientInfoData.weight) >= 400) ? 'Cannot Book - Contact Us' :
+                 formData.isPrivatePay ? `Pay $${currentPricing?.pricing?.total?.toFixed(2) || '0.00'} & Book Trip` :
                  'Book Trip'}
               </button>
             </div>

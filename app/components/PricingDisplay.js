@@ -1,17 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getPricingEstimate, createPricingBreakdown, formatCurrency } from '@/lib/pricing';
+import { getPricingEstimate, createPricingBreakdown, formatCurrency, getEffectiveRates } from '@/lib/pricing';
 
-export default function PricingDisplay({ 
-  formData, 
+export default function PricingDisplay({
+  formData,
   selectedClient,
   routeInfo = null,
   isVisible = true,
   onPricingCalculated = null,
   wheelchairData = null,
   clientInfoData = null,
-  holidayData = null
+  holidayData = null,
+  customRates = null
 }) {
   const [pricing, setPricing] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -40,7 +41,8 @@ export default function PricingDisplay({
     isVisible,
     wheelchairData,
     clientInfoData,
-    holidayData
+    holidayData,
+    customRates
   ]);
 
   const calculatePricing = async () => {
@@ -72,7 +74,8 @@ export default function PricingDisplay({
         } : null,
         clientWeight: clientInfoData?.weight ? parseFloat(clientInfoData.weight) : null,
         holidayData: holidayData,
-        calculateDeadMileageEnabled: true
+        calculateDeadMileageEnabled: true,
+        customRates: customRates
       });
 
       if (result.success) {
@@ -207,14 +210,17 @@ export default function PricingDisplay({
 
           {/* Pricing Notes */}
           <div className="text-xs text-[#2E4F54]/60 text-gray-900/60 space-y-1">
+            {pricing.summary?.hasCustomRates && (
+              <p className="text-blue-600 dark:text-blue-400 font-medium">• Custom facility rates applied</p>
+            )}
             {pricing.summary?.isBariatric && (
-              <p>• Enhanced bariatric rate ($150 vs $50) applied based on client weight</p>
+              <p>• Enhanced bariatric rate ({formatCurrency(getEffectiveRates(customRates).BASE_RATES.BARIATRIC_PER_LEG)} vs {formatCurrency(getEffectiveRates(customRates).BASE_RATES.REGULAR_PER_LEG)}) applied based on client weight</p>
             )}
             {pricing.summary?.hasHolidaySurcharge && (
-              <p>• Holiday surcharge (+$100) applied for special holiday dates</p>
+              <p>• Holiday surcharge (+{formatCurrency(getEffectiveRates(customRates).PREMIUMS.HOLIDAY_SURCHARGE)}) applied for special holiday dates</p>
             )}
             {pricing.summary?.hasDeadMileage && (
-              <p>• Dead mileage fee ($4/mile from office to pickup) for trips 2+ counties out</p>
+              <p>• Dead mileage fee ({formatCurrency(getEffectiveRates(customRates).DISTANCE.DEAD_MILEAGE)}/mile from office to pickup) for trips 2+ counties out</p>
             )}
             {pricing.distance?.isEstimated && (
               <p>• Distance is estimated - actual fare may vary based on route</p>

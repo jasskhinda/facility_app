@@ -7,6 +7,7 @@ import PricingDisplay from './PricingDisplay';
 import WheelchairSelectionFlow from './WheelchairSelectionFlow';
 import EnhancedClientInfoForm from './EnhancedClientInfoForm';
 import HolidayPricingChecker from './HolidayPricingChecker';
+import { getEffectiveRates, formatCurrency } from '@/lib/pricing';
 
 // Dynamically import Google Maps components to prevent SSR issues
 const SuperSimpleMap = dynamic(() => import('./SuperSimpleMap'), {
@@ -35,6 +36,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
   const [selectedClient, setSelectedClient] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [holidayInfo, setHolidayInfo] = useState({ isHoliday: false, holidayName: '', surcharge: 0 });
+  const [customRates, setCustomRates] = useState(null);
   
   // Client information state
   const [clientInfo, setClientInfo] = useState({
@@ -203,6 +205,31 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
       loadClientData();
     }
   }, [trip]);
+
+  // Load custom rates for the facility
+  useEffect(() => {
+    const loadCustomRates = async () => {
+      if (!trip?.facility_id) return;
+
+      try {
+        const { data: facilityRates } = await supabase
+          .from('facility_custom_rates')
+          .select('*')
+          .eq('facility_id', trip.facility_id)
+          .eq('is_active', true)
+          .single();
+
+        if (facilityRates) {
+          console.log('💰 Loaded custom rates for trip facility:', facilityRates);
+          setCustomRates(facilityRates);
+        }
+      } catch (err) {
+        console.log('No custom rates found for facility (using defaults)');
+      }
+    };
+
+    loadCustomRates();
+  }, [trip?.facility_id]);
 
   // Handle wheelchair selection changes
   const handleWheelchairChange = useCallback((newWheelchairData) => {
@@ -553,6 +580,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
               initialData={clientInfo}
               selectedClient={selectedClient}
               onClientInfoChange={handleClientInfoChange}
+              customRates={customRates}
               className="mb-6"
             />
 
@@ -594,6 +622,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
               <WheelchairSelectionFlow
                 onWheelchairChange={handleWheelchairChange}
                 initialValue={wheelchairData.type}
+                customRates={customRates}
                 className="mt-2"
                 disabled={loading}
               />
@@ -629,7 +658,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
                   <span className="text-red-800 dark:text-red-300 font-medium">🚨 Emergency Trip</span>
                   <p className="text-sm text-red-700 dark:text-red-400 mt-1">
                     Check this box if this is an emergency trip requiring immediate attention.
-                    <span className="font-medium"> Additional $40 emergency fee applies.</span>
+                    <span className="font-medium"> Additional {formatCurrency(getEffectiveRates(customRates).PREMIUMS.EMERGENCY)} emergency fee applies.</span>
                   </p>
                 </div>
               </label>
@@ -652,7 +681,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
 
 
             {/* Pricing Display */}
-            <PricingDisplay 
+            <PricingDisplay
               formData={{
                 ...formData,
                 pickupDate: formData.pickupDate,
@@ -665,6 +694,7 @@ export default function EditTripForm({ trip, onSave, onCancel }) {
               holidayInfo={holidayInfo}
               wheelchairData={wheelchairData}
               clientInfoData={clientInfo}
+              customRates={customRates}
               onPricingCalculated={setCurrentPricing}
             />
 

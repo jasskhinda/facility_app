@@ -109,10 +109,10 @@ export default function SavedPricingBreakdown({ trip, onPricingCalculated }) {
             <h4 className="text-sm font-medium text-blue-800 mb-2">Pricing Notes:</h4>
             <ul className="text-sm text-blue-700 space-y-1">
               {pricing.isBariatric && (
-                <li>• Bariatric rate applied ($150/leg)</li>
+                <li>• Bariatric rate applied ({formatCurrency((pricing.basePrice + (pricing.roundTripPrice || 0)) / (pricing.roundTripPrice > 0 ? 2 : 1))}/leg)</li>
               )}
               {pricing.hasHolidaySurcharge && (
-                <li>• Holiday surcharge applied (+$100)</li>
+                <li>• Holiday surcharge applied (+{formatCurrency(pricing.holidaySurcharge)})</li>
               )}
               {pricing.hasDeadMileage && (
                 <li>• Dead mileage charge included</li>
